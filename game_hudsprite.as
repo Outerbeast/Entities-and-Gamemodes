@@ -5,7 +5,7 @@ Ideal for intro logos for maps
 
 class game_hudsprite : ScriptBaseEntity
 {
-	string SpriteName = "";
+	string SpriteName 	= "";
   
 	int16 Width		= 0;
 	int16 Height		= 0;
@@ -51,17 +51,17 @@ class game_hudsprite : ScriptBaseEntity
 			yPos = atof( szValue );
 			return true;
     	}
-		else if( szKey == "left" ) 
+	else if( szKey == "left" ) 
     	{
 			LeftOffset = atoi( szValue );
 			return true;
     	}
-		else if( szKey == "top" ) 
+	else if( szKey == "top" ) 
     	{
 			TopOffset = atoi( szValue );
 			return true;
     	}
-		else if( szKey == "width" ) 
+	else if( szKey == "width" ) 
     	{
 			Width = atoi( szValue );
 			return true;
@@ -101,7 +101,7 @@ class game_hudsprite : ScriptBaseEntity
 			HoldTime = atof( szValue );
 			return true;
     	}
-		else if( szKey == "fx" ) 
+	else if( szKey == "fx" ) 
     	{
 			Effect = atof( szValue );
 			return true;
@@ -121,7 +121,7 @@ class game_hudsprite : ScriptBaseEntity
 			Color2 = StringToRGBA( szValue );
 			return true;
     	}
-   		else
+   	else
       		return BaseClass.KeyValue( szKey, szValue );
   	}
 
