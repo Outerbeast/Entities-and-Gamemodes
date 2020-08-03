@@ -7,19 +7,19 @@ class game_hudsprite : ScriptBaseEntity
 {
 	string SpriteName = "";
   
-	int16 Width			= 0;
+	int16 Width		= 0;
 	int16 Height		= 0;
 
 	uint8 LeftOffset 	= 0;
 	uint8 TopOffset 	= 0;
 	uint8 Effect		= 0;
-	uint8 Frame			= 0;
+	uint8 Frame		= 0;
 	uint8 NumFrames		= 0;
 	uint8 Channel		= 0;
 
-	float xPos			= 0.0f;
-	float yPos			= 0.0f;
-	float Fps			= 0.0f;
+	float xPos		= 0.0f;
+	float yPos		= 0.0f;
+	float Fps		= 0.0f;
 	float FadeinTime	= 0.0f;
 	float FadeoutTime	= 0.0f;
 	float HoldTime		= 0.0f;
@@ -144,24 +144,24 @@ class game_hudsprite : ScriptBaseEntity
 		HUDSpriteParams keys;
 	
 		keys.spritename		= "" + SpriteName;
-		keys.x				= xPos;
-		keys.y				= yPos;
-		keys.left			= LeftOffset;
-		keys.top			= TopOffset;
-		keys.width			= Width;
-		keys.height			= Height;
-		keys.effect			= Effect;
-		keys.frame			= Frame;
+		keys.x			= xPos;
+		keys.y			= yPos;
+		keys.left		= LeftOffset;
+		keys.top		= TopOffset;
+		keys.width		= Width;
+		keys.height		= Height;
+		keys.effect		= Effect;
+		keys.frame		= Frame;
 		keys.numframes		= NumFrames;
 		keys.framerate		= Fps;
 		keys.fadeinTime 	= FadeinTime;
 		keys.holdTime		= HoldTime;
 		keys.fadeoutTime	= FadeoutTime;
-		keys.fxTime			= EffectTime;
-		keys.color1			= Color1;
-		keys.color2			= Color2;
+		keys.fxTime		= EffectTime;
+		keys.color1		= Color1;
+		keys.color2		= Color2;
 		keys.channel		= Channel;
-		keys.flags			= self.pev.spawnflags;
+		keys.flags		= self.pev.spawnflags;
 
 		g_PlayerFuncs.HudCustomSprite( null, keys );
 	}
