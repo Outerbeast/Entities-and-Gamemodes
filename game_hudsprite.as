@@ -133,10 +133,10 @@ class game_hudsprite : ScriptBaseEntity
 	void Spawn()
 	{
 		Precache();
-    	self.pev.movetype  = MOVETYPE_NONE;
-    	self.pev.solid     = SOLID_NOT;
+    		self.pev.movetype  = MOVETYPE_NONE;
+    		self.pev.solid     = SOLID_NOT;
     
-    	g_EntityFuncs.SetOrigin( self, self.pev.origin );
+    		g_EntityFuncs.SetOrigin( self, self.pev.origin );
   	}
 
 	void Use( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue )
