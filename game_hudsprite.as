@@ -5,29 +5,23 @@ Ideal for intro logos for maps
 
 class game_hudsprite : ScriptBaseEntity
 {
-	string SpriteName 	= "";
-  
-	int16 Width		= 0;
-	int16 Height		= 0;
+	private HUDSpriteParams m_hsp;
 
-	uint8 LeftOffset 	= 0;
-	uint8 TopOffset 	= 0;
-	uint8 Effect		= 0;
-	uint8 Frame		= 0;
-	uint8 NumFrames		= 0;
-	uint8 Channel		= 0;
-
-	float xPos		= 0.0f;
-	float yPos		= 0.0f;
-	float Fps		= 0.0f;
-	float FadeinTime	= 0.0f;
-	float FadeoutTime	= 0.0f;
-	float HoldTime		= 0.0f;
-	float EffectTime	= 0.0f;
-
-	RGBA Color1(255, 255, 255, 255);
-	RGBA Color2(255, 255, 255, 255);
-
+	game_hudsprite()
+	{
+		m_hsp.spritename				= "";
+		m_hsp.x		 = m_hsp.y			= 0.0f;
+		m_hsp.left	 = m_hsp.top			= 0;
+		m_hsp.width	 = m_hsp.height			= 0;
+		m_hsp.effect					= 0;
+		m_hsp.frame	 = m_hsp.numframes		= 0.0f;
+		m_hsp.framerate					= 0.0f;
+		m_hsp.fadeinTime = m_hsp.holdTime 	= m_hsp.fadeoutTime = m_hsp.fxTime = 0.0f;
+		m_hsp.color1 = m_hsp.color2			= RGBA(255, 255, 255, 255);
+		m_hsp.channel					= 0;
+		m_hsp.flags					= 4;
+	}
+	
 	RGBA StringToRGBA(string& in szColor)
 	{
     		array<string> arrValues = (szColor + " 0 0 0 0").Split(" ");
@@ -37,97 +31,48 @@ class game_hudsprite : ScriptBaseEntity
   	bool KeyValue( const string& in szKey, const string& in szValue )
 	{
     	if( szKey == "spritename" ) 
-    	{
-			SpriteName = szValue;
-			return true;
-    	}
+			m_hsp.spritename = szValue;
     	else if( szKey == "x" ) 
-    	{
-			xPos = atof( szValue );
-			return true;
-    	}
+			m_hsp.x = atof( szValue );
     	else if( szKey == "y" ) 
-    	{
-			yPos = atof( szValue );
-			return true;
-    	}
+			m_hsp.y = atof( szValue );
 	else if( szKey == "left" ) 
-    	{
-			LeftOffset = atoi( szValue );
-			return true;
-    	}
+			m_hsp.left = int8(Math.clamp( 0, 255, atoi( szValue ) ) );
 	else if( szKey == "top" ) 
-    	{
-			TopOffset = atoi( szValue );
-			return true;
-    	}
+			m_hsp.top =  int8(Math.clamp( 0, 255, atoi( szValue ) ) );
 	else if( szKey == "width" ) 
-    	{
-			Width = atoi( szValue );
-			return true;
-    	}
+			m_hsp.width = int16(Math.clamp( 0, 512, atoi( szValue ) ) );
     	else if( szKey == "height" ) 
-    	{
-			Height = atoi( szValue );
-			return true;
-    	}
-    	else if( szKey == "frames" ) 
-    	{
-			Frame = atoi( szValue );
-			return true;
-    	}
+			m_hsp.height = int16(Math.clamp( 0, 512, atoi( szValue ) ) );
+    	else if( szKey == "frame" ) 
+			m_hsp.frame =  int8(Math.clamp( 0, 255, atoi( szValue ) ) );
     	else if( szKey == "numframes" ) 
-    	{
-			NumFrames = atoi( szValue );
-			return true;
-    	}
+			m_hsp.numframes =  int8(Math.clamp( 0, 255, atoi( szValue ) ) );
     	else if( szKey == "channel" ) 
-    	{
-			Channel = atoi( szValue );
-			return true;
-    	}
+			m_hsp.channel =  Math.clamp( 0, 15, atoi( szValue ) );
     	else if( szKey == "fadein" ) 
-    	{
-			FadeinTime = atof( szValue );
-			return true;
-    	}
+			m_hsp.fadeinTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
     	else if( szKey == "fadeout" ) 
-    	{
-			FadeoutTime = atof( szValue );
-			return true;
-    	}
+			m_hsp.fadeoutTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
     	else if( szKey == "holdtime" ) 
-    	{
-			HoldTime = atof( szValue );
-			return true;
-    	}
+			m_hsp.holdTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
 	else if( szKey == "fx" ) 
-    	{
-			Effect = atof( szValue );
-			return true;
-    	}
+			m_hsp.effect = int8(Math.clamp( 0, 8, atoi( szValue ) ) );
     	else if( szKey == "fxtime" ) 
-    	{
-			EffectTime = atof( szValue );
-			return true;
-    	}
+			m_hsp.fxTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
     	else if( szKey == "color1" ) 
-    	{
-			Color1 = StringToRGBA( szValue );
-			return true;
-    	}
+			m_hsp.color1 = StringToRGBA( szValue );
     	else if( szKey == "color2" ) 
-    	{
-			Color2 = StringToRGBA( szValue );
-			return true;
-    	}
-   	else
+			m_hsp.color2 = StringToRGBA( szValue );
+		else
       		return BaseClass.KeyValue( szKey, szValue );
+
+		return true;
   	}
 
 	void Precache()
 	{
-		g_Game.PrecacheModel( SpriteName );
+		g_Game.PrecacheModel( m_hsp.spritename );
 	}
 
 	void Spawn()
@@ -141,29 +86,8 @@ class game_hudsprite : ScriptBaseEntity
 
 	void Use( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue )
 	{
-		HUDSpriteParams keys;
-	
-		keys.spritename		= "" + SpriteName;
-		keys.x			= xPos;
-		keys.y			= yPos;
-		keys.left		= LeftOffset;
-		keys.top		= TopOffset;
-		keys.width		= Width;
-		keys.height		= Height;
-		keys.effect		= Effect;
-		keys.frame		= Frame;
-		keys.numframes		= NumFrames;
-		keys.framerate		= Fps;
-		keys.fadeinTime 	= FadeinTime;
-		keys.holdTime		= HoldTime;
-		keys.fadeoutTime	= FadeoutTime;
-		keys.fxTime		= EffectTime;
-		keys.color1		= Color1;
-		keys.color2		= Color2;
-		keys.channel		= Channel;
-		keys.flags		= self.pev.spawnflags;
-
-		g_PlayerFuncs.HudCustomSprite( null, keys );
+		m_hsp.flags = self.pev.spawnflags;
+		g_PlayerFuncs.HudCustomSprite( null, m_hsp );
 	}
 }
 
@@ -178,5 +102,4 @@ void RegisterGameHudSpriteEntity()
 -Neo 
 -_RC 
 -Admer456
-
 their efforts will not go unappreciated :) */
