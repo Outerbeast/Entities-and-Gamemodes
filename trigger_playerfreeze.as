@@ -100,7 +100,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 					}					
 					else
 					{
-                		pPlayer.pev.flags |= FL_FROZEN;
+                				pPlayer.pev.flags |= FL_FROZEN;
 						//g_EngineFuncs.ServerPrint("-- DEBUG: All Players Frozen!\n");
 
 						if( RenderInvisible == 1 && pPlayer.pev.rendermode != kRenderTransTexture)
