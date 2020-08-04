@@ -9,60 +9,70 @@ class game_hudsprite : ScriptBaseEntity
 
 	game_hudsprite()
 	{
-		m_hsp.spritename				= "";
-		m_hsp.x		 = m_hsp.y			= 0.0f;
-		m_hsp.left	 = m_hsp.top			= 0;
-		m_hsp.width	 = m_hsp.height			= 0;
-		m_hsp.effect					= 0;
-		m_hsp.frame	 = m_hsp.numframes		= 0.0f;
-		m_hsp.framerate					= 0.0f;
-		m_hsp.fadeinTime = m_hsp.holdTime 	= m_hsp.fadeoutTime = m_hsp.fxTime = 0.0f;
-		m_hsp.color1 = m_hsp.color2			= RGBA(255, 255, 255, 255);
-		m_hsp.channel					= 0;
-		m_hsp.flags					= 4;
+		m_hsp.spritename	= "";
+		m_hsp.x 		= 0.0f;
+		m_hsp.y			= 0.0f;
+		m_hsp.left 		= 0;
+		m_hsp.top		= 0;
+		m_hsp.width		= 0;
+		m_hsp.height		= 0;
+		m_hsp.effect		= 0;
+		m_hsp.frame 		= 0;
+		m_hsp.numframes		= 0;
+		m_hsp.framerate		= 0.0f;
+		m_hsp.fadeinTime 	= 0.0f;
+		m_hsp.fadeoutTime 	= 0.0f;
+		m_hsp.holdTime		= 0.0f;
+		m_hsp.fxTime 		= 0.0f;
+		m_hsp.color1		= RGBA(255, 255, 255, 255);
+		m_hsp.color2		= RGBA(255, 255, 255, 255);
+		m_hsp.channel		= 0;
+		m_hsp.flags		= 0;
 	}
 	
 	RGBA StringToRGBA(string& in szColor)
 	{
-    		array<string> arrValues = (szColor + " 0 0 0 0").Split(" ");
-    		return RGBA(atoi(arrValues[0]), atoi(arrValues[1]), atoi(arrValues[2]), atoi(arrValues[3]));
+    	array<string> arrValues = (szColor + " 0 0 0 0").Split(" ");
+    	return RGBA(atoi(arrValues[0]), atoi(arrValues[1]), atoi(arrValues[2]), atoi(arrValues[3]));
 	}
 
   	bool KeyValue( const string& in szKey, const string& in szValue )
 	{
-    	if( szKey == "spritename" ) 
+    		if( szKey == "spritename" ) 
 			m_hsp.spritename = szValue;
-    	else if( szKey == "x" ) 
+    		else if( szKey == "x" ) 
 			m_hsp.x = atof( szValue );
-    	else if( szKey == "y" ) 
+    		else if( szKey == "y" ) 
 			m_hsp.y = atof( szValue );
-	else if( szKey == "left" ) 
+		else if( szKey == "left" ) 
 			m_hsp.left = int8(Math.clamp( 0, 255, atoi( szValue ) ) );
-	else if( szKey == "top" ) 
+		else if( szKey == "top" ) 
 			m_hsp.top =  int8(Math.clamp( 0, 255, atoi( szValue ) ) );
-	else if( szKey == "width" ) 
+		else if( szKey == "width" ) 
 			m_hsp.width = int16(Math.clamp( 0, 512, atoi( szValue ) ) );
-    	else if( szKey == "height" ) 
+    		else if( szKey == "height" ) 
 			m_hsp.height = int16(Math.clamp( 0, 512, atoi( szValue ) ) );
-    	else if( szKey == "frame" ) 
+    		else if( szKey == "frame" ) 
 			m_hsp.frame =  int8(Math.clamp( 0, 255, atoi( szValue ) ) );
-    	else if( szKey == "numframes" ) 
+		else if( szKey == "fps" ) 
+			m_hsp.framerate =  Math.clamp(0.0f, 360.0f, atof( szValue ) );
+    		else if( szKey == "numframes" ) 
 			m_hsp.numframes =  int8(Math.clamp( 0, 255, atoi( szValue ) ) );
-    	else if( szKey == "channel" ) 
+    		else if( szKey == "channel" ) 
 			m_hsp.channel =  Math.clamp( 0, 15, atoi( szValue ) );
-    	else if( szKey == "fadein" ) 
+    		else if( szKey == "fadein" ) 
 			m_hsp.fadeinTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
-    	else if( szKey == "fadeout" ) 
+    		else if( szKey == "fadeout" ) 
 			m_hsp.fadeoutTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
-    	else if( szKey == "holdtime" ) 
+    		else if( szKey == "holdtime" ) 
 			m_hsp.holdTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
-	else if( szKey == "fx" ) 
+		else if( szKey == "fx" ) 
 			m_hsp.effect = int8(Math.clamp( 0, 8, atoi( szValue ) ) );
-    	else if( szKey == "fxtime" ) 
+    		else if( szKey == "fxtime" ) 
 			m_hsp.fxTime = Math.clamp(0.0f, 360.0f, atof( szValue ) );
-    	else if( szKey == "color1" ) 
+    		else if( szKey == "color1" ) 
 			m_hsp.color1 = StringToRGBA( szValue );
-    	else if( szKey == "color2" ) 
+    		else if( szKey == "color2" ) 
 			m_hsp.color2 = StringToRGBA( szValue );
 		else
       		return BaseClass.KeyValue( szKey, szValue );
