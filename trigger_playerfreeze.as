@@ -27,7 +27,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 	private bool m_fActivated	= false;
 	private string TargetPlayer	= "";
 
-	uint RenderInvisible	= 0;
+	uint RenderInvisible		= 0;
 	uint StartOn			= 0;
 	uint szRemoveOnFire		= 0;
 	float waitTime 			= 0.0f;
@@ -71,7 +71,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
 		SetThink( ThinkFunction( this.TriggerThink ) );
-        self.pev.nextthink = g_Engine.time + 5.0f;
+        	self.pev.nextthink = g_Engine.time + 5.0f;
 
 		if(StartOn == 1){ m_fTriggered = true; }
 	}
@@ -135,7 +135,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 				if( pPlayer !is null )
 				{
-                	pPlayer.pev.flags &= ~FL_FROZEN;
+                			pPlayer.pev.flags &= ~FL_FROZEN;
 					//g_EngineFuncs.ServerPrint("-- DEBUG: Player Unfrozen!\n");
 
 					if( pPlayer.pev.rendermode != kRenderNormal )
@@ -157,14 +157,14 @@ class trigger_playerfreeze : ScriptBaseEntity
  	void Wait()
 	{
 		dictionary keys;
-        keys ["target"]			= ( "" + self.pev.targetname );
+        	keys ["target"]			= ( "" + self.pev.targetname );
 		keys ["targetname"] 	= ( "" + self.pev.targetname + "_playerfreeze_wait_rly" );
 		keys ["delay"] 			= ( "" + waitTime );
 		keys ["triggerstate"] 	= ( "2" );
 		keys ["spawnflags"] 	= ( "65" );
 
 		CBaseEntity@ WaitRelay = g_EntityFuncs.CreateEntity( "trigger_relay", keys, true );
-    	WaitRelay.Think();
+    		WaitRelay.Think();
 		//g_EngineFuncs.ServerPrint( "-- DEBUG: Created WaitRelay " + self.pev.targetname + "_playerfreeze_wait_rly with wait time " + waitTime + "\n");
 		g_EntityFuncs.FireTargets( "" + self.pev.targetname + "_playerfreeze_wait_rly", WaitRelay, WaitRelay, USE_ON, 0.0f );
 		//g_EngineFuncs.ServerPrint( "-- DEBUG: WaitRelay " + self.pev.targetname + "_playerfreeze_wait with wait time " + waitTime + "triggered. \n");
