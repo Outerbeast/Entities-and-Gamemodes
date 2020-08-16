@@ -39,7 +39,7 @@ class player_hurt_zone : ScriptBaseEntity
 		SetThink( ThinkFunction( this.TriggerThink ) );
         self.pev.nextthink = g_Engine.time + 5.0f;
 
-		if( self.pev.dmg == 0){ self.pev.dmg = 10; }
+		if( self.pev.dmg == 0.0f ){ self.pev.dmg = 10.0f; }
 		if(	DamageType == 32){ DamageType = 0; }
 	}
 	
