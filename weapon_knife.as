@@ -5,19 +5,19 @@
 
 enum knife_e
 {
-    	KNIFE_IDLE = 0,
-    	KNIFE_DRAW,
-    	KNIFE_HOLSTER,
-    	KNIFE_ATTACK1,
-    	KNIFE_ATTACK1MISS,
+    KNIFE_IDLE = 0,
+    KNIFE_DRAW,
+    KNIFE_HOLSTER,
+    KNIFE_ATTACK1,
+    KNIFE_ATTACK1MISS,
 	KNIFE_ATTACK2,
-    	KNIFE_ATTACK2HIT,
-    	KNIFE_ATTACK3,
-	KNIFE_ATTACK3HIT,
+    KNIFE_ATTACK2HIT,
+    KNIFE_ATTACK3,
+    KNIFE_ATTACK3HIT,
 	KNIFE_IDLE2,
 	KNIFE_IDLE3,
 	KNIFE_CHARGE,
-	KNIFE_STAB
+    KNIFE_STAB
 };
 
 class weapon_hlknife : ScriptBasePlayerWeaponEntity
@@ -211,7 +211,7 @@ class weapon_hlknife : ScriptBasePlayerWeaponEntity
 			m_pPlayer.SetAnimation( PLAYER_ATTACK1 ); 
 
 			// AdamR: Custom damage option
-			float flDamage = 20;
+			float flDamage = 35;
 			if ( self.m_flCustomDmg > 0 )
 				flDamage = self.m_flCustomDmg;
 			// AdamR: End
