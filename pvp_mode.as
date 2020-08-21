@@ -1,6 +1,7 @@
 /* Script for enabling friendly fire between players for pvp deathmatch
 Only supports 14 players maximum- more than 14 players connected to the server may cause unwanted effects!
 
+Use as include in a map script or directly via map cfg.
 -Outerbeast */
 
 array<string> player_classification = { "1", "2", "4", "5", "6", "7", "8", "9", "10", "12", "13", "14", "15", "99" };
