@@ -1,5 +1,6 @@
-/* Script for enabling friendly fire between players for pvp deathmatch
-Only supports 14 players maximum- more than 14 players connected to the server may cause unwanted effects!
+/* Script for enabling friendly fire between players for pvp deathmatch maps
+Only supports 14 players maximum because of limitations.
+Ensure the server has only 14 player slots available or your map as logic to account for extra players.
 
 Use as include in a map script or directly via map cfg.
 -Outerbeast */
@@ -9,15 +10,22 @@ array<string> player_classification = { "1", "2", "4", "5", "6", "7", "8", "9", 
 void MapInit()
 {
     g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @OnPlayerSpawn );
+
+    g_EngineFuncs.CVarSetFloat( "mp_disable_autoclimb", 1 );
+    g_EngineFuncs.CVarSetFloat( "mp_monsterpoints", 1 );
+    g_EngineFuncs.CVarSetFloat( "mp_respawndelay", 0 );
+    g_EngineFuncs.CVarSetFloat( "mp_multiplespawn", 1 );
+    g_EngineFuncs.CVarSetFloat( "mp_allowmonsterinfo", 1 );
 }
 
 HookReturnCode OnPlayerSpawn( CBasePlayer @pPlr )
 {
-    PvpMode();
+    AssignTeam();
+    SpawnProtection(pPlr);
     return HOOK_CONTINUE;
 }
 
-void PvpMode()
+void AssignTeam()
 {
     for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; ++iPlayer )
     {
@@ -40,3 +48,31 @@ void PvpMode()
         }
     }
 }
+
+void SpawnProtection(CBasePlayer@ pPlayer)
+{
+    if( pPlayer !is null )
+    {
+        pPlayer.pev.flags       |= FL_FROZEN;
+        pPlayer.pev.takedamage  = DAMAGE_NO;
+    }
+
+    EHandle ePlayer = pPlayer;
+    g_Scheduler.SetTimeout( "ProtectionOff", 5.0f, ePlayer );
+}
+
+void ProtectionOff(EHandle ePlayer)
+{
+    if(!ePlayer)
+        return;
+            
+    CBaseEntity@ pEnt = ePlayer;
+    CBasePlayer@ pPlayer = cast<CBasePlayer@>(pEnt);
+
+    pPlayer.pev.flags       &= ~FL_FROZEN;
+    pPlayer.pev.takedamage  = DAMAGE_YES;
+}
+
+/* Special thanks to 
+- Zode and H2 for scripting help
+AlexCorruptor for testing*/
