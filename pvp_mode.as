@@ -1,6 +1,6 @@
 /* Script for enabling friendly fire between players for pvp deathmatch maps
 Only supports 14 players maximum because of limitations.
-Ensure the server has only 14 player slots available or your map as logic to account for extra players.
+Ensure the server has only 14 player slots available or your map has logic to account for extra players.
 
 Use as include in a map script or directly via map cfg.
 -Outerbeast */
