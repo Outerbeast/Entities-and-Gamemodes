@@ -14,6 +14,7 @@ void MapInit()
     g_EngineFuncs.CVarSetFloat( "mp_disable_autoclimb", 1 );
     g_EngineFuncs.CVarSetFloat( "mp_monsterpoints", 1 );
     g_EngineFuncs.CVarSetFloat( "mp_respawndelay", 0 );
+    g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
     g_EngineFuncs.CVarSetFloat( "mp_multiplespawn", 1 );
     g_EngineFuncs.CVarSetFloat( "mp_allowmonsterinfo", 1 );
 }
