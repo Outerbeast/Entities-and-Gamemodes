@@ -3,6 +3,7 @@
 
 class player_count_zone : ScriptBaseEntity 
 {
+	uint ResetCount = 1;
 	string FilterPlayer = "";
 
 	bool KeyValue( const string& in szKey, const string& in szValue )
@@ -10,6 +11,11 @@ class player_count_zone : ScriptBaseEntity
 		if( szKey == "filterplayer" )
 		{
 			FilterPlayer = szValue;
+			return true;
+		}
+		else if( szKey == "resetcount" )
+		{
+			ResetCount = atoi( szValue );
 			return true;
 		}
 		else
@@ -30,6 +36,8 @@ class player_count_zone : ScriptBaseEntity
 
 	void Use( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value )
 	{
+		if( ResetCount == 1 ){ self.pev.frags = 0 }
+
 		for(int playerID = 0; playerID <= g_Engine.maxClients; playerID++ )
 		{
 			CBaseEntity@ ePlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
@@ -50,7 +58,7 @@ class player_count_zone : ScriptBaseEntity
 		self.pev.nextthink = g_Engine.time + 0.1f;
 	}
 
-// Credit to CubeMath for the bounding box logic uses here //
+// Credit to CubeMath for the bounding box logic used here //
 	bool playerInBox( CBasePlayer@ pPlayer, Vector vMin, Vector vMax )
 	{
 		if ( pPlayer.pev.origin.x >= vMin.x && pPlayer.pev.origin.x <= vMax.x )
