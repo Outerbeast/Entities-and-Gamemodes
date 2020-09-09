@@ -25,7 +25,7 @@ class trigger_sound : ScriptBaseEntity
 	}
 	
 	void Spawn() 
-    {
+    	{
 		self.pev.movetype 		= MOVETYPE_NONE;
 		self.pev.solid 			= SOLID_NOT;
 		self.pev.framerate 		= 1.0f;
@@ -44,7 +44,7 @@ class trigger_sound : ScriptBaseEntity
 		CreateEnvSound();
 
 		SetThink( ThinkFunction( this.TriggerThink ) );
-        self.pev.nextthink = g_Engine.time + 5.0f;
+        	self.pev.nextthink = g_Engine.time + 5.0f;
 	}
 
 	void CreateEnvSound()
@@ -52,12 +52,12 @@ class trigger_sound : ScriptBaseEntity
 		dictionary keys;
 		keys ["origin"]		= ( "" + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) );
 		keys ["targetname"]	= ( "" + EnvSoundTName );
-        keys ["roomtype"]	= ( "" + self.pev.health );
+        	keys ["roomtype"]	= ( "" + self.pev.health );
 		keys ["radius"]		= ( "" + iRadius );
 		keys ["spawnflags"]	= ( "1" );
 
 		CBaseEntity@ EnvSound = g_EntityFuncs.CreateEntity( "env_sound", keys, true );
-    	EnvSound.pev.nextthink;
+    		EnvSound.pev.nextthink;
 
 		//g_EngineFuncs.ServerPrint( "-- DEBUG: Spawned env_sound from trigger_sound brush number: " + self.pev.model + " with targetname " + EnvSoundTName + " and origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + "\n" );
 	}
