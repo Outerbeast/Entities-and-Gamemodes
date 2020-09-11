@@ -17,8 +17,8 @@ class trigger_sound : ScriptBaseEntity
 	{
 		if(szKey == "roomtype")
 		{
-    		self.pev.health = atoi( szValue ); // Assigning it to health kv so its compatible with Azure Sheep maps that use "health" key directly instead of "roomtype"
-    		return true;
+    			self.pev.health = atoi( szValue ); // Assigning it to health kv so its compatible with Azure Sheep maps that use "health" key directly instead of "roomtype"
+    			return true;
 		}
 		else
 			return BaseClass.KeyValue( szKey, szValue );
