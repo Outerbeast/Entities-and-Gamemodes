@@ -52,7 +52,7 @@ final class PvpMode
                     pPlayer.pev.origin.z    = 1000.0f;
                     pPlayer.pev.angles.x    = 90.0f;
                     pPlayer.RemoveAllItems( true );
-                    g_PlayerFuncs.ShowMessage( pPlayer, "SPECTATING\n\nNo player slots available. Please wait until the end of the round." );
+                    g_PlayerFuncs.ShowMessage( pPlayer, "SPECTATING" + "\n\n" + "No player slots available. Please wait until the end of the round." );
                     g_EngineFuncs.ServerPrint( "-- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + ( playerID ) + " is Spectating (no free player slots available!)\n" );
                 }
             }
