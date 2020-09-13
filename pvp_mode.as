@@ -7,9 +7,11 @@ Use as include in a map script or directly via map cfg.
 
 PvpMode@ g_pvpmode = @PvpMode();
 
+const bool _IS_ONPLAYERSPAWN_HOOK_REGISTERED = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
+
 HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 {
-	return g_pvpmode.OnPlayerSpawn(pPlayer);
+	return g_pvpmode.OnPlayerSpawn( pPlayer );
 }
 
 final class PvpMode
@@ -21,13 +23,14 @@ final class PvpMode
     PvpMode()
     {
         PLAYER_TEAM.resize(32);
-        g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
     }
 
-    HookReturnCode OnPlayerSpawn( CBasePlayer @pPlr )
-    {
+    HookReturnCode OnPlayerSpawn(CBasePlayer @pPlr)
+    {   
+        if( pPlr is null ){ return HOOK_CONTINUE; }
+
         AssignTeam();
-        SpawnProtection(pPlr);
+        SpawnProtection( pPlr );
         return HOOK_CONTINUE;
     }
 
@@ -49,7 +52,7 @@ final class PvpMode
                     pPlayer.pev.origin.z    = 1000.0f;
                     pPlayer.pev.angles.x    = 90.0f;
                     pPlayer.RemoveAllItems( true );
-                    g_PlayerFuncs.ShowMessage( pPlayer, "No player slots available. Please wait until end of the round." );
+                    g_PlayerFuncs.ShowMessage( pPlayer, "SPECTATING\n\nNo player slots available. Please wait until the end of the round." );
                     g_EngineFuncs.ServerPrint( "-- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + ( playerID ) + " is Spectating (no free player slots available!)\n" );
                 }
             }
@@ -104,5 +107,5 @@ final class PvpMode
 }
 
 /* Special thanks to 
-- Zode, AnggaraNothing and H2 for scripting help
+- AnggaraNothing, Zode and H2 for scripting help
 AlexCorruptor for testing and building a test map*/
