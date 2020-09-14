@@ -3,6 +3,11 @@ Only supports 14 players maximum because of limitations imposed by the game + AP
 Ensure the server has only 14 player slots available or some players will spawn outside the map and unable to play.
 
 Use as include in a map script or directly via map cfg.
+
+Map cfg settings:
+as_command pvp_spawnprotecttime - set the time duraion in seconds for how long spawn invulnerbility lasts
+by default this is 5 if let undefined
+
 -Outerbeast */
 
 PvpMode@ g_pvpmode = @PvpMode();
@@ -16,14 +21,14 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 
 final class PvpMode
 {
+
     CCVar@ g_ProtectDuration;
-    
     array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
 
     PvpMode()
     {
         PLAYER_TEAM.resize(32);
-        @g_ProtectDuration = CCVar("protectduration", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly);
+        @g_ProtectDuration = CCVar( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
     }
 
     HookReturnCode OnPlayerSpawn(CBasePlayer @pPlr)
@@ -108,5 +113,5 @@ final class PvpMode
 }
 
 /* Special thanks to 
-- AnggaraNothing, Zode and H2 for scripting help
+- AnggaraNothing, Zode, Neo and H2 for scripting help
 AlexCorruptor for testing and building a test map*/
