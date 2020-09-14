@@ -16,13 +16,14 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 
 final class PvpMode
 {
-
-    float fl_ProtectDuration = 5.0f;
+    CCVar@ g_ProtectDuration;
+    
     array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
 
     PvpMode()
     {
         PLAYER_TEAM.resize(32);
+        @g_ProtectDuration = CCVar("protectduration", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly);
     }
 
     HookReturnCode OnPlayerSpawn(CBasePlayer @pPlr)
@@ -68,7 +69,7 @@ final class PvpMode
         }
 
         EHandle ePlayer = pPlayer;
-        g_Scheduler.SetTimeout( this, "ProtectionOff", fl_ProtectDuration, ePlayer );
+        g_Scheduler.SetTimeout( this, "ProtectionOff", g_ProtectDuration.GetFloat(), ePlayer );
         // For some retarded reason the render settings don't work instantly so had to delay it a tiny bit after PlayerSpawn
         g_Scheduler.SetTimeout( this, "RenderGhost", 0.01f, ePlayer );
     }
