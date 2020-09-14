@@ -12,23 +12,24 @@ by default this is 5 if let undefined
 
 PvpMode@ g_pvpmode = @PvpMode();
 
+CCVar g_ProtectDuration( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
+
 const bool _IS_ONPLAYERSPAWN_HOOK_REGISTERED = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
 
 HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 {
-	return g_pvpmode.OnPlayerSpawn( pPlayer );
+    return g_pvpmode.OnPlayerSpawn( pPlayer );
 }
+
 
 final class PvpMode
 {
 
-    CCVar@ g_ProtectDuration;
     array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
 
     PvpMode()
     {
         PLAYER_TEAM.resize(32);
-        @g_ProtectDuration = CCVar( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
     }
 
     HookReturnCode OnPlayerSpawn(CBasePlayer @pPlr)
