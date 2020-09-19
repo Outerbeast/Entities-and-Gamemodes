@@ -11,7 +11,12 @@ Installation:
         "script" "StaticCfg"
  	}
 3) Inside the dir svencoop_addon/scripts/plugins/store create the file static.cfg
-4) Add your CVars into this new config file 
+4) Add your CVars into this new config file
+
+WARNING:
+This will override map cvars and will potentially break maps if you don't know what you're doing.
+Add your CVars sparingly.
+
 - Outerbeast*/
 
 
@@ -65,5 +70,5 @@ void MapInit()
 }
 
 /* Special thanks to
-- Neo for scripting supports
+- Neo for scripting support
 - Incognico for file parsing code */
