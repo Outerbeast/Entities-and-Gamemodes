@@ -26,6 +26,7 @@ final class PvpMode
 {
 
     array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
+    array<bool> _IS_ASSIGNED(32);
 
     PvpMode()
     {
@@ -48,10 +49,12 @@ final class PvpMode
             CBaseEntity@ ePlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
             CBasePlayer@ pPlayer = cast<CBasePlayer@>( ePlayer );
 
-            if( pPlayer !is null && pPlayer.IsAlive() )
+            if( pPlayer !is null && pPlayer.IsAlive() && !_IS_ASSIGNED[playerID] )
             {
                 pPlayer.pev.targetname = "dm_plyr_" + playerID;
                 pPlayer.SetClassification( PLAYER_TEAM[playerID-1] );
+                _IS_ASSIGNED[playerID] = true;
+                pPlayer.SetViewMode(ViewMode_FirstPerson);
                 g_EngineFuncs.ServerPrint( "-- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + ( playerID ) + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
 
                 if( pPlayer.m_iClassSelection == 0 )
@@ -59,7 +62,7 @@ final class PvpMode
                     pPlayer.pev.origin.z    = 1000.0f;
                     pPlayer.pev.angles.x    = 90.0f;
                     pPlayer.RemoveAllItems( true );
-                    g_PlayerFuncs.ShowMessage( pPlayer, "SPECTATING" + "\n\n" + "No player slots available. Please wait until the end of the round." );
+                    g_PlayerFuncs.SayText( pPlayer, "SPECTATING" + "\n\n" + "No player slots available. Please wait until the end of the round." );
                     g_EngineFuncs.ServerPrint( "-- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + ( playerID ) + " is Spectating (no free player slots available!)\n" );
                 }
             }
