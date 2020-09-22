@@ -35,6 +35,7 @@ final class PvpMode
 
         AssignTeam();
         SpawnProtection( pPlr );
+        pPlr.SetViewMode( ViewMode_FirstPerson );
         return HOOK_CONTINUE;
     }
 
@@ -52,7 +53,7 @@ final class PvpMode
                     pPlayer.pev.targetname = "dm_plyr_" + playerID;
                     pPlayer.SetClassification( PLAYER_TEAM[playerID-1] );
                     _IS_ASSIGNED[playerID] = true;
-                    g_EngineFuncs.ServerPrint( "-- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + ( playerID ) + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
+                    g_EngineFuncs.ServerPrint( "-- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + playerID + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
                 }
             }
             else
@@ -66,7 +67,6 @@ final class PvpMode
         {
             pPlayer.pev.flags       |= FL_FROZEN;
             pPlayer.pev.takedamage  = DAMAGE_NO;
-            pPlayer.SetViewMode(ViewMode_FirstPerson);
 
             if( pPlayer.m_iClassSelection == 0 )
             {
@@ -90,7 +90,7 @@ final class PvpMode
             return;
                 
         CBaseEntity@ pEnt = ePlayer;
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>(pEnt);
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
 
         pPlayer.pev.rendermode  = kRenderTransTexture;
         if( pPlayer.m_iClassSelection != 0){ pPlayer.pev.renderamt = 50.0f; }
@@ -104,7 +104,7 @@ final class PvpMode
             return;
                 
         CBaseEntity@ pEnt = ePlayer;
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>(pEnt);
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
 
         if( pPlayer.m_iClassSelection != 0 )
         {
@@ -114,6 +114,7 @@ final class PvpMode
             pPlayer.pev.renderamt   = 255.0f;
         }
     }
+    
 }
 
 /* Special thanks to 
