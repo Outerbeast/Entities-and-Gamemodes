@@ -106,14 +106,14 @@ final class PvpMode
 
     void EnterSpectator(CBasePlayer@ pPlayer)
 	{
-		if( pPlayer is null )
-			return;
+	    if( pPlayer is null )
+		    return;
         if( !pPlayer.IsConnected() )
-			return;
+		    return;
 		// Players not assigned to a team immediately get moved to observer mode
 		if( !pPlayer.GetObserver().IsObserver() && pPlayer.m_iClassSelection == 0 )
 		{
-			pPlayer.GetObserver().StartObserver( pPlayer.pev.origin, pPlayer.pev.angles, false );
+		    pPlayer.GetObserver().StartObserver( pPlayer.pev.origin, pPlayer.pev.angles, false );
             pPlayer.GetObserver().SetObserverModeControlEnabled( true );
             pPlayer.RemoveAllItems( true );
             g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait until the end of the round." );
