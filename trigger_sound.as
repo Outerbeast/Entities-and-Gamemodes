@@ -59,7 +59,7 @@ class trigger_sound : ScriptBaseEntity
 		CBaseEntity@ EnvSound = g_EntityFuncs.CreateEntity( "env_sound", keys, true );
     	EnvSound.pev.nextthink;
 
-		g_EngineFuncs.ServerPrint( "-- DEBUG: Spawned env_sound from trigger_sound brush number: " + self.pev.model + " with targetname " + EnvSoundTName + " and origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + "\n" );
+		//g_EngineFuncs.ServerPrint( "-- DEBUG: Spawned env_sound from trigger_sound brush number: " + self.pev.model + " with targetname " + EnvSoundTName + " and origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + "\n" );
 	}
 
 	void TriggerThink()
@@ -79,17 +79,16 @@ class trigger_sound : ScriptBaseEntity
 					{
 						g_EntityFuncs.FireTargets( "" + EnvSoundTName, self, self, USE_ON, 0.0f );
 						_HAS_TRIGGERED[playerID] = true;
-						g_EngineFuncs.ServerPrint( "-- DEBUG: Activated trigger_sound: " + EnvSoundTName + " at origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + " triggered by: " + pPlayer.pev.netname + "\n" );
+						//g_EngineFuncs.ServerPrint( "-- DEBUG: Activated trigger_sound: " + EnvSoundTName + " at origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + " triggered by: " + pPlayer.pev.netname + "\n" );
 					}
-					else
-						g_EngineFuncs.ServerPrint( "-- DEBUG: Player: " + pPlayer.pev.netname + " cannot activate trigger_sound: " + EnvSoundTName + " again!\n" );
+					//else
+					//	g_EngineFuncs.ServerPrint( "-- DEBUG: Player: " + pPlayer.pev.netname + " cannot activate trigger_sound: " + EnvSoundTName + " again!\n" );
 				}
 			}
 		}
 		self.pev.nextthink = g_Engine.time + 1.0f;
 	}
 
-	// Credit to CubeMath for creating bbox logic used here //
 	bool playerInBox( CBasePlayer@ pPlayer, Vector vMin, Vector vMax )
 	{
 		if( pPlayer.pev.origin.x >= vMin.x && pPlayer.pev.origin.x <= vMax.x )
