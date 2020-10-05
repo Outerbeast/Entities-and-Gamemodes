@@ -57,7 +57,7 @@ class trigger_sound : ScriptBaseEntity
 		keys ["spawnflags"]	= ( "1" );
 
 		CBaseEntity@ EnvSound = g_EntityFuncs.CreateEntity( "env_sound", keys, true );
-    	EnvSound.pev.nextthink;
+    	EnvSound.Think();
 
 		//g_EngineFuncs.ServerPrint( "-- DEBUG: Spawned env_sound from trigger_sound brush number: " + self.pev.model + " with targetname " + EnvSoundTName + " and origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + "\n" );
 	}
@@ -77,7 +77,7 @@ class trigger_sound : ScriptBaseEntity
 				{
 					if( !_HAS_TRIGGERED[playerID] )
 					{
-						g_EntityFuncs.FireTargets( "" + EnvSoundTName, self, self, USE_ON, 0.0f );
+						g_EntityFuncs.FireTargets( "" + EnvSoundTName, self, self, USE_ON, 0.0f, 0.1f );
 						_HAS_TRIGGERED[playerID] = true;
 						//g_EngineFuncs.ServerPrint( "-- DEBUG: Activated trigger_sound: " + EnvSoundTName + " at origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + " triggered by: " + pPlayer.pev.netname + "\n" );
 					}
