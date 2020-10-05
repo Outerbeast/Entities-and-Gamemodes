@@ -29,7 +29,7 @@ class trigger_sound : ScriptBaseEntity
 		self.pev.movetype 		= MOVETYPE_NONE;
 		self.pev.solid 			= SOLID_NOT;
 		self.pev.framerate 		= 1.0f;
-		self.pev.effects 		|= EF_NODRAW;
+		//self.pev.effects 		|= EF_NODRAW;
 		
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 		g_EntityFuncs.SetModel(self, self.pev.model);
@@ -41,13 +41,11 @@ class trigger_sound : ScriptBaseEntity
 		else
 			EnvSoundTName = self.pev.targetname;
 
-		CreateEnvSound();
-
 		SetThink( ThinkFunction( this.TriggerThink ) );
         self.pev.nextthink = g_Engine.time + 5.0f;
 	}
 
-	void CreateEnvSound()
+	void ApplySoundFx()
 	{
 		dictionary keys;
 		keys ["origin"]		= ( "" + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) );
@@ -58,8 +56,10 @@ class trigger_sound : ScriptBaseEntity
 
 		CBaseEntity@ EnvSound = g_EntityFuncs.CreateEntity( "env_sound", keys, true );
     	EnvSound.Think();
+		g_EntityFuncs.FireTargets( "" + EnvSoundTName, self, self, USE_ON, 0.0f, 0.0f );
+		g_EntityFuncs.Remove( EnvSound );
 
-		//g_EngineFuncs.ServerPrint( "-- DEBUG: Spawned env_sound from trigger_sound brush number: " + self.pev.model + " with targetname " + EnvSoundTName + " and origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + "\n" );
+		g_EngineFuncs.ServerPrint( "-- DEBUG: Spawned env_sound from trigger_sound brush number: " + self.pev.model + " with targetname " + EnvSoundTName + " and origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + "\n" );
 	}
 
 	void TriggerThink()
@@ -77,12 +77,12 @@ class trigger_sound : ScriptBaseEntity
 				{
 					if( !_HAS_TRIGGERED[playerID] )
 					{
-						g_EntityFuncs.FireTargets( "" + EnvSoundTName, self, self, USE_ON, 0.0f, 0.1f );
+						ApplySoundFx();
 						_HAS_TRIGGERED[playerID] = true;
-						//g_EngineFuncs.ServerPrint( "-- DEBUG: Activated trigger_sound: " + EnvSoundTName + " at origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + " triggered by: " + pPlayer.pev.netname + "\n" );
+						g_EngineFuncs.ServerPrint( "-- DEBUG: Activated trigger_sound: " + EnvSoundTName + " at origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + " triggered by: " + pPlayer.pev.netname + "\n" );
 					}
-					//else
-					//	g_EngineFuncs.ServerPrint( "-- DEBUG: Player: " + pPlayer.pev.netname + " cannot activate trigger_sound: " + EnvSoundTName + " again!\n" );
+					else
+						g_EngineFuncs.ServerPrint( "-- DEBUG: Player: " + pPlayer.pev.netname + " cannot activate trigger_sound: " + EnvSoundTName + " again!\n" );
 				}
 			}
 		}
