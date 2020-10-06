@@ -29,7 +29,7 @@ class trigger_sound : ScriptBaseEntity
 		self.pev.movetype 		= MOVETYPE_NONE;
 		self.pev.solid 			= SOLID_NOT;
 		self.pev.framerate 		= 1.0f;
-		//self.pev.effects 		|= EF_NODRAW;
+		self.pev.effects 		|= EF_NODRAW;
 		
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 		g_EntityFuncs.SetModel(self, self.pev.model);
@@ -50,7 +50,7 @@ class trigger_sound : ScriptBaseEntity
 		dictionary keys;
 		keys ["origin"]		= ( "" + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) );
 		keys ["targetname"]	= ( "" + EnvSoundTName );
-        keys ["roomtype"]	= ( "" + self.pev.health );
+                keys ["roomtype"]	= ( "" + self.pev.health );
 		keys ["radius"]		= ( "" + iRadius );
 		keys ["spawnflags"]	= ( "1" );
 
