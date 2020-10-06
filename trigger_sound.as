@@ -25,7 +25,7 @@ class trigger_sound : ScriptBaseEntity
 	}
 	
 	void Spawn() 
-    {
+        {
 		self.pev.movetype 		= MOVETYPE_NONE;
 		self.pev.solid 			= SOLID_NOT;
 		self.pev.framerate 		= 1.0f;
@@ -42,7 +42,7 @@ class trigger_sound : ScriptBaseEntity
 			EnvSoundTName = self.pev.targetname;
 
 		SetThink( ThinkFunction( this.TriggerThink ) );
-        self.pev.nextthink = g_Engine.time + 5.0f;
+                self.pev.nextthink = g_Engine.time + 5.0f;
 	}
 
 	void ApplySoundFx()
