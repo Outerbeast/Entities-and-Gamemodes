@@ -25,7 +25,7 @@ class trigger_sound : ScriptBaseEntity
 	}
 	
 	void Spawn() 
-    {
+    	{
 		self.pev.movetype 		= MOVETYPE_NONE;
 		self.pev.solid 			= SOLID_NOT;
 		self.pev.framerate 		= 1.0f;
@@ -55,7 +55,7 @@ class trigger_sound : ScriptBaseEntity
 		keys ["spawnflags"]	= ( "1" );
 
 		CBaseEntity@ EnvSound = g_EntityFuncs.CreateEntity( "env_sound", keys, true );
-    	EnvSound.Think();
+    		EnvSound.Think();
 		g_EntityFuncs.FireTargets( "" + EnvSoundTName, self, self, USE_ON, 0.0f, 0.0f );
 		g_EntityFuncs.Remove( EnvSound );
 		//g_EngineFuncs.ServerPrint( "-- DEBUG: Applied env_sound from trigger_sound brush number: " + self.pev.model + " with targetname " + EnvSoundTName + " and origin: " + string(vOrigin.x) + " " + string(vOrigin.y) + " " + string(vOrigin.z) + " with roomtype: " + self.pev.health + " of radius: " + iRadius + "\n" );
