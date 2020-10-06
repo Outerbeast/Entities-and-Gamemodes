@@ -42,7 +42,7 @@ class trigger_sound : ScriptBaseEntity
 			EnvSoundTName = self.pev.targetname;
 
 		SetThink( ThinkFunction( this.TriggerThink ) );
-        self.pev.nextthink = g_Engine.time + 5.0f;
+        	self.pev.nextthink = g_Engine.time + 5.0f;
 	}
 
 	void ApplySoundFx()
