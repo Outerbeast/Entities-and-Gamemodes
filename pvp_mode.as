@@ -45,14 +45,14 @@ final class PvpMode
         for( int playerID = 1; playerID <= g_Engine.maxClients; ++playerID )
         {
             CBaseEntity@ ePlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-            CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer );
+            CBasePlayer@ pPlayer = cast<CBasePlayer@>( ePlayer );
 
             if( pPlayer !is null && pPlayer.IsAlive() && !_IS_ASSIGNED[playerID] )
             {
                 pPlayer.SetClassification( PLAYER_TEAM[playerID-1] );
                 _IS_ASSIGNED[playerID] = true;
                 pPlayer.pev.targetname = "dm_plyr_" + playerID;
-                g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + playerID + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
+                //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + playerID + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
                 EHandle hPlayer = pPlayer;
             }
             else if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
