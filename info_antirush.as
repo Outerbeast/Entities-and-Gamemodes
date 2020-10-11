@@ -7,11 +7,11 @@ Can be used in conjunction with the custom antirush trigger "trigger_once_mp" by
 
 class info_antirush : ScriptBaseEntity
 {
-    string LogoName         = "sprites/adamr/arrow_gohere.spr"; // Placeholder default logo, use your own custom one
-    string Sound            = "buttons/bell1.wav";
-    string KillTarget       = "";
-    float fl_FadeTime      = 5.0f;
-    float fl_TargetDelay    = 0.0f;
+    	string LogoName         = "sprites/adamr/arrow_gohere.spr"; // Placeholder default logo, use your own custom one
+    	string Sound            = "buttons/bell1.wav";
+    	string KillTarget       = "";
+    	float fl_FadeTime      = 5.0f;
+    	float fl_TargetDelay    = 0.0f;
 
 	bool KeyValue(const string& in szKey, const string& in szValue)
 	{
@@ -25,12 +25,12 @@ class info_antirush : ScriptBaseEntity
 			Sound = szValue;
 			return true;
 		}
-        else if( szKey == "killtarget" ) 
+        	else if( szKey == "killtarget" ) 
 		{
 			KillTarget = szValue;
 			return true;
 		}
-        else if( szKey == "delay" ) 
+        	else if( szKey == "delay" ) 
 		{
 			fl_TargetDelay = atof( szValue );
 			return true;
@@ -44,16 +44,16 @@ class info_antirush : ScriptBaseEntity
 			return BaseClass.KeyValue( szKey, szValue );
 	}
 	
-    void Precache()
+    	void Precache()
 	{
 		BaseClass.Precache();
-        g_Game.PrecacheModel( "" + LogoName );
+        	g_Game.PrecacheModel( "" + LogoName );
 		g_SoundSystem.PrecacheSound( "" + Sound );
 	}
 
 	void Spawn()
 	{
-        Precache();
+        	Precache();
 		self.pev.movetype 	= MOVETYPE_NONE;
 		self.pev.solid 		= SOLID_NOT;
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
@@ -66,40 +66,40 @@ class info_antirush : ScriptBaseEntity
         CreateLogo();
 	}
 
-    void CreateLogo()
-    {
-        dictionary keys;
-        keys ["origin"]         = ( "" + string(self.pev.origin.x) + " " + string(self.pev.origin.y) + " " + string(self.pev.origin.z) );
-        keys ["angles"]         = ( "" + string(self.pev.angles.x) + " " + string(self.pev.angles.y) + " " + string(self.pev.angles.z) );
+    	void CreateLogo()
+    	{
+        	dictionary keys;
+        	keys ["origin"]         = ( "" + string(self.pev.origin.x) + " " + string(self.pev.origin.y) + " " + string(self.pev.origin.z) );
+        	keys ["angles"]         = ( "" + string(self.pev.angles.x) + " " + string(self.pev.angles.y) + " " + string(self.pev.angles.z) );
 		keys ["targetname"]     = ( "" + self.pev.targetname + "_spr" );
-        keys ["model"]          = ( "" + LogoName );
-        keys ["vp_type"]        = ( "0" );
-        keys ["scale"]          = ( "" + self.pev.scale );
+        	keys ["model"]          = ( "" + LogoName );
+        	keys ["vp_type"]        = ( "0" );
+        	keys ["scale"]          = ( "" + self.pev.scale );
 		keys ["rendercolor"]    = ( "255 0 0" );
-        keys ["renderamt"]      = ( "255 255 255" );
-        keys ["rendermode"]     = ( "5" );
+        	keys ["renderamt"]      = ( "255 255 255" );
+        	keys ["rendermode"]     = ( "5" );
 		keys ["spawnflags"] 	= ( "1" );
 		CBaseEntity@ AntirushPercentLogo = g_EntityFuncs.CreateEntity( "env_sprite", keys, true );
-    	AntirushPercentLogo.Think();
+    		AntirushPercentLogo.Think();
 
 		g_EngineFuncs.ServerPrint( "-- DEBUG: Created AntirushPercentLogo:  " + AntirushPercentLogo.pev.targetname + " \n");
-    }
+    	}
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
 	{
-        g_SoundSystem.EmitSoundDyn( self.edict(), CHAN_ITEM, "" + Sound, 0.5f, ATTN_NORM );
+        	g_SoundSystem.EmitSoundDyn( self.edict(), CHAN_ITEM, "" + Sound, 0.5f, ATTN_NORM );
 
-        CBaseEntity@ pLogoInstance = g_EntityFuncs.FindEntityByTargetname( pLogoInstance, "" + self.pev.targetname + "_spr" );
-        if( pLogoInstance !is null )
-        {
-            pLogoInstance.pev.rendercolor = Vector(0, 255, 0);
-            EHandle hLogoHandle = pLogoInstance;
-            if( fl_FadeTime != 0 )
-            {
-                g_Scheduler.SetTimeout( this, "RemoveLogo", fl_FadeTime, hLogoHandle );
-            }
-        }
-        g_Scheduler.SetTimeout( this, "TargetFuncs", fl_TargetDelay );
+        	CBaseEntity@ pLogoInstance = g_EntityFuncs.FindEntityByTargetname( pLogoInstance, "" + self.pev.targetname + "_spr" );
+        	if( pLogoInstance !is null )
+        	{
+           		pLogoInstance.pev.rendercolor = Vector(0, 255, 0);
+            		EHandle hLogoHandle = pLogoInstance;
+            		if( fl_FadeTime != 0 )
+            		{
+                		g_Scheduler.SetTimeout( this, "RemoveLogo", fl_FadeTime, hLogoHandle );
+            		}
+       		 }
+        	g_Scheduler.SetTimeout( this, "TargetFuncs", fl_TargetDelay );
 	}
 
     void TargetFuncs()
