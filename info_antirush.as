@@ -81,8 +81,6 @@ class info_antirush : ScriptBaseEntity
 		keys ["spawnflags"] 	= ( "1" );
 		CBaseEntity@ AntirushPercentLogo = g_EntityFuncs.CreateEntity( "env_sprite", keys, true );
     		AntirushPercentLogo.Think();
-
-		g_EngineFuncs.ServerPrint( "-- DEBUG: Created AntirushPercentLogo:  " + AntirushPercentLogo.pev.targetname + " \n");
     	}
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
