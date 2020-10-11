@@ -3,7 +3,7 @@ Only supports 14 players maximum because of limitations imposed by the game + AP
 Ensure the server has only 14 player slots available or extra players will be moved onto Observer Mode
 Use as include in a map script or directly via map cfg.
 Map cfg settings:
-as_command pvp_spawnprotecttime - set the time duraion in seconds for how long spawn invulnerbility lasts
+as_command pvp_spawnprotecttime - set the time duration in seconds for how long spawn invulnerbility lasts
 by default this is 5 if let undefined
 -Outerbeast */
 
@@ -29,14 +29,14 @@ final class PvpMode
         PLAYER_TEAM.resize(33);
     }
 
-    HookReturnCode OnPlayerSpawn(CBasePlayer @pPlr)
+    HookReturnCode OnPlayerSpawn(CBasePlayer @pSpawnedplyr)
     {   
-        if( pPlr is null ){ return HOOK_CONTINUE; }
+        if( pSpawnedplyr is null ){ return HOOK_CONTINUE; }
 
         AssignTeam();
-        SpawnProtection( pPlr );
-        EnterSpectator( pPlr );
-        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, -1, @pPlr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
+        SpawnProtection( pSpawnedplyr );
+        EnterSpectator( pSpawnedplyr );
+        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, -1, @pSpawnedplyr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
         return HOOK_CONTINUE;
     }
 
@@ -45,17 +45,20 @@ final class PvpMode
         for( int playerID = 1; playerID <= g_Engine.maxClients; ++playerID )
         {
             CBaseEntity@ ePlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-            CBasePlayer@ pPlayer = cast<CBasePlayer@>( ePlayer );
+            CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer );
 
             if( pPlayer !is null && pPlayer.IsAlive() && !_IS_ASSIGNED[playerID] )
             {
                 pPlayer.SetClassification( PLAYER_TEAM[playerID-1] );
                 _IS_ASSIGNED[playerID] = true;
-                //pPlayer.pev.targetname = "dm_plyr_" + playerID;
-                //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + playerID + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
+                pPlayer.pev.targetname = "dm_plyr_" + playerID;
+                g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + playerID + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
+                EHandle hPlayer = pPlayer;
             }
-            else
-                continue;
+            else if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+            {
+                _IS_ASSIGNED[playerID] = false;
+            }
         }
     }
 
@@ -67,18 +70,18 @@ final class PvpMode
             pPlayer.pev.takedamage  = DAMAGE_NO;
         }
 
-        EHandle ePlayer = pPlayer;
-        g_Scheduler.SetTimeout( this, "ProtectionOff", g_ProtectDuration.GetFloat(), ePlayer );
+        EHandle hPlayer = pPlayer;
+        g_Scheduler.SetTimeout( this, "ProtectionOff", g_ProtectDuration.GetFloat(), hPlayer );
         // For some retarded reason the render settings don't work instantly so had to delay it a tiny bit after PlayerSpawn
-        g_Scheduler.SetTimeout( this, "RenderGhost", 0.01f, ePlayer );
+        g_Scheduler.SetTimeout( this, "RenderGhost", 0.01f, hPlayer );
     }
     
-    void RenderGhost(EHandle ePlayer)
+    void RenderGhost(EHandle hPlayer)
     {
-        if( !ePlayer )
+        if( !hPlayer )
             return;
                 
-        CBaseEntity@ pEnt = ePlayer;
+        CBaseEntity@ pEnt = hPlayer;
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
 
         pPlayer.pev.rendermode  = kRenderTransTexture;
@@ -87,12 +90,12 @@ final class PvpMode
             pPlayer.pev.renderamt = 0.0f;
     }
 
-    void ProtectionOff(EHandle ePlayer)
+    void ProtectionOff(EHandle hPlayer)
     {
-        if( !ePlayer )
+        if( !hPlayer )
             return;
                 
-        CBaseEntity@ pEnt = ePlayer;
+        CBaseEntity@ pEnt = hPlayer;
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
 
         if( pPlayer.m_iClassSelection != 0 )
@@ -105,32 +108,32 @@ final class PvpMode
     }
 
     void EnterSpectator(CBasePlayer@ pPlayer)
-    {
-        if( pPlayer is null )
-                return;
-        if( !pPlayer.IsConnected() )
-                return;
-        // Players not assigned to a team immediately get moved to observer mode
-	if( !pPlayer.GetObserver().IsObserver() && pPlayer.m_iClassSelection == 0 )
 	{
-                pPlayer.GetObserver().StartObserver( pPlayer.pev.origin, pPlayer.pev.angles, false );
-                pPlayer.GetObserver().SetObserverModeControlEnabled( true );
-       		pPlayer.RemoveAllItems( true );
-            	g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait until the end of the round." );
-            	//g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " was moved into Spectator (no free player slots available\n" );
-	}
+	    if( pPlayer is null )
+		    return;
+        if( !pPlayer.IsConnected() )
+		    return;
+		// Players not assigned to a team immediately get moved to observer mode
+		if( !pPlayer.GetObserver().IsObserver() && pPlayer.m_iClassSelection == 0 )
+		{
+		    pPlayer.GetObserver().StartObserver( pPlayer.pev.origin, pPlayer.pev.angles, false );
+            pPlayer.GetObserver().SetObserverModeControlEnabled( true );
+            pPlayer.RemoveAllItems( true );
+            g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait until the end of the round." );
+            g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " was moved into Spectator (no free player slots available\n" );
+		}
 
-        EHandle ePlayer = pPlayer;
+        EHandle hPlayer = pPlayer;
         // Stupid hax needed to set the respawn delay, triggering directly in the block does not work
-        g_Scheduler.SetTimeout( this, "NoRespawn", 0.1f, ePlayer );
-    }
+        g_Scheduler.SetTimeout( this, "NoRespawn", 0.1f, hPlayer );
+	}
     // "Disables" respawning of players in Spectator Mode (just making the respawn delay stupid long)
-    void NoRespawn(EHandle ePlayer)
+    void NoRespawn(EHandle hPlayer)
     {
-        if( !ePlayer )
+        if( !hPlayer )
             return;
 
-        CBaseEntity@ pEnt = ePlayer;
+        CBaseEntity@ pEnt = hPlayer;
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
 
         if( pPlayer.m_iClassSelection == 0 )
@@ -139,7 +142,7 @@ final class PvpMode
             pPlayer.RemoveAllItems( true );
         }
         // Just to make sure the respawn delay never counts down, keep updating the time in a loop
-        g_Scheduler.SetTimeout( this, "NoRespawn", 1.0f, ePlayer );
+        g_Scheduler.SetTimeout( this, "NoRespawn", 1.0f, hPlayer );
     }
 
     void ViewMode(CBasePlayer@ pPlayer)
