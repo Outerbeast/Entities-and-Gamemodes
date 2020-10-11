@@ -100,21 +100,21 @@ class info_antirush : ScriptBaseEntity
         	g_Scheduler.SetTimeout( this, "TargetFuncs", fl_TargetDelay );
 	}
 
-    void TargetFuncs()
-    {
-        self.SUB_UseTargets( @self, USE_ON, 0 );
+    	void TargetFuncs()
+    	{
+        	self.SUB_UseTargets( @self, USE_ON, 0 );
 
-        CBaseEntity@ pKillTargetEnt = null;
-        while( ( @pKillTargetEnt = g_EntityFuncs.FindEntityByTargetname( pKillTargetEnt, "" + KillTarget ) ) !is null && KillTarget != "" )
-        {
-            g_EntityFuncs.Remove( pKillTargetEnt );
-        }
-    }
+        	CBaseEntity@ pKillTargetEnt = null;
+        	while( ( @pKillTargetEnt = g_EntityFuncs.FindEntityByTargetname( pKillTargetEnt, "" + KillTarget ) ) !is null && KillTarget != "" )
+        	{
+            		g_EntityFuncs.Remove( pKillTargetEnt );
+        	}
+    	}
 
-    void RemoveLogo(EHandle hLogoHandle)
-    {
-        g_EntityFuncs.Remove( hLogoHandle.GetEntity() );
-    }
+    	void RemoveLogo(EHandle hLogoHandle)
+    	{
+        	g_EntityFuncs.Remove( hLogoHandle.GetEntity() );
+    	}
 }
 
 void RegisterInfoAntiRushEntity()
