@@ -77,15 +77,15 @@ class info_antirush : ScriptBaseEntity
         	dictionary spr;
         	spr ["origin"]         = ( "" + string(self.pev.origin.x) + " " + string(self.pev.origin.y) + " " + string(self.pev.origin.z) );
         	spr ["angles"]         = ( "" + string(self.pev.angles.x) + " " + string(self.pev.angles.y) + " " + string(self.pev.angles.z) );
-		    spr ["targetname"]     = ( "" + self.pev.targetname + "_spr" );
+		spr ["targetname"]     = ( "" + self.pev.targetname + "_spr" );
         	spr ["model"]          = ( "" + IconName );
         	spr ["vp_type"]        = ( "0" );
         	spr ["scale"]          = ( "" + self.pev.scale );
-		    spr ["rendercolor"]    = ( "255 0 0" );
+		spr ["rendercolor"]    = ( "255 0 0" );
         	spr ["renderamt"]      = ( "255 255 255" );
         	spr ["rendermode"]     = ( "5" );
-		    spr ["spawnflags"] 	   = ( "1" );
-		    CBaseEntity@ AntirushPercentIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
+		spr ["spawnflags"] 	   = ( "1" );
+		CBaseEntity@ AntirushPercentIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
     		AntirushPercentIcon.Think();
     	}
 
@@ -93,7 +93,7 @@ class info_antirush : ScriptBaseEntity
         {
            dictionary ms;
            ms ["targetname"] = ( "" + self.pev.target )
-           CBaseEntity AntirushLock = g_EntityFuncs.CreateEntity( "multisource", ms, true );   
+           CBaseEntity@ AntirushLock = g_EntityFuncs.CreateEntity( "multisource", ms, true );   
            AntirushLock.Think();
         }
 
