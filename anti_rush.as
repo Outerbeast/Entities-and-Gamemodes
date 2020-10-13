@@ -103,6 +103,10 @@ class anti_rush : ScriptBaseEntity
             }
         }
 
+        if( self.pev.rendercolor == Vector( 0, 0, 0) )
+        {
+            self.pev.rendercolor = Vector( 255, 0, 0 );
+        }
         if( self.pev.scale <= 0 )
         {
             self.pev.scale = 0.15;
@@ -113,6 +117,7 @@ class anti_rush : ScriptBaseEntity
         {
             CreateLock();
         }
+        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created anti_rush entity " + self.GetTargetname() + "\n" );
 	}
 
     void CreatePercentPlayerTrigger()
@@ -128,7 +133,7 @@ class anti_rush : ScriptBaseEntity
         }
 	    CBaseEntity@ PercentPlayerTrigger = g_EntityFuncs.CreateEntity( "trigger_once_mp", trgr, true );
         //PercentPlayerTrigger.Think();
-        g_EngineFuncs.ServerPrint( "-- DEBUG -- Created AntiRush trigger zone with target: " + PercentPlayerTrigger.pev.target + " with required percentage " + fl_PercentRequired + " with master: " + MasterName + " with bounds: " + "" + string(vZoneCornerMin.x) + " " + string(vZoneCornerMin.y) + " " + string(vZoneCornerMin.z) + " and " + string(vZoneCornerMax.x) + " " + string(vZoneCornerMax.y) + " " + string(vZoneCornerMax.z) + "\n" );
+        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created AntiRush trigger zone: " + self.GetTargetname() + " with target: " + PercentPlayerTrigger.pev.target + " with required percentage " + fl_PercentRequired + " with master: " + MasterName + " with bounds: " + "" + string(vZoneCornerMin.x) + " " + string(vZoneCornerMin.y) + " " + string(vZoneCornerMin.z) + " and " + string(vZoneCornerMax.x) + " " + string(vZoneCornerMax.y) + " " + string(vZoneCornerMax.z) + "\n" );
     }
 
     void CreateIcon()
@@ -139,7 +144,7 @@ class anti_rush : ScriptBaseEntity
         spr ["model"]           = ( "" + IconName );
         spr ["vp_type"]         = ( "0" );
         spr ["scale"]           = ( "" + self.pev.scale );
-	    spr ["rendercolor"]     = ( "255 0 0" );
+	    spr ["rendercolor"]     = ( "" + string(self.pev.rendercolor.x) + " " + string(self.pev.rendercolor.y) + " " + string(self.pev.rendercolor.z) );
         spr ["renderamt"]       = ( "255 255 255" );
         spr ["rendermode"]      = ( "5" );
 	    @AntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
@@ -152,7 +157,7 @@ class anti_rush : ScriptBaseEntity
         ms ["targetname"] = ( "" + self.pev.target );
         CBaseEntity@ AntiRushLock = g_EntityFuncs.CreateEntity( "multisource", ms, true );   
         AntiRushLock.Think();
-        g_EngineFuncs.ServerPrint( "-- DEBUG -- Created AntiRush multisource lock with targetname: " + AntiRushLock.GetTargetname() + "\n" );
+        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created AntiRush multisource lock: " + self.GetTargetname() + " with targetname: " + AntiRushLock.GetTargetname() + "\n" );
     }
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
