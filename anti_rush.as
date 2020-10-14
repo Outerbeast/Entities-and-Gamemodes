@@ -18,10 +18,12 @@ class anti_rush : ScriptBaseEntity
     private string SoundName        = "buttons/bell1.wav";
     private string MasterName       = "";
     private string KillTarget       = "";
+    private string PercentTriggerType = "trigger_once_mp";
+
     private float fl_FadeTime       = 5.0f;
     private float fl_TargetDelay    = 0.0f;
-
     private float fl_PercentRequired = 0.0f;
+    private float fl_TriggerWait     = 0.0f;
 
     private Vector vZoneCornerMin = Vector(0, 0, 0);
     private Vector vZoneCornerMax = Vector(0, 0, 0);
@@ -65,6 +67,11 @@ class anti_rush : ScriptBaseEntity
 			fl_PercentRequired = atof( szValue )*0.01f;
 			return true;
 		}
+        else if( szKey == "wait" )
+		{
+			fl_TriggerWait = atof( szValue );
+			return true;
+		}
         else if( szKey == "delay" )
 		{
 			fl_TargetDelay = atof( szValue );
@@ -92,6 +99,10 @@ class anti_rush : ScriptBaseEntity
 		self.pev.movetype 	= MOVETYPE_NONE;
 		self.pev.solid 		= SOLID_NOT;
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
+        if( fl_TriggerWait >= 0.0f)
+           PercentTriggerType = "trigger_multiple_mp";
+        else
+           PercentTriggerType = "trigger_once_mp";
 
         if( fl_PercentRequired > 0.01f )
         {   
@@ -132,7 +143,9 @@ class anti_rush : ScriptBaseEntity
         { 
             trgr ["master"] = ( "" + MasterName ); 
         }
-	    CBaseEntity@ PercentPlayerTrigger = g_EntityFuncs.CreateEntity( "trigger_once_mp", trgr, true );
+        if( PercentTriggerType == "trigger_multiple_mp")
+           trgr ["m_flDelay"] = ( "" + fl_TriggerWait );
+	    CBaseEntity@ PercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + PercentTriggerType, trgr, true );
         //PercentPlayerTrigger.Think();
         //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created AntiRush trigger zone: " + self.GetTargetname() + " with target: " + PercentPlayerTrigger.pev.target + " with required percentage " + fl_PercentRequired + " with master: " + MasterName + " with bounds: " + "" + string(vZoneCornerMin.x) + " " + string(vZoneCornerMin.y) + " " + string(vZoneCornerMin.z) + " and " + string(vZoneCornerMax.x) + " " + string(vZoneCornerMax.y) + " " + string(vZoneCornerMax.z) + "\n" );
     }
@@ -204,5 +217,6 @@ void RegisterAntiRushEntity()
 {
 	g_CustomEntityFuncs.RegisterCustomEntity( "anti_rush", "anti_rush" );
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_once_mp", "trigger_once_mp" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "trigger_multiple_mp", "trigger_multiple_mp");
     g_CustomEntityFuncs.RegisterCustomEntity( "func_wall_custom", "func_wall_custom" );
 }
