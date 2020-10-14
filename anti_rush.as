@@ -9,6 +9,7 @@ Those scripts must already be installed for this one to work
 */
 
 #include "cubemath/trigger_once_mp"
+#include "cubemath/trigger_multiple_mp"
 #include "cubemath/func_wall_custom"
 
 class anti_rush : ScriptBaseEntity
@@ -178,7 +179,7 @@ class anti_rush : ScriptBaseEntity
 
     void TargetFuncs()
     {
-        self.SUB_UseTargets( @self, USE_ON, 0 );
+        self.SUB_UseTargets( @self, USE_TOGGLE, 0 );
 
         CBaseEntity@ pKillTargetEnt = null;
         if( KillTarget != "" || KillTarget != self.GetTargetname() )
