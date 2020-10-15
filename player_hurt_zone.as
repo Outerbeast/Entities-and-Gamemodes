@@ -6,7 +6,8 @@
 
 class player_hurt_zone : ScriptBaseEntity
 {
-	int DamageType = 0;
+	private int iDamageType = 0;
+	private bool fIsOn = true;
 
 	bool KeyValue( const string& in szKey, const string& in szValue )
 	{
@@ -22,7 +23,7 @@ class player_hurt_zone : ScriptBaseEntity
 		}
 		else if( szKey == "damagetype" ) 
 		{
-			DamageType = atoi( szValue );
+			iDamageType = atoi( szValue );
 			return true;
 		}
 		else
@@ -32,49 +33,41 @@ class player_hurt_zone : ScriptBaseEntity
 	void Spawn()
 	{
 		self.pev.movetype 	= MOVETYPE_NONE;
-		self.pev.solid 		= SOLID_NOT;
+		self.pev.solid 		= SOLID_TRIGGER;
 		
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 		g_EntityFuncs.SetSize( self.pev, self.pev.vuser1, self.pev.vuser2 );
-		SetThink( ThinkFunction( this.TriggerThink ) );
-        self.pev.nextthink = g_Engine.time + 5.0f;
 
 		if( self.pev.dmg == 0.0f ){ self.pev.dmg = 10.0f; }
-		if(	DamageType == 32){ DamageType = 0; }
+		if(	iDamageType == 32){ iDamageType = 0; }
+		if( self.pev.spawnflags & 1 != 0 && self.GetTargetname() != "" ){ fIsOn = false; }
+
+		SetThink( ThinkFunction( this.KeepActive ) );
+        self.pev.nextthink = g_Engine.time + 1.0f;
+	}
+
+	void KeepActive()
+	{
+        self.pev.nextthink = g_Engine.time + 1.0f;
+	}
+
+	void Touch( CBaseEntity@ pOther )
+	{
+		if( fIsOn )
+		{
+			pOther.TakeDamage( null, null, self.pev.dmg, iDamageType );
+			pOther.pev.flags &= ~( FL_GODMODE );
+		}
 	}
 	
-	void TriggerThink()
+	void Use( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value )
 	{
-		for(int playerID = 0; playerID <= g_Engine.maxClients; playerID++ )
+		if( fIsOn )
 		{
-			CBaseEntity@ ePlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-			CBasePlayer@ pPlayer = cast<CBasePlayer@>( ePlayer );
-
-			if( pPlayer !is null )
-			{
-				if( playerInBox( pPlayer, self.pev.absmin, self.pev.absmax ) )
-				{	
-					pPlayer.pev.flags &= ~( FL_GODMODE );
-					pPlayer.TakeDamage( null, null, self.pev.dmg, DamageType );
-				}
-			}
+			fIsOn = false;
 		}
-		self.pev.nextthink = g_Engine.time + 0.1f;
-	}
-
-	bool playerInBox( CBasePlayer@ pPlayer, Vector vMin, Vector vMax )
-	{
-		if ( pPlayer.pev.origin.x >= vMin.x && pPlayer.pev.origin.x <= vMax.x )
-		{
-			if ( pPlayer.pev.origin.y >= vMin.y && pPlayer.pev.origin.y <= vMax.y )
-			{
-				if ( pPlayer.pev.origin.z >= vMin.z && pPlayer.pev.origin.z <= vMax.z )
-				{
-					return true;
-				}
-			}
-		}
-		return false;
+		else
+			fIsOn = true;
 	}
 }
 
