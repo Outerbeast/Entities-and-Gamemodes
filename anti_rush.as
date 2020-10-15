@@ -21,6 +21,8 @@ class anti_rush : ScriptBaseEntity
     private string MasterName           = "";
     private string KillTarget           = "";
 
+    private uint VpType                 = 0;
+
     private float fl_PercentRequired    = 0.0f;
     private float fl_TargetDelay        = 0.0f;
     private float fl_TriggerWait        = 0.0f;
@@ -41,6 +43,11 @@ class anti_rush : ScriptBaseEntity
 		else if( szKey == "sound" ) 
 		{
 			SoundName = szValue;
+			return true;
+		}
+        else if( szKey == "icon_drawtype" ) 
+		{
+			VpType = atoi( szValue );
 			return true;
 		}
         else if( szKey == "master" ) 
@@ -142,7 +149,7 @@ class anti_rush : ScriptBaseEntity
         spr ["origin"]          = ( "" + string(self.pev.origin.x) + " " + string(self.pev.origin.y) + " " + string(self.pev.origin.z) );
         spr ["angles"]          = ( "" + string(self.pev.angles.x) + " " + string(self.pev.angles.y) + " " + string(self.pev.angles.z) );
         spr ["model"]           = ( "" + IconName );
-        spr ["vp_type"]         = ( "0" );
+        spr ["vp_type"]         = ( "" + VpType );
         spr ["scale"]           = ( "" + self.pev.scale );
 	    spr ["rendercolor"]     = ( "" + string(self.pev.rendercolor.x) + " " + string(self.pev.rendercolor.y) + " " + string(self.pev.rendercolor.z) );
         spr ["renderamt"]       = ( "255" );
