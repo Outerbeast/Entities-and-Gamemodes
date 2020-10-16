@@ -28,10 +28,10 @@ class anti_rush : ScriptBaseEntity
     private float fl_TriggerWait        = 0.0f;
     private float fl_FadeTime           = 5.0f;
 
-    private Vector vZoneCornerMin = Vector( 0, 0, 0 );
-    private Vector vZoneCornerMax = Vector( 0, 0, 0 );
-    private Vector vBlockerCornerMin = Vector( 0, 0, 0 );
-    private Vector vBlockerCornerMax = Vector( 0, 0, 0 );
+    private Vector vZoneCornerMin       = Vector( 0, 0, 0 );
+    private Vector vZoneCornerMax       = Vector( 0, 0, 0 );
+    private Vector vBlockerCornerMin    = Vector( 0, 0, 0 );
+    private Vector vBlockerCornerMax    = Vector( 0, 0, 0 );
 
     private CBaseEntity@ pAntiRushBarrier;
     private CBaseEntity@ pAntiRushIcon;
@@ -75,12 +75,12 @@ class anti_rush : ScriptBaseEntity
 		}
         else if( szKey == "blockercornermin" ) 
 		{
-			g_Utility.StringToVector( vZoneCornerMin, szValue );
+			g_Utility.StringToVector( vBlockerCornerMin, szValue );
 			return true;
 		}
          else if( szKey == "blockercornermax" ) 
 		{
-			g_Utility.StringToVector( vZoneCornerMax, szValue );
+			g_Utility.StringToVector( vBlockerCornerMax, szValue );
 			return true;
 		}
         else if( szKey == "percentage" ) 
@@ -170,7 +170,7 @@ class anti_rush : ScriptBaseEntity
         wall ["minhullsize"]        = ( "" + string(vBlockerCornerMin.x) + " " + string(vBlockerCornerMin.y) + " " + string(vBlockerCornerMin.z) );
         wall ["maxhullsize"]        = ( "" + string(vBlockerCornerMax.x) + " " + string(vBlockerCornerMax.y) + " " + string(vBlockerCornerMax.z) );
         @pAntiRushBarrier = g_EntityFuncs.CreateEntity( "func_wall_custom", wall, true );
-        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created " + pPercentPlayerTrigger.GetClassname() + " with target: " + pPercentPlayerTrigger.pev.target + " " + fl_PercentRequired + "% with master: " + MasterName + " with bounds: " + "" + string(vZoneCornerMin.x) + " " + string(vZoneCornerMin.y) + " " + string(vZoneCornerMin.z) + " and " + string(vZoneCornerMax.x) + " " + string(vZoneCornerMax.y) + " " + string(vZoneCornerMax.z) + "\n" );
+        g_EngineFuncs.ServerPrint( "-- DEBUG -- Created " + pAntiRushBarrier.GetClassname() + " from anti_rush " + self.GetTargetname() + " with bounds: " + "" + string(vBlockerCornerMin.x) + " " + string(vBlockerCornerMin.y) + " " + string(vBlockerCornerMin.z) + " and " + string(vBlockerCornerMax.x) + " " + string(vBlockerCornerMax.y) + " " + string(vBlockerCornerMax.z) + "\n" );
     }
 
     void CreateIcon()
