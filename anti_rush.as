@@ -30,7 +30,10 @@ class anti_rush : ScriptBaseEntity
 
     private Vector vZoneCornerMin = Vector( 0, 0, 0 );
     private Vector vZoneCornerMax = Vector( 0, 0, 0 );
+    private Vector vBlockerCornerMin = Vector( 0, 0, 0 );
+    private Vector vBlockerCornerMax = Vector( 0, 0, 0 );
 
+    private CBaseEntity@ pAntiRushBarrier;
     private CBaseEntity@ pAntiRushIcon;
 
 	bool KeyValue(const string& in szKey, const string& in szValue)
@@ -66,6 +69,16 @@ class anti_rush : ScriptBaseEntity
 			return true;
 		}
          else if( szKey == "zonecornermax" ) 
+		{
+			g_Utility.StringToVector( vZoneCornerMax, szValue );
+			return true;
+		}
+        else if( szKey == "blockercornermin" ) 
+		{
+			g_Utility.StringToVector( vZoneCornerMin, szValue );
+			return true;
+		}
+         else if( szKey == "blockercornermax" ) 
 		{
 			g_Utility.StringToVector( vZoneCornerMax, szValue );
 			return true;
@@ -114,12 +127,20 @@ class anti_rush : ScriptBaseEntity
 
         if( self.GetTargetname() != "" && fl_PercentRequired > 0.01f )
         {   
-            if( vZoneCornerMin != Vector ( 0, 0, 0 ) )
+            if( vZoneCornerMin != Vector( 0, 0, 0 ) )
             {
-                if( vZoneCornerMax != Vector ( 0, 0, 0 ) )
+                if( vZoneCornerMax != Vector( 0, 0, 0 ) )
                 {
                     CreatePercentPlayerTrigger();
                 }
+            }
+        }
+   
+        if( vBlockerCornerMin != Vector( 0, 0, 0 ) )
+        {
+            if( vBlockerCornerMax != Vector( 0, 0, 0 ) )
+            {
+                CreateBlocker();
             }
         }
 
@@ -140,6 +161,15 @@ class anti_rush : ScriptBaseEntity
         if( MasterName != "" || MasterName != "" + self.GetTargetname() ){ trgr ["master"] = ( "" + MasterName ); }
         if( PercentTriggerType == "trigger_multiple_mp" ){ trgr ["m_flDelay"] = ( "" + fl_TriggerWait ); }
 	    CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + PercentTriggerType, trgr, true );
+        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created " + pPercentPlayerTrigger.GetClassname() + " with target: " + pPercentPlayerTrigger.pev.target + " " + fl_PercentRequired + "% with master: " + MasterName + " with bounds: " + "" + string(vZoneCornerMin.x) + " " + string(vZoneCornerMin.y) + " " + string(vZoneCornerMin.z) + " and " + string(vZoneCornerMax.x) + " " + string(vZoneCornerMax.y) + " " + string(vZoneCornerMax.z) + "\n" );
+    }
+
+    void CreateBlocker()
+    {
+        dictionary wall;
+        wall ["minhullsize"]        = ( "" + string(vBlockerCornerMin.x) + " " + string(vBlockerCornerMin.y) + " " + string(vBlockerCornerMin.z) );
+        wall ["maxhullsize"]        = ( "" + string(vBlockerCornerMax.x) + " " + string(vBlockerCornerMax.y) + " " + string(vBlockerCornerMax.z) );
+        @pAntiRushBarrier = g_EntityFuncs.CreateEntity( "func_wall_custom", wall, true );
         //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created " + pPercentPlayerTrigger.GetClassname() + " with target: " + pPercentPlayerTrigger.pev.target + " " + fl_PercentRequired + "% with master: " + MasterName + " with bounds: " + "" + string(vZoneCornerMin.x) + " " + string(vZoneCornerMin.y) + " " + string(vZoneCornerMin.z) + " and " + string(vZoneCornerMax.x) + " " + string(vZoneCornerMax.y) + " " + string(vZoneCornerMax.z) + "\n" );
     }
 
@@ -174,11 +204,17 @@ class anti_rush : ScriptBaseEntity
             g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "" + SoundName, 0.5f, ATTN_NORM );
            	pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
             EHandle hIconHandle = pAntiRushIcon;
-            if( fl_FadeTime != 0 )
+            if( fl_FadeTime > 0 )
             {
                 g_Scheduler.SetTimeout( this, "RemoveIcon", fl_FadeTime, hIconHandle );
             }
        	}
+
+        if( pAntiRushBarrier !is null )
+        {
+            g_EntityFuncs.Remove( pAntiRushBarrier );
+        }
+
         g_Scheduler.SetTimeout( this, "TargetFuncs", fl_TargetDelay );
 	}
 
