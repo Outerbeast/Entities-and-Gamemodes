@@ -21,7 +21,7 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 
 final class PvpMode
 {
-    const array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
+    array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
     array<bool> _IS_ASSIGNED(33);
 
     PvpMode()
