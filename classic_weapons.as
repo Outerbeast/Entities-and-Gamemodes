@@ -10,13 +10,13 @@ const string gmrpath = "../../scripts/maps/classic_weapons.gmr";
 
 array<ItemMapping@> g_ClassicWeapons = 
 {
-	ItemMapping( "weapon_m16", "weapon_hlmp5" ),
+    ItemMapping( "weapon_m16", "weapon_hlmp5" ),
     ItemMapping( "weapon_9mmAR", "weapon_hlmp5" ),
     ItemMapping( "weapon_uzi", "weapon_hlmp5" ),
     ItemMapping( "weapon_uziakimbo", "weapon_hlmp5" ),
     ItemMapping( "weapon_crowbar", "weapon_hlcrowbar" ),
-	ItemMapping( "weapon_shotgun", "weapon_hlshotgun" ),
-	ItemMapping( "weapon_357", "weapon_hl357" ),
+    ItemMapping( "weapon_shotgun", "weapon_hlshotgun" ),
+    ItemMapping( "weapon_357", "weapon_hl357" ),
     ItemMapping( "ammo_556", "ammo_9mmbox" ),
     ItemMapping( "ammo_556clip", "ammo_9mmAR" ),
     ItemMapping( "ammo_9mmuziclip", "ammo_9mmAR" )
@@ -40,7 +40,6 @@ void MapActivate()
     if( pWorldspawn !is null )
        g_EntityFuncsDispatchKeyValue( pWorldspawn.edit(), "globalmodellist", gmrpath );
 }
-
 // World weapon swapper routine (credit to KernCore)
 HookReturnCode PickupObjectMaterialize( CBaseEntity@ pOldItem ) 
 {
