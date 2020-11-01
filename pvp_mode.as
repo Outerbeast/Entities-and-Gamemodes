@@ -37,7 +37,7 @@ final class PvpMode
         SpawnProtection( pSpawnedplyr );
         EnterSpectator( pSpawnedplyr );
         g_Scheduler.SetInterval( this, "ViewMode", 0.1f, -1, @pSpawnedplyr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
-        return HOOK_CONTINUE;
+        return HOOK_HANDLED;
     }
 
     void AssignTeam()
