@@ -28,17 +28,17 @@ void MapInit()
 
     g_ClassicMode.SetItemMappings( @g_ClassicWeapons );
     g_ClassicMode.ForceItemRemap( true );
-    //g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
+    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
 }    
 // World weapon swapper routine (credit to KernCore)
-HookReturnCode MaterializeHook( CBaseEntity@ pOldItem ) 
+HookReturnCode ItemSpawned( CBaseEntity@ pOldItem ) 
 {
 	for( uint w = 0; w < g_ClassicWeapons.length(); ++w )
 	{
-		if( pOldItem.GetClassname == g_ClassicWeapons[w].get_From() )
+		if( pOldItem.GetClassname() == g_ClassicWeapons[w].get_From() )
 		{
-			CBaseEntity@ pNewItem = g_EntityFuncs.Create( g_ClassicWeapons[w].get_To(), pOldItem.GetOrigin(), pOldItem.GetAngles(), true );
-                        pNewItem.pev.movetype = pOldItem.pev.movetype;
+			CBaseEntity@ pNewItem = g_EntityFuncs.Create( g_ClassicWeapons[w].get_To(), pOldItem.GetOrigin(), pOldItem.pev.angles, true );
+            pNewItem.pev.movetype = pOldItem.pev.movetype;
 
 			if( pOldItem.GetTargetname() != "" )
 				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
@@ -50,7 +50,7 @@ HookReturnCode MaterializeHook( CBaseEntity@ pOldItem )
 				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
 
 			g_EntityFuncs.DispatchSpawn( pNewItem.edict() );
-                        g_EntityFuncs.Remove( pOldItem );
+            g_EntityFuncs.Remove( pOldItem );
 		}
 	}
 	return HOOK_HANDLED;
