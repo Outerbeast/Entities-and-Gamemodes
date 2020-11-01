@@ -32,14 +32,7 @@ void MapInit()
     g_ClassicMode.SetItemMappings( @g_ClassicWeapons );
     g_ClassicMode.ForceItemRemap( true );
     g_Hooks.RegisterHook( Hooks::PickupObject::Materialize );
-}
-// Does this even work?
-void MapActivate()
-{
-    CBaseEntity@ pWorldspawn = g_EntityFuncs.FindEntityByClassname( pWorldspawn, "worldspawn" );
-    if( pWorldspawn !is null )
-       g_EntityFuncsDispatchKeyValue( pWorldspawn.edit(), "globalmodellist", gmrpath );
-}
+}    
 // World weapon swapper routine (credit to KernCore)
 HookReturnCode PickupObjectMaterialize( CBaseEntity@ pOldItem ) 
 {
@@ -48,7 +41,7 @@ HookReturnCode PickupObjectMaterialize( CBaseEntity@ pOldItem )
 		if( pOldItem.GetClassname == g_ClassicWeapons[w].get_From() )
 		{
 			CBaseEntity@ pNewItem = g_EntityFuncs.Create( g_ClassicWeapons[w].get_To(), pOldItem.GetOrigin(), pOldItem.GetAngles(), true );
-            pNewItem.pev.movetype = pOldItem.pev.movetype;
+                        pNewItem.pev.movetype = pOldItem.pev.movetype;
 
 			if( pOldItem.GetTargetname() != "" )
 				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
@@ -60,7 +53,7 @@ HookReturnCode PickupObjectMaterialize( CBaseEntity@ pOldItem )
 				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
 
 			g_EntityFuncs.DispatchSpawn( pNewItem.edict() );
-            g_EntityFuncs.Remove( pOldItem );
+                        g_EntityFuncs.Remove( pOldItem );
 		}
 	}
 	return HOOK_HANDLED;
