@@ -6,8 +6,6 @@
 #include "hl_weapons/weapon_hlmp5"
 #include "hl_weapons/weapon_hlshotgun"
 
-const string gmrpath = "../../scripts/maps/classic_weapons.gmr";
-
 array<ItemMapping@> g_ClassicWeapons = 
 {
     ItemMapping( "weapon_m16", "weapon_hlmp5" ),
