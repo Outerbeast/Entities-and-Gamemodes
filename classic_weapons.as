@@ -6,7 +6,16 @@
 #include "hl_weapons/weapon_hlmp5"
 #include "hl_weapons/weapon_hlshotgun"
 
-array<ItemMapping@> g_ClassicWeapons = 
+ClassicWeapons@ g_ClassicWeapons = @ClassicWeapons();
+
+const bool _IS_ITEMSPAWNED_HOOK_REGISTERED = g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ClassicWeaponsItemSpawned );
+
+HookReturnCode ClassicWeaponsItemSpawned(CBaseEntity@ pItem)
+{
+    return g_ClassicWeapons.ItemSpawned( pItem );
+}
+
+array<ItemMapping@> CLASSIC_WEAPONS_LIST = 
 {
     ItemMapping( "weapon_m16", "weapon_hlmp5" ),
     ItemMapping( "weapon_9mmAR", "weapon_hlmp5" ),
@@ -19,39 +28,48 @@ array<ItemMapping@> g_ClassicWeapons =
     ItemMapping( "ammo_9mmuziclip", "ammo_9mmAR" )
 };
 
-void MapInit()
+
+final class ClassicWeapons
 {
-    RegisterHLPYTHON();
-    RegisterHLCrowbar();
-    RegisterHLMP5();
-    RegisterHLShotgun();
+    ClassicWeapons(){ }
 
-    g_ClassicMode.SetItemMappings( @g_ClassicWeapons );
-    g_ClassicMode.ForceItemRemap( true );
-    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
-}    
-// World weapon swapper routine (credit to KernCore)
-HookReturnCode ItemSpawned( CBaseEntity@ pOldItem ) 
-{
-	for( uint w = 0; w < g_ClassicWeapons.length(); ++w )
-	{
-		if( pOldItem.GetClassname() == g_ClassicWeapons[w].get_From() )
-		{
-			CBaseEntity@ pNewItem = g_EntityFuncs.Create( g_ClassicWeapons[w].get_To(), pOldItem.GetOrigin(), pOldItem.pev.angles, true );
-            		pNewItem.pev.movetype = pOldItem.pev.movetype;
+    void MapInit()
+    {
+        RegisterHLPYTHON();
+        RegisterHLCrowbar();
+        RegisterHLMP5();
+        RegisterHLShotgun();
 
-			if( pOldItem.GetTargetname() != "" )
-				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
+        g_ClassicMode.SetItemMappings( @CLASSIC_WEAPONS_LIST );
+        g_ClassicMode.ForceItemRemap( true );
+        //g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
+    }    
+    // World weapon swapper routine (credit to KernCore)
+    HookReturnCode ItemSpawned( CBaseEntity@ pOldItem ) 
+    {
+        if( pOldItem !is null)
+            return HOOK_CONTINUE;
 
-			if( pOldItem.pev.target != "" )
-				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "target", pOldItem.pev.target );
+        for( uint w = 0; w < CLASSIC_WEAPONS_LIST.length(); ++w )
+        {
+            if( pOldItem.GetClassname() == CLASSIC_WEAPONS_LIST[w].get_From() )
+            {
+                CBaseEntity@ pNewItem = g_EntityFuncs.Create( CLASSIC_WEAPONS_LIST[w].get_To(), pOldItem.GetOrigin(), pOldItem.pev.angles, true );
+                pNewItem.pev.movetype = pOldItem.pev.movetype;
 
-			if( pOldItem.pev.netname != "" )
-				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
+                if( pOldItem.GetTargetname() != "" )
+                    g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
 
-			g_EntityFuncs.DispatchSpawn( pNewItem.edict() );
-            		g_EntityFuncs.Remove( pOldItem );
-		}
-	}
-	return HOOK_HANDLED;
+                if( pOldItem.pev.target != "" )
+                    g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "target", pOldItem.pev.target );
+
+                if( pOldItem.pev.netname != "" )
+                    g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
+
+                g_EntityFuncs.DispatchSpawn( pNewItem.edict() );
+                g_EntityFuncs.Remove( pOldItem );
+            }
+        }
+        return HOOK_HANDLED;
+    }
 }
