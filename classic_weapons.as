@@ -28,10 +28,10 @@ void MapInit()
 
     g_ClassicMode.SetItemMappings( @g_ClassicWeapons );
     g_ClassicMode.ForceItemRemap( true );
-    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize );
+    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
 }    
 // World weapon swapper routine (credit to KernCore)
-HookReturnCode PickupObjectMaterialize( CBaseEntity@ pOldItem ) 
+HookReturnCode ItemSpawned( CBaseEntity@ pOldItem ) 
 {
 	for( uint w = 0; w < g_ClassicWeapons.length(); ++w )
 	{
