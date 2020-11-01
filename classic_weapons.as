@@ -47,7 +47,7 @@ final class ClassicWeapons
     // World weapon swapper routine (credit to KernCore)
     HookReturnCode ItemSpawned( CBaseEntity@ pOldItem ) 
     {
-        if( pOldItem !is null)
+        if( pOldItem is null)
             return HOOK_CONTINUE;
 
         for( uint w = 0; w < CLASSIC_WEAPONS_LIST.length(); ++w )
