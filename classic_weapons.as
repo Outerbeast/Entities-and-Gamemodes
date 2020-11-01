@@ -38,7 +38,7 @@ HookReturnCode ItemSpawned( CBaseEntity@ pOldItem )
 		if( pOldItem.GetClassname() == g_ClassicWeapons[w].get_From() )
 		{
 			CBaseEntity@ pNewItem = g_EntityFuncs.Create( g_ClassicWeapons[w].get_To(), pOldItem.GetOrigin(), pOldItem.pev.angles, true );
-            pNewItem.pev.movetype = pOldItem.pev.movetype;
+            		pNewItem.pev.movetype = pOldItem.pev.movetype;
 
 			if( pOldItem.GetTargetname() != "" )
 				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
@@ -50,7 +50,7 @@ HookReturnCode ItemSpawned( CBaseEntity@ pOldItem )
 				g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
 
 			g_EntityFuncs.DispatchSpawn( pNewItem.edict() );
-            g_EntityFuncs.Remove( pOldItem );
+            		g_EntityFuncs.Remove( pOldItem );
 		}
 	}
 	return HOOK_HANDLED;
