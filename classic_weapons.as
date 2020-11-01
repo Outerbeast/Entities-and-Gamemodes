@@ -15,7 +15,6 @@ array<ItemMapping@> g_ClassicWeapons =
     ItemMapping( "weapon_crowbar", "weapon_hlcrowbar" ),
     ItemMapping( "weapon_shotgun", "weapon_hlshotgun" ),
     ItemMapping( "weapon_357", "weapon_hl357" ),
-    ItemMapping( "ammo_556", "ammo_9mmbox" ),
     ItemMapping( "ammo_556clip", "ammo_9mmAR" ),
     ItemMapping( "ammo_9mmuziclip", "ammo_9mmAR" )
 };
