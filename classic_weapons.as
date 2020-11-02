@@ -1,4 +1,16 @@
 /* Script for swapping default weapons with classic ones without Classic Mode.
+Usage: map_script classic_mode or if you are already using your own map script do the following:-
+1) Comment out or remove the block
+void MapInit()
+{
+    g_ClassicWeapons.MapInit();
+} 
+then in your main map script add
+#include "classic_weapons"
+
+and inside your MapInit block add
+g_ClassicWeapons.MapInit();
+
 -Outerbeast */
 
 #include "hl_weapons/weapon_hl357"
