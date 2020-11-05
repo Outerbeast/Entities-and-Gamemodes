@@ -22,6 +22,10 @@ enum knife_e
 
 class weapon_hlknife : ScriptBasePlayerWeaponEntity
 {
+	private float m_flBigSwingStart;
+	private int m_iSwingMode = 0;
+	private bool isPullingBack;
+	
 	private CBasePlayer@ m_pPlayer
 	{
 		get const 	{ return cast<CBasePlayer@>( self.m_hPlayer.GetEntity() ); }
@@ -120,166 +124,6 @@ class weapon_hlknife : ScriptBasePlayerWeaponEntity
 		BaseClass.Holster( skipLocal );
 	}
 
-	void PrimaryAttack()
-	{
-		if( !Swing( 1 ) )
-		{
-			SetThink( ThinkFunction( this.SwingAgain ) );
-			self.pev.nextthink = g_Engine.time + 0.1;
-		}
-	}
-
-	private float m_flBigSwingStart;
-	private int m_iSwingMode = 0;
-	private bool isPullingBack;
-
-	void SecondaryAttack()
-	{
-		if( m_iSwingMode != 1 )
-		{
-			self.SendWeaponAnim( KNIFE_CHARGE, 0, 0 );
-			m_flBigSwingStart = g_Engine.time;
-			self.m_flTimeWeaponIdle = self.m_flNextSecondaryAttack = self.m_flNextPrimaryAttack = WeaponTimeBase() + 0.6;
-			m_iSwingMode = 1;
-			isPullingBack = true;
-		}
-		if( isPullingBack == true && self.m_flTimeWeaponIdle <= g_Engine.time )
-		{
-			// Manually set wrench windup loop animation
-			m_pPlayer.m_Activity = ACT_RELOAD;
-			m_pPlayer.pev.frame = 0;
-			m_pPlayer.pev.sequence = 26;
-			m_pPlayer.ResetSequenceInfo();
-			self.m_flNextSecondaryAttack = g_Engine.time + 2.0f;
-			//m_pPlayer.SetAnimation( PLAYER_ATTACK1 );
-		}
-
-		m_iSwingMode = 1;
-	}
-	
-	void Smack()
-	{
-		g_WeaponFuncs.DecalGunshot( m_trHit, BULLET_PLAYER_CROWBAR );
-	}
-
-	void SwingAgain()
-	{
-		Swing( 0 );
-	}
-
-	// My humble thanks to KernCore for the secondary attack functions from weapon_csknife code- used in the CS weapons pack :D
-	bool HeavySmack()
-	{
-		bool fDidHit = false;
-
-		TraceResult tr;
-		Math.MakeVectors( m_pPlayer.pev.v_angle );
-		Vector vecSrc	= m_pPlayer.GetGunPosition();
-		Vector vecEnd	= vecSrc + g_Engine.v_forward * 35;
-
-		g_Utility.TraceLine( vecSrc, vecEnd, dont_ignore_monsters, m_pPlayer.edict(), tr );
-		if( tr.flFraction >= 1.0 )
-		{
-			g_Utility.TraceHull( vecSrc, vecEnd, dont_ignore_monsters, head_hull, m_pPlayer.edict(), tr );
-			if( tr.flFraction < 1.0 )
-			{
-				EHandle hHit = g_EntityFuncs.Instance( tr.pHit );
-				if( hHit.GetEntity() is null || hHit.GetEntity().IsBSPModel() )
-					g_Utility.FindHullIntersection( vecSrc, tr, tr, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX, m_pPlayer.edict() );
-
-				vecEnd = tr.vecEndPos;
-			}
-		}
-		g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife1.wav", 1, ATTN_NORM, 0, 94 + Math.RandomLong( 0,0xF ) );
-
-		if( tr.flFraction >= 1.0 )
-		{
-			self.SendWeaponAnim( KNIFE_STAB, 0, 0 );
-			self.m_flTimeWeaponIdle = self.m_flNextSecondaryAttack = self.m_flNextPrimaryAttack = g_Engine.time + 0.6;
-			//Miss
-			m_pPlayer.SetAnimation( PLAYER_ATTACK1 );
-		}
-		else
-		{
-			//Hit
-			fDidHit = true;
-			self.SendWeaponAnim( KNIFE_STAB, 0, 0 );
-			m_pPlayer.SetAnimation( PLAYER_ATTACK1 );
-			EHandle hEntity = g_EntityFuncs.Instance( tr.pHit );
-
-			if( hEntity.GetEntity() !is null )
-			{
-				g_WeaponFuncs.ClearMultiDamage();
-				float flDamage = 35;
-				if( self.m_flNextSecondaryAttack + 1 < g_Engine.time )
-				{
-					hEntity.GetEntity().TraceAttack( m_pPlayer.pev, flDamage, g_Engine.v_forward, tr, DMG_CLUB | DMG_NEVERGIB );
-				}
-				else
-				{
-					hEntity.GetEntity().TraceAttack( m_pPlayer.pev, flDamage / 2, g_Engine.v_forward, tr, DMG_CLUB | DMG_NEVERGIB );
-				}
-				g_WeaponFuncs.ApplyMultiDamage( m_pPlayer.pev, m_pPlayer.pev );
-			}
-
-			// play thwack, smack, or dong sound
-			float flVol = 1.0;
-			bool fHitWorld = true;
-			if( hEntity.GetEntity() !is null )
-			{
-				self.m_flTimeWeaponIdle = self.m_flNextSecondaryAttack = self.m_flNextPrimaryAttack = g_Engine.time + 0.64;
-				if( hEntity.GetEntity().Classify() != CLASS_NONE && hEntity.GetEntity().Classify() != CLASS_MACHINE && hEntity.GetEntity().BloodColor() != DONT_BLEED )
-				{
-					if( hEntity.GetEntity().IsPlayer() ) // lets pull them
-					{
-						hEntity.GetEntity().pev.velocity = hEntity.GetEntity().pev.velocity + ( self.pev.origin - hEntity.GetEntity().pev.origin ).Normalize() * 120;
-					}
-
-					// play thwack or smack sound
-					switch( Math.RandomLong( 0, 1 ) )
-					{
-						case 0:
-							g_SoundSystem.EmitSound( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_flesh1.wav", 1, ATTN_NORM );
-							break;
-						case 1:
-							g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_flesh2.wav", 1, ATTN_NORM ); 
-							break;
-					}
-
-					m_pPlayer.m_iWeaponVolume = 128;
-					if( !hEntity.GetEntity().IsAlive() )
-						return true;
-					else
-						flVol = 0.1;
-
-					fHitWorld = false;
-				}
-			}
-
-			if( fHitWorld == true )
-			{
-				float fvolbar = g_SoundSystem.PlayHitSound( tr, vecSrc, vecSrc + (vecEnd - vecSrc) * 2, BULLET_PLAYER_CROWBAR );
-
-				// override the volume here, cause we don't play texture sounds in multiplayer, 
-				// and fvolbar is going to be 0 from the above call.
-				fvolbar = 1;
-				// also play crowbar strike
-				switch( Math.RandomLong( 0, 1 ) )
-				{
-					case 0:
-						g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_wall1.wav", fvolbar, ATTN_NORM, 0, 98 + Math.RandomLong( 0, 3 ) ); 
-						break;
-					case 1:
-						g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_wall2.wav", fvolbar, ATTN_NORM, 0, 98 + Math.RandomLong( 0, 3 ) ); 
-						break;
-				}
-			}
-		}
-
-		g_WeaponFuncs.DecalGunshot( g_Utility.GetGlobalTrace(), BULLET_PLAYER_CROWBAR );
-		return fDidHit;
-	}
-
 	void WeaponIdle()
 	{
 		if( self.m_flTimeWeaponIdle > g_Engine.time )
@@ -300,6 +144,7 @@ class weapon_hlknife : ScriptBasePlayerWeaponEntity
 
 		if( m_iSwingMode == 0 )
 		{
+			m_pPlayer.m_szAnimExtension = "crowbar";
 			switch( Math.RandomLong( 0, 2 ) )
 			{
 				case 0:
@@ -315,6 +160,15 @@ class weapon_hlknife : ScriptBasePlayerWeaponEntity
 					self.m_flTimeWeaponIdle = g_Engine.time + 5.33f;
 					break;
 			}
+		}
+	}
+	
+	void PrimaryAttack()
+	{
+		if( !Swing( 1 ) )
+		{
+			SetThink( ThinkFunction( this.SwingAgain ) );
+			self.pev.nextthink = g_Engine.time + 0.1;
 		}
 	}
 
@@ -476,6 +330,152 @@ class weapon_hlknife : ScriptBasePlayerWeaponEntity
 
 			m_pPlayer.m_iWeaponVolume = int( flVol * 512 ); 
 		}
+		return fDidHit;
+	}
+
+	void SecondaryAttack()
+	{
+		if( m_iSwingMode != 1 )
+		{
+			self.SendWeaponAnim( KNIFE_CHARGE, 0, 0 );
+			m_flBigSwingStart = g_Engine.time;
+			self.m_flTimeWeaponIdle = self.m_flNextSecondaryAttack = self.m_flNextPrimaryAttack = WeaponTimeBase() + 0.7;
+			m_iSwingMode = 1;
+			isPullingBack = true;
+		}
+		if( isPullingBack == true && self.m_flTimeWeaponIdle <= g_Engine.time )
+		{
+			// Manually set wrench windup loop animation
+			m_pPlayer.m_Activity = ACT_RELOAD;
+			m_pPlayer.pev.frame = 0;
+			m_pPlayer.pev.sequence = 26;
+			m_pPlayer.ResetSequenceInfo();
+			self.m_flNextSecondaryAttack = g_Engine.time + 2.0f;
+		}
+
+		m_iSwingMode = 1;
+	}
+	
+	void Smack()
+	{
+		g_WeaponFuncs.DecalGunshot( m_trHit, BULLET_PLAYER_CROWBAR );
+	}
+
+	void SwingAgain()
+	{
+		Swing( 0 );
+	}
+
+	// My humble thanks to KernCore for the secondary attack functions from weapon_csknife code- used in the CS weapons pack :D
+	bool HeavySmack()
+	{
+		bool fDidHit = false;
+
+		TraceResult tr;
+		Math.MakeVectors( m_pPlayer.pev.v_angle );
+		Vector vecSrc	= m_pPlayer.GetGunPosition();
+		Vector vecEnd	= vecSrc + g_Engine.v_forward * 35;
+
+		g_Utility.TraceLine( vecSrc, vecEnd, dont_ignore_monsters, m_pPlayer.edict(), tr );
+		if( tr.flFraction >= 1.0 )
+		{
+			g_Utility.TraceHull( vecSrc, vecEnd, dont_ignore_monsters, head_hull, m_pPlayer.edict(), tr );
+			if( tr.flFraction < 1.0 )
+			{
+				EHandle hHit = g_EntityFuncs.Instance( tr.pHit );
+				if( hHit.GetEntity() is null || hHit.GetEntity().IsBSPModel() )
+					g_Utility.FindHullIntersection( vecSrc, tr, tr, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX, m_pPlayer.edict() );
+
+				vecEnd = tr.vecEndPos;
+			}
+		}
+		g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife1.wav", 1, ATTN_NORM, 0, 94 + Math.RandomLong( 0,0xF ) );
+		m_pPlayer.m_szAnimExtension = "wrench";
+		if( tr.flFraction >= 1.0 )
+		{
+			self.SendWeaponAnim( KNIFE_STAB, 0, 0 );
+			self.m_flTimeWeaponIdle = self.m_flNextSecondaryAttack = self.m_flNextPrimaryAttack = g_Engine.time + 0.7;
+			//Miss
+			m_pPlayer.SetAnimation( PLAYER_ATTACK1 );
+		}
+		else
+		{
+			//Hit
+			fDidHit = true;
+			self.SendWeaponAnim( KNIFE_STAB, 0, 0 );
+			m_pPlayer.SetAnimation( PLAYER_ATTACK1 );
+			EHandle hEntity = g_EntityFuncs.Instance( tr.pHit );
+
+			if( hEntity.GetEntity() !is null )
+			{
+				g_WeaponFuncs.ClearMultiDamage();
+				float flDamage = 35;
+				if( self.m_flNextSecondaryAttack + 1 < g_Engine.time )
+				{
+					hEntity.GetEntity().TraceAttack( m_pPlayer.pev, flDamage, g_Engine.v_forward, tr, DMG_CLUB | DMG_NEVERGIB );
+				}
+				else
+				{
+					hEntity.GetEntity().TraceAttack( m_pPlayer.pev, flDamage / 2, g_Engine.v_forward, tr, DMG_CLUB | DMG_NEVERGIB );
+				}
+				g_WeaponFuncs.ApplyMultiDamage( m_pPlayer.pev, m_pPlayer.pev );
+			}
+
+			// play thwack, smack, or dong sound
+			float flVol = 1.0;
+			bool fHitWorld = true;
+			if( hEntity.GetEntity() !is null )
+			{
+				self.m_flTimeWeaponIdle = self.m_flNextSecondaryAttack = self.m_flNextPrimaryAttack = g_Engine.time + 0.64;
+				if( hEntity.GetEntity().Classify() != CLASS_NONE && hEntity.GetEntity().Classify() != CLASS_MACHINE && hEntity.GetEntity().BloodColor() != DONT_BLEED )
+				{
+					if( hEntity.GetEntity().IsPlayer() ) // lets pull them
+					{
+						hEntity.GetEntity().pev.velocity = hEntity.GetEntity().pev.velocity + ( self.pev.origin - hEntity.GetEntity().pev.origin ).Normalize() * 120;
+					}
+
+					// play thwack or smack sound
+					switch( Math.RandomLong( 0, 1 ) )
+					{
+						case 0:
+							g_SoundSystem.EmitSound( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_flesh1.wav", 1, ATTN_NORM );
+							break;
+						case 1:
+							g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_flesh2.wav", 1, ATTN_NORM ); 
+							break;
+					}
+
+					m_pPlayer.m_iWeaponVolume = 128;
+					if( !hEntity.GetEntity().IsAlive() )
+						return true;
+					else
+						flVol = 0.1;
+
+					fHitWorld = false;
+				}
+			}
+
+			if( fHitWorld == true )
+			{
+				float fvolbar = g_SoundSystem.PlayHitSound( tr, vecSrc, vecSrc + (vecEnd - vecSrc) * 2, BULLET_PLAYER_CROWBAR );
+
+				// override the volume here, cause we don't play texture sounds in multiplayer, 
+				// and fvolbar is going to be 0 from the above call.
+				fvolbar = 1;
+				// also play crowbar strike
+				switch( Math.RandomLong( 0, 1 ) )
+				{
+					case 0:
+						g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_wall1.wav", fvolbar, ATTN_NORM, 0, 98 + Math.RandomLong( 0, 3 ) ); 
+						break;
+					case 1:
+						g_SoundSystem.EmitSoundDyn( m_pPlayer.edict(), CHAN_WEAPON, "weapons/knife_hit_wall2.wav", fvolbar, ATTN_NORM, 0, 98 + Math.RandomLong( 0, 3 ) ); 
+						break;
+				}
+			}
+		}
+
+		g_WeaponFuncs.DecalGunshot( g_Utility.GetGlobalTrace(), BULLET_PLAYER_CROWBAR );
 		return fDidHit;
 	}
 }
