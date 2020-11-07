@@ -124,7 +124,10 @@ class anti_rush : ScriptBaseEntity
             {
                 if( vZoneCornerMax != Vector( 0, 0, 0 ) )
                 {
-                    CreatePercentPlayerTrigger();
+                    if( vZoneCornerMin != vZoneCornerMax )
+                    {
+                        CreatePercentPlayerTrigger();
+                    }
                 }
             }
         }
@@ -133,7 +136,10 @@ class anti_rush : ScriptBaseEntity
         {
             if( vBlockerCornerMax != Vector( 0, 0, 0 ) )
             {
-                CreateBlocker();
+                if( vBlockerCornerMin != vBlockerCornerMax )
+                {
+                    CreateBlocker();
+                }
             }
         }
 
@@ -154,7 +160,6 @@ class anti_rush : ScriptBaseEntity
         if( MasterName != "" || MasterName != "" + self.GetTargetname() ){ trgr ["master"] = ( "" + MasterName ); }
         if( PercentTriggerType == "trigger_multiple_mp" ){ trgr ["m_flDelay"] = ( "" + flTriggerWait ); }
 	    CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + PercentTriggerType, trgr, true );
-        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created " + pPercentPlayerTrigger.GetClassname() + " with target: " + pPercentPlayerTrigger.pev.target + " " + fl_PercentRequired + "% with master: " + MasterName + " with bounds: " + "" + string(vZoneCornerMin.x) + " " + string(vZoneCornerMin.y) + " " + string(vZoneCornerMin.z) + " and " + string(vZoneCornerMax.x) + " " + string(vZoneCornerMax.y) + " " + string(vZoneCornerMax.z) + "\n" );
     }
 
     void CreateBlocker()
@@ -163,7 +168,6 @@ class anti_rush : ScriptBaseEntity
         wall ["minhullsize"]        = ( "" + string(vBlockerCornerMin.x) + " " + string(vBlockerCornerMin.y) + " " + string(vBlockerCornerMin.z) );
         wall ["maxhullsize"]        = ( "" + string(vBlockerCornerMax.x) + " " + string(vBlockerCornerMax.y) + " " + string(vBlockerCornerMax.z) );
         @pAntiRushBarrier = g_EntityFuncs.CreateEntity( "func_wall_custom", wall, true );
-        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created " + pAntiRushBarrier.GetClassname() + " from anti_rush " + self.GetTargetname() + " with bounds: " + "" + string(vBlockerCornerMin.x) + " " + string(vBlockerCornerMin.y) + " " + string(vBlockerCornerMin.z) + " and " + string(vBlockerCornerMax.x) + " " + string(vBlockerCornerMax.y) + " " + string(vBlockerCornerMax.z) + "\n" );
     }
 
     void CreateIcon()
@@ -187,7 +191,6 @@ class anti_rush : ScriptBaseEntity
         ms ["targetname"] = ( "" + self.pev.target );
         CBaseEntity@ pAntiRushLock = g_EntityFuncs.CreateEntity( "multisource", ms, true );   
         pAntiRushLock.Think();
-        //g_EngineFuncs.ServerPrint( "-- DEBUG -- Created AntiRush multisource lock: " + self.GetTargetname() + " with targetname: " + pAntiRushLock.GetTargetname() + "\n" );
     }
     // Main triggering business
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
