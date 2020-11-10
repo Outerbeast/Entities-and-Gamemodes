@@ -4,8 +4,8 @@
 const int playerID = 1;
 float flMortalVelocity;
 
-array<float> FL_OLD_PLAYER_VELOCITY(33);
-array<bool> BL_PLAYER_HAS_FELL(33);
+array<float> PLAYER_FALL_SPEED(33);
+array<bool> HAS_PLAYER_FELL(33);
 
 void DoomFallStartThink(float flMortalVelocitySetting)
 {
@@ -26,8 +26,8 @@ HookReturnCode TrackPlayer(CBasePlayer @pSpawnedPlyr)
     for( playerID; playerID <= g_Engine.maxClients; ++playerID )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-        FL_OLD_PLAYER_VELOCITY[playerID]    = 0.0f;
-        BL_PLAYER_HAS_FELL[playerID]        = false;
+        PLAYER_FALL_SPEED[playerID]     = 0.0f;
+        HAS_PLAYER_FELL[playerID]       = false;
     }
     return HOOK_HANDLED;
 }
@@ -38,19 +38,19 @@ HookReturnCode DoomFall(CBasePlayer@ pPlayer, uint& out uiFlags)
     {
         if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
-            FL_OLD_PLAYER_VELOCITY[playerID]    = 0.0f;
-            BL_PLAYER_HAS_FELL[playerID]        = false;
+            PLAYER_FALL_SPEED[playerID]     = 0.0f;
+            HAS_PLAYER_FELL[playerID]       = false;
         }
 
         if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
-            FL_OLD_PLAYER_VELOCITY[playerID] = pPlayer.m_flFallVelocity;
+            PLAYER_FALL_SPEED[playerID] = pPlayer.m_flFallVelocity;
 
-            if( FL_OLD_PLAYER_VELOCITY[playerID] >= flMortalVelocity && !BL_PLAYER_HAS_FELL[playerID] )
+            if( PLAYER_FALL_SPEED[playerID] >= flMortalVelocity && !HAS_PLAYER_FELL[playerID] )
             {
                 g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
                 g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
-                BL_PLAYER_HAS_FELL[playerID] = true;
+                HAS_PLAYER_FELL[playerID] = true;
 
                 return HOOK_HANDLED;
             }
@@ -66,11 +66,11 @@ HookReturnCode DoomFall(CBasePlayer@ pPlayer, uint& out uiFlags)
 
 HookReturnCode Splat( CBasePlayer@ pPlayer )
 {
-    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && BL_PLAYER_HAS_FELL[playerID] )
+    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && HAS_PLAYER_FELL[playerID] )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
         pPlayer.TakeDamage(world, world, 10000.0f, DMG_FALL);
-        BL_PLAYER_HAS_FELL[playerID] = false;
+        HAS_PLAYER_FELL[playerID] = false;
         g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
 
         return HOOK_HANDLED;
