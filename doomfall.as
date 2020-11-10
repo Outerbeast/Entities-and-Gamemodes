@@ -1,7 +1,7 @@
 /* Just a fun script that changes at what fall speed makes players die from falldamage
 - Outerbeast */
 
-const int playerID = 1;
+int playerID = 1;
 float flMortalVelocity;
 
 array<float> PLAYER_FALL_SPEED(33);
