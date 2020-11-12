@@ -1,18 +1,17 @@
 /* Just a fun script that changes at what fall speed makes players die from falldamage- players also emit screaming sound
 Usage:-
-Put the code "DoomFallEnable( flMortalVelocitySetting, blStartOnSetting );" in MapInit
+Put the code "DOOMFALL::Enable( flMortalVelocitySetting, blStartOnSetting );" in MapInit
 Replace or assign "flMortalVelocitySetting" to your falling speed
-Replace or assign "blStartOnSetting" to true if you want it active on map start, or false if you want to have inactive- in which case
-you must make a trigger_script that calls "TriggerDoomFall" to enable- to disable in map, call " DoomFallStopThink"
+Replace or assign "blStartOnSetting" to true if you want it active on map start, or false if you want to have inactive
 
 - Outerbeast */
+
 namespace DOOMFALL
 {
 
-int playerID = 1;
+int playerID = 0;
 float flMortalVelocity;
 bool blStartOn = true;
-EHandle hFallingPlayer;
     
 array<float> PLAYER_FALL_SPEED(33);
 array<bool> HAS_PLAYER_FELL(33);
@@ -61,8 +60,8 @@ HookReturnCode TrackPlayer(CBasePlayer @pSpawnedPlyr)
 
 HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
-    if( pPlayer is null ){ return HOOK_CONTINUE; }
-    
+    if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
+    {
         if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
             PLAYER_FALL_SPEED[playerID]     = 0.0f;
@@ -78,20 +77,21 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
                 g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
                 g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
                 HAS_PLAYER_FELL[playerID] = true;
-                Ehandle hFallingPlayer = pPlayer;
+
                 return HOOK_HANDLED;
             }
             else
-                return HOOK_CONTINUE; 
+                return HOOK_CONTINUE;
         }
         else
             return HOOK_CONTINUE;
+    }
+    else
+        return HOOK_CONTINUE;
 }
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
-{
-    if( pPlayer is null || pPlayer !is hFallingPlayer ){ return HOOK_CONTINUE; }
-    
+{ 
     if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && HAS_PLAYER_FELL[playerID] )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
@@ -102,14 +102,14 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
         return HOOK_HANDLED;
     }
     else
-        return HOOK_CONTINUE; 
+        return HOOK_CONTINUE;
 }
 
 void StopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
     g_Hooks.RemoveHook( Hooks::Player::PlayerSpawn, @TrackPlayer );
-    g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, @DoomFall );
-    g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, @Splat );
+    g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, @Fall );
+    g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, @Splat );
 }
 
 }
