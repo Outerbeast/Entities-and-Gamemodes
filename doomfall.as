@@ -12,11 +12,12 @@ namespace DOOMFALL
 int playerID = 1;
 float flMortalVelocity;
 bool blStartOn = true;
-
+EHandle hFallingPlayer;
+    
 array<float> PLAYER_FALL_SPEED(33);
 array<bool> HAS_PLAYER_FELL(33);
 
-void DoomFallEnable(const float flMortalVelocitySetting, const bool blStartOnSetting)
+void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 {
     g_SoundSystem.PrecacheSound( "sc_persia/scream.wav" );
 
@@ -27,7 +28,7 @@ void DoomFallEnable(const float flMortalVelocitySetting, const bool blStartOnSet
     if( blStartOnSetting )
     {
         blStartOn = true;
-        DoomFallStartThink(); 
+        StartThink(); 
     }
     else
         blStartOn = false;
@@ -35,13 +36,13 @@ void DoomFallEnable(const float flMortalVelocitySetting, const bool blStartOnSet
 
 void TriggerDoomFall(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
-    if( !blStartOn ){ DoomFallStartThink(); }
+    if( !blStartOn ){ StartThink(); }
 }
 
-void DoomFallStartThink()
+void StartThink()
 {
     g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @TrackPlayer );
-    g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @DoomFall );
+    g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @Fall );
     g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, @Splat );
 }
 
@@ -58,7 +59,7 @@ HookReturnCode TrackPlayer(CBasePlayer @pSpawnedPlyr)
     return HOOK_HANDLED;
 }
 
-HookReturnCode DoomFall(CBasePlayer@ pPlayer, uint& out uiFlags)
+HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
     if( pPlayer is null ){ return HOOK_CONTINUE; }
     
@@ -77,7 +78,7 @@ HookReturnCode DoomFall(CBasePlayer@ pPlayer, uint& out uiFlags)
                 g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
                 g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
                 HAS_PLAYER_FELL[playerID] = true;
-
+                Ehandle hFallingPlayer = pPlayer;
                 return HOOK_HANDLED;
             }
             else
@@ -89,7 +90,7 @@ HookReturnCode DoomFall(CBasePlayer@ pPlayer, uint& out uiFlags)
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
 {
-    if( pPlayer is null ){ return HOOK_CONTINUE; }
+    if( pPlayer is null || pPlayer !is hFallingPlayer ){ return HOOK_CONTINUE; }
     
     if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && HAS_PLAYER_FELL[playerID] )
     {
@@ -104,7 +105,7 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
         return HOOK_CONTINUE; 
 }
 
-void DoomFallStopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+void StopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
     g_Hooks.RemoveHook( Hooks::Player::PlayerSpawn, @TrackPlayer );
     g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, @DoomFall );
