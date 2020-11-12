@@ -6,6 +6,8 @@ Replace or assign "blStartOnSetting" to true if you want it active on map start,
 you must make a trigger_script that calls "TriggerDoomFall" to enable- to disable in map, call " DoomFallStopThink"
 
 - Outerbeast */
+namespace DOOMFALL
+{
 
 int playerID = 1;
 float flMortalVelocity;
@@ -109,6 +111,7 @@ void DoomFallStopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE u
     g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, @Splat );
 }
 
+}
 /* Special thanks to the usual scripting gang:-
 -KernCore
 -AnggaraNothing
