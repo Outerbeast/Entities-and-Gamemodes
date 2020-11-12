@@ -58,8 +58,8 @@ HookReturnCode TrackPlayer(CBasePlayer @pSpawnedPlyr)
 
 HookReturnCode DoomFall(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
-    if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
-    {
+    if( pPlayer is null ){ return HOOK_CONTINUE; }
+    
         if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
             PLAYER_FALL_SPEED[playerID]     = 0.0f;
@@ -82,14 +82,13 @@ HookReturnCode DoomFall(CBasePlayer@ pPlayer, uint& out uiFlags)
                 return HOOK_CONTINUE; 
         }
         else
-            return HOOK_CONTINUE; 
-    }
-    else
-        return HOOK_CONTINUE; 
+            return HOOK_CONTINUE;
 }
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
 {
+    if( pPlayer is null ){ return HOOK_CONTINUE; }
+    
     if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && HAS_PLAYER_FELL[playerID] )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
