@@ -1,7 +1,7 @@
 /* "The GoldSRC Ministry of Defence has has raised conerns with the unethical practices of the SC Task Forces, namely "spawncamping" 
 and thus have issued a statement on behalf of all npcs that those npcs spawning in must be allowed a few seconds of 
 invulnerbility to gain a footing before being able to fight.
-The SC Ethics Team have enforced measures to prevent this."
+The SC Ethics Committee have enforced measures to prevent this."
 --------------------------------------------------------------
 A script that allows a few seconds of spawn invulnerblity for npcs spawning
 Usage:-
