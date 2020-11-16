@@ -21,22 +21,22 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 
 final class PvpMode
 {
-    array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
-    array<bool> _IS_ASSIGNED(33);
+    public array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
+    private array<bool> _IS_ASSIGNED(33);
 
     PvpMode()
     {
         PLAYER_TEAM.resize(33);
     }
 
-    HookReturnCode OnPlayerSpawn(CBasePlayer @pSpawnedplyr)
+    HookReturnCode OnPlayerSpawn(CBasePlayer@ pSpawnedPlyr)
     {   
-        if( pSpawnedplyr is null ){ return HOOK_CONTINUE; }
+        if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
 
         AssignTeam();
-        SpawnProtection( pSpawnedplyr );
-        EnterSpectator( pSpawnedplyr );
-        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, -1, @pSpawnedplyr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
+        SpawnProtection( pSpawnedPlyr );
+        EnterSpectator( pSpawnedPlyr );
+        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, -1, @pSpawnedPlyr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
         return HOOK_HANDLED;
     }
 
@@ -44,8 +44,8 @@ final class PvpMode
     {
         for( int playerID = 1; playerID <= g_Engine.maxClients; ++playerID )
         {
-            CBaseEntity@ ePlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-            CBasePlayer@ pPlayer = cast<CBasePlayer@>( ePlayer );
+            CBaseEntity@ pEntity = g_PlayerFuncs.FindPlayerByIndex( playerID );
+            CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEntity );
 
             if( pPlayer !is null && pPlayer.IsAlive() && !_IS_ASSIGNED[playerID] )
             {
@@ -80,9 +80,8 @@ final class PvpMode
     {
         if( !hPlayer )
             return;
-                
-        CBaseEntity@ pEnt = hPlayer;
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
+
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
         pPlayer.pev.rendermode  = kRenderTransTexture;
         if( pPlayer.m_iClassSelection != 0){ pPlayer.pev.renderamt = 50.0f; }
@@ -94,9 +93,8 @@ final class PvpMode
     {
         if( !hPlayer )
             return;
-                
-        CBaseEntity@ pEnt = hPlayer;
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
+        
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
         if( pPlayer.m_iClassSelection != 0 )
         {
@@ -133,8 +131,7 @@ final class PvpMode
         if( !hPlayer )
             return;
 
-        CBaseEntity@ pEnt = hPlayer;
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEnt );
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
         if( pPlayer.m_iClassSelection == 0 )
         { 
