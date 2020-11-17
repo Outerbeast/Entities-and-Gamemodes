@@ -45,9 +45,9 @@ void StartThink()
     g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, @Splat );
 }
 
-HookReturnCode TrackPlayer(CBasePlayer @pSpawnedPlyr)
+HookReturnCode TrackPlayer(CBasePlayer@ pSpawnedPlyr)
 {
-    if( @pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
+    if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
 
     for( playerID; playerID <= g_Engine.maxClients; ++playerID )
     {
@@ -75,7 +75,7 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
             if( PLAYER_FALL_SPEED[playerID] >= flMortalVelocity && !HAS_PLAYER_FELL[playerID] )
             {
                 g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
-                g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
+                //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
                 HAS_PLAYER_FELL[playerID] = true;
 
                 return HOOK_HANDLED;
@@ -97,7 +97,7 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
         pPlayer.TakeDamage(world, world, 10000.0f, DMG_FALL);
         HAS_PLAYER_FELL[playerID] = false;
-        g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
+        //g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
 
         return HOOK_HANDLED;
     }
