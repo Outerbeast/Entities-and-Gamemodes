@@ -9,7 +9,7 @@ Replace or assign "blStartOnSetting" to true if you want it active on map start,
 namespace DOOMFALL
 {
 
-int playerID = 0;
+int playerID = 1;
 float flMortalVelocity;
 bool blStartOn = true;
     
