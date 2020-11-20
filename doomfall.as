@@ -9,12 +9,16 @@ Replace or assign "blStartOnSetting" to true if you want it active on map start,
 namespace DOOMFALL
 {
 
-int playerID = 1;
 float flMortalVelocity;
 bool blStartOn = true;
-    
-array<float> PLAYER_FALL_SPEED(33);
-array<bool> HAS_PLAYER_FELL(33);
+
+class FallingPlayer
+{
+    float flPlayerFallSpeed;
+    bool blHasPlayerFell;
+}
+
+array<FallingPlayer@> FALLING_PLAYER_DATA( 33, FallingPlayer() );
 
 void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 {
@@ -49,13 +53,12 @@ HookReturnCode TrackPlayer(CBasePlayer@ pSpawnedPlyr)
 {
     if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
 
-    for( playerID = 1; playerID <= g_Engine.maxClients; ++playerID )
-    {
-        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-        PLAYER_FALL_SPEED[playerID]     = 0.0f;
-        HAS_PLAYER_FELL[playerID]       = false;
-    }
-    return HOOK_HANDLED;
+        FallingPlayer playerdata;
+        playerdata.flPlayerFallSpeed = 0.0f;
+        playerdata.blHasPlayerFell   = false;
+        FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1] = playerdata;
+
+    return HOOK_CONTINUE;
 }
 
 HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
@@ -64,44 +67,34 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
     {
         if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
-            PLAYER_FALL_SPEED[playerID]     = 0.0f;
-            HAS_PLAYER_FELL[playerID]       = false;
+            FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
+            FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
         }
 
         if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
-            PLAYER_FALL_SPEED[playerID] = pPlayer.m_flFallVelocity;
+            FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = pPlayer.m_flFallVelocity;
 
-            if( PLAYER_FALL_SPEED[playerID] >= flMortalVelocity && !HAS_PLAYER_FELL[playerID] )
+            if( FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed >= flMortalVelocity && !FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
             {
                 g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
-                //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
-                HAS_PLAYER_FELL[playerID] = true;
-
-                return HOOK_HANDLED;
+                g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
+                FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = true;
             }
-            else
-                return HOOK_CONTINUE;
         }
-        else
-            return HOOK_CONTINUE;
     }
-    else
-        return HOOK_CONTINUE;
+    return HOOK_CONTINUE;
 }
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
 { 
-    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && HAS_PLAYER_FELL[playerID] )
+    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
         pPlayer.TakeDamage(world, world, 10000.0f, DMG_FALL);
-        HAS_PLAYER_FELL[playerID] = false;
-        //g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
-
-        return HOOK_HANDLED;
+        FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = false;
+        g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
     }
-    else
         return HOOK_CONTINUE;
 }
 
@@ -116,5 +109,5 @@ void StopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, 
 /* Special thanks to the usual scripting gang:-
 -KernCore
 -AnggaraNothing
--H2
--Zode */
+-Zode 
+-H2*/
