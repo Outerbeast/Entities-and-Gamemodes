@@ -18,7 +18,7 @@ class FallingPlayer
     bool blHasPlayerFell;
 }
 
-array<FallingPlayer@> FALLING_PLAYER_DATA( 33, FallingPlayer() );
+array<FallingPlayer@> FALLING_PLAYER_DATA;
 
 void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 {
@@ -35,6 +35,14 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
     }
     else
         blStartOn = false;
+
+    for(int i = 0; i < g_Engine.maxClients; i++)
+    {
+        FallingPlayer plrdata;
+        plrdata.flPlayerFallSpeed = 0.0f;
+        plrdata.blHasPlayerFell = false;
+        FALLING_PLAYER_DATA.insertLast(plrdata);
+    }
 }
 
 void TriggerDoomFall(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -53,10 +61,8 @@ HookReturnCode TrackPlayer(CBasePlayer@ pSpawnedPlyr)
 {
     if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
 
-        FallingPlayer playerdata;
-        playerdata.flPlayerFallSpeed = 0.0f;
-        playerdata.blHasPlayerFell   = false;
-        FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1] = playerdata;
+        FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].flPlayerFallSpeed = 0.0f;
+        FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].blHasPlayerFell   = false;
 
     return HOOK_CONTINUE;
 }
@@ -106,8 +112,9 @@ void StopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, 
 }
 
 }
-/* Special thanks to the usual scripting gang:-
+/* Special thanks to:-
+-Zode for extensive support, testing and proofreading
+and others I've asked help from for minor things:
 -KernCore
 -AnggaraNothing
--Zode 
 -H2*/
