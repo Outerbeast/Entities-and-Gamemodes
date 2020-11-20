@@ -22,7 +22,7 @@ class FallingPlayer
     bool blHasPlayerFell;
 }
 
-array<FallingPlayer@> FALLING_PLAYER_DATA(33);
+array<FallingPlayer@> FALLING_PLAYER_DATA( 33, FallingPlayer() );
 
 void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 {
@@ -57,14 +57,14 @@ HookReturnCode TrackPlayer(CBasePlayer@ pSpawnedPlyr)
 {
     if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
 
-    for( playerID = 1; playerID <= FALLING_PLAYER_DATA.length(); ++playerID )
+    for( uint playerID = 1; playerID <= FALLING_PLAYER_DATA.length(); ++playerID )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
 
         FallingPlayer playerdata;
         playerdata.flPlayerFallSpeed = 0.0f;
         playerdata.blHasPlayerFell   = false;
-        FALLING_PLAYER_DATA[playerID] = playerdata;
+        FALLING_PLAYER_DATA[playerID-1] = playerdata;
     }
     return HOOK_HANDLED;
 }
@@ -75,19 +75,19 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
     {
         if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
-            FALLING_PLAYER_DATA[playerID].flPlayerFallSpeed = 0.0f;
-            FALLING_PLAYER_DATA[playerID].blHasPlayerFell   = false;
+            FALLING_PLAYER_DATA[playerID-1].flPlayerFallSpeed = 0.0f;
+            FALLING_PLAYER_DATA[playerID-1].blHasPlayerFell   = false;
         }
 
         if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
         {
-            FALLING_PLAYER_DATA[playerID].flPlayerFallSpeed = pPlayer.m_flFallVelocity;
+            FALLING_PLAYER_DATA[playerID-1].flPlayerFallSpeed = pPlayer.m_flFallVelocity;
 
-            if( FALLING_PLAYER_DATA[playerID].flPlayerFallSpeed >= flMortalVelocity && !FALLING_PLAYER_DATA[playerID].blHasPlayerFell )
+            if( FALLING_PLAYER_DATA[playerID-1].flPlayerFallSpeed >= flMortalVelocity && !FALLING_PLAYER_DATA[playerID-1].blHasPlayerFell )
             {
                 g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
                 //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
-                FALLING_PLAYER_DATA[playerID].blHasPlayerFell = true;
+                FALLING_PLAYER_DATA[playerID-1].blHasPlayerFell = true;
 
                 return HOOK_HANDLED;
             }
@@ -103,11 +103,11 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
 { 
-    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !FALLING_PLAYER_DATA[playerID].blHasPlayerFell )
+    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !FALLING_PLAYER_DATA[playerID-1].blHasPlayerFell )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
         pPlayer.TakeDamage(world, world, 10000.0f, DMG_FALL);
-        FALLING_PLAYER_DATA[playerID].blHasPlayerFell = false;
+        FALLING_PLAYER_DATA[playerID-1].blHasPlayerFell = false;
         //g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
 
         return HOOK_HANDLED;
