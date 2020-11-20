@@ -36,7 +36,7 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
     else
         blStartOn = false;
 
-    for(int i = 0; i < g_Engine.maxClients; i++)
+    for( int i = 0; i < g_Engine.maxClients; i++ )
     {
         FallingPlayer plrdata;
         plrdata.flPlayerFallSpeed = 0.0f;
@@ -47,7 +47,16 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 
 void TriggerDoomFall(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
-    if( !blStartOn ){ StartThink(); }
+    if( !blStartOn )
+    { 
+        StartThink();
+        blStartOn = true;
+    }
+    else if( blStartOn )
+    { 
+        StopThink; 
+        blStartOn = false;
+    }
 }
 
 void StartThink()
@@ -104,7 +113,7 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
         return HOOK_CONTINUE;
 }
 
-void StopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+void StopThink()
 {
     g_Hooks.RemoveHook( Hooks::Player::PlayerSpawn, @OnGround );
     g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, @Fall );
