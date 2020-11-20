@@ -60,8 +60,11 @@ HookReturnCode TrackPlayer(CBasePlayer@ pSpawnedPlyr)
     for( playerID = 1; playerID <= FALLING_PLAYER_DATA.length(); ++playerID )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-        FALLING_PLAYER_DATA[playerID].flPlayerFallSpeed = 0.0f;
-        FALLING_PLAYER_DATA[playerID].blHasPlayerFell   = false;
+
+        FallingPlayer playerdata;
+        playerdata.flPlayerFallSpeed = 0.0f;
+        playerdata.blHasPlayerFell   = false;
+        FALLING_PLAYER_DATA[playerID] = playerdata;
     }
     return HOOK_HANDLED;
 }
