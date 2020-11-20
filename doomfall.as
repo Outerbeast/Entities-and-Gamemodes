@@ -52,12 +52,12 @@ void TriggerDoomFall(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE use
 
 void StartThink()
 {
-    g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @TrackPlayer );
+    g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @OnGround );
     g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @Fall );
     g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, @Splat );
 }
 
-HookReturnCode TrackPlayer(CBasePlayer@ pSpawnedPlyr)
+HookReturnCode OnGround(CBasePlayer@ pSpawnedPlyr)
 {
     if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
 
@@ -106,7 +106,7 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
 
 void StopThink(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
-    g_Hooks.RemoveHook( Hooks::Player::PlayerSpawn, @TrackPlayer );
+    g_Hooks.RemoveHook( Hooks::Player::PlayerSpawn, @OnGround );
     g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, @Fall );
     g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, @Splat );
 }
