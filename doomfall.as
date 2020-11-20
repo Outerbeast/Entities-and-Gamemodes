@@ -88,7 +88,7 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
 { 
-    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !FALLING_PLAYER_DATA[pPlayer.entindex()].blHasPlayerFell )
+    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()].blHasPlayerFell )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
         pPlayer.TakeDamage(world, world, 10000.0f, DMG_FALL);
