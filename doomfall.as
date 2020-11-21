@@ -92,9 +92,9 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 
             if( FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed >= flMortalVelocity && !FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
             {
-                g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
-                g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
+                g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM )
                 FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = true;
+                g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
             }
         }
     }
