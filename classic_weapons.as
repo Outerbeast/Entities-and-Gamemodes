@@ -1,16 +1,4 @@
 /* Script for swapping default weapons with classic ones without Classic Mode.
-Usage: map_script classic_mode or if you are already using your own map script do the following:-
-1) Comment out or remove the block
-void MapInit()
-{
-    g_ClassicWeapons.MapInit();
-} 
-then in your main map script add
-#include "classic_weapons"
-
-and inside your MapInit block add
-g_ClassicWeapons.MapInit();
-
 -Outerbeast */
 
 #include "hl_weapons/weapon_hl357"
@@ -18,26 +6,9 @@ g_ClassicWeapons.MapInit();
 #include "hl_weapons/weapon_hlmp5"
 #include "hl_weapons/weapon_hlshotgun"
 
-ClassicWeapons@ g_ClassicWeapons = @ClassicWeapons();
-
-const bool _IS_ITEMSPAWNED_HOOK_REGISTERED = g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ClassicWeaponsItemSpawned );
-
-void MapInit()
+namespace CLASSICWEAPONS
 {
-    g_ClassicWeapons.MapInit();
-} 
-
-HookReturnCode ClassicWeaponsItemSpawned(CBaseEntity@ pItem)
-{
-    return g_ClassicWeapons.ItemSpawned( pItem );
-}
-
-
-final class ClassicWeapons
-{
-    ClassicWeapons(){ }
-
-    private array<ItemMapping@> CLASSIC_WEAPONS_LIST = 
+    array<ItemMapping@> CLASSIC_WEAPONS_LIST = 
     {
         ItemMapping( "weapon_m16", "weapon_hlmp5" ),
         ItemMapping( "weapon_9mmAR", "weapon_hlmp5" ),
@@ -50,7 +21,7 @@ final class ClassicWeapons
         ItemMapping( "ammo_9mmuziclip", "ammo_9mmAR" )
     };
 
-    void MapInit()
+    void Enable()
     {
         RegisterHLPYTHON();
         RegisterHLCrowbar();
@@ -59,6 +30,8 @@ final class ClassicWeapons
 
         g_ClassicMode.SetItemMappings( @CLASSIC_WEAPONS_LIST );
         g_ClassicMode.ForceItemRemap( true );
+        
+        g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
     }    
     // World weapon swapper routine (credit to KernCore)
     HookReturnCode ItemSpawned( CBaseEntity@ pOldItem ) 
