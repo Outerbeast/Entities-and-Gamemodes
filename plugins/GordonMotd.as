@@ -56,10 +56,13 @@ HookReturnCode DrawGordonAnimation(CBasePlayer@ pPlayer)
 {
     if( blWelcomeEnabled )
        pPlayer.pev.viewmodel = WelcomeModel;
+	
     if( hMusic.GetEntity() !is null )
-	    FireTargets(hMusic.GetEntity().GetTargetname(), CBaseEntity@ pActivator, null, null, float flValue = 0.0f, float flDelay = 0.0f)
-    
-	    return HOOK_CONTINUE;
+    {
+	    FireTargets( hMusic.GetEntity().GetTargetname(), CBaseEntity@ pActivator, null, null, 0.0f, 0.0f );
+            g_EntityFuncs.Remove( hMusic.GetEntity() );
+    }
+return HOOK_CONTINUE;
 }
 
 void PlayMusic()
