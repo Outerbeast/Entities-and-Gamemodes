@@ -44,7 +44,7 @@ void MapInit()
 
 void MapStart()
 {
-	if( WelcomeMusic != "" && blMusicEnabled )
+	if( blMusicEnabled )
 	{
 		PlayMusic();
 	}
