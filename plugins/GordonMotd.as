@@ -9,7 +9,7 @@ Original AMXX plugin by: KORD_12.7
 #include "GordonMotd_conf"
 
 bool blMusicEnabled;
-bool blWelcomeEnabledè;
+bool blWelcomeEnabled;
 
 EHandle hMusic;
 
@@ -43,35 +43,18 @@ void MapInit()
                 blWelcomeEnabled = false;
 	}
 }
-
-void MapStart()
-{
-	if( blMusicEnabled )
-	{
-		PlayMusic();
-	}
-}
-
+		
 HookReturnCode DrawGordonAnimation(CBasePlayer@ pPlayer)
 {
     if( blWelcomeEnabled )
        pPlayer.pev.viewmodel = WelcomeModel;
 	
-    if( hMusic.GetEntity() !is null )
-    {
-	    FireTargets( hMusic.GetEntity().GetTargetname(), CBaseEntity@ pActivator, null, null, 0.0f, 0.0f );
-            g_EntityFuncs.Remove( hMusic.GetEntity() );
-    }
-return HOOK_CONTINUE;
+    if( blMusicEnabled )
+{
+    NetworkMessage msg(MSG_ONE, NetworkMessages::SVC_STUFFTEXT, edict);
+        msg.WriteString("mp3 loop \""+WelcomeMusic+"\"");
+    msg.End();
 }
 
-void PlayMusic()
-{
-	dictionary music;
-	music ["targetname"]	= ( "welkum_muzak" );
-	music ["message"]	= ( "" + WelcomeMusic );
-	music ["volume"]	= ( "" + flMusicVolume );
-	music ["spawnflags"]	= ( "3" );
-	CBaseEntity@ pMusic = g_EntityFuncs.CreateEntity( "ambient_music", music, true );
-	EHandle hMusic = pMusic;
+return HOOK_CONTINUE;
 }
