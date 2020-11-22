@@ -8,7 +8,8 @@ Original AMXX plugin by: KORD_12.7
 
 #include "GordonMotd_conf"
 
-bool blMusicEnabled = false;
+bool blMusicEnabled;
+bool blWelcomeEnabledè;
 
 void PluginInit()
 {
@@ -31,12 +32,13 @@ void MapInit()
 		if( WelcomeModel != "" )
 		{
 			g_Game.PrecacheModel( WelcomeModel );
+                        blWelcomeEnabled = true;
 		}
 	}
 	else
-	{
-		g_Hooks.RemoveHook( Hooks::Player::PlayerSpawn, @DrawGordonAnimation );
+        {
 		blMusicEnabled = false;
+                blWelcomeEnabled = false;
 	}
 }
 
@@ -50,7 +52,9 @@ void MapStart()
 
 HookReturnCode DrawGordonAnimation(CBasePlayer@ pPlayer)
 {
-    pPlayer.pev.viewmodel = WelcomeModel;
+    if( blWelcomeEnabled )
+       pPlayer.pev.viewmodel = WelcomeModel;
+
     return HOOK_CONTINUE;
 }
 
