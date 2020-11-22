@@ -11,6 +11,8 @@ Original AMXX plugin by: KORD_12.7
 bool blMusicEnabled;
 bool blWelcomeEnabledè;
 
+EHandle hMusic;
+
 void PluginInit()
 {
 	g_Module.ScriptInfo.SetAuthor( "Outerbeast" );
@@ -54,25 +56,19 @@ HookReturnCode DrawGordonAnimation(CBasePlayer@ pPlayer)
 {
     if( blWelcomeEnabled )
        pPlayer.pev.viewmodel = WelcomeModel;
-
-    return HOOK_CONTINUE;
+    if( hMusic.GetEntity() !is null )
+	    FireTargets(hMusic.GetEntity().GetTargetname(), CBaseEntity@ pActivator, null, null, float flValue = 0.0f, float flDelay = 0.0f)
+    
+	    return HOOK_CONTINUE;
 }
 
 void PlayMusic()
 {
-	dictionary rly;
 	dictionary music;
-
-	rly ["targetname"]		= ( "game_playerspawn" );
-	rly ["target"]			= ( "welkum_muzak" );
-	rly ["triggerstate"]	= ( "1" );
-	rly ["spawnflags"]		= ( "1" );
-
 	music ["targetname"]	= ( "welkum_muzak" );
-	music ["message"]		= ( "" + WelcomeMusic );
-	music ["volume"]		= ( "" + flMusicVolume );
+	music ["message"]	= ( "" + WelcomeMusic );
+	music ["volume"]	= ( "" + flMusicVolume );
 	music ["spawnflags"]	= ( "3" );
-
-	CBaseEntity@ pMusicStart = g_EntityFuncs.CreateEntity( "trigger_relay", rly, true );
-	CBaseEntity@ pWelcomeMusic = g_EntityFuncs.CreateEntity( "ambient_music", music, true );
+	CBaseEntity@ pMusic = g_EntityFuncs.CreateEntity( "ambient_music", music, true );
+	EHandle hMusic = pMusic;
 }
