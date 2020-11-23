@@ -5,13 +5,18 @@ Edit GordonMotd_conf to customise the model and music played
 Model by: ra4fhe
 Original AMXX plugin by: KORD_12.7
 */
+/* Gordon MOTD Welcome Animation
+Plays dancing Gordon animation with welcome message in your selected maps
+Edit GordonMotd_conf to customise the model and music played
+Model by: ra4fhe
+Original AMXX plugin by: KORD_12.7
+*/
 
 #include "GordonMotd_conf"
 
 bool blMusicEnabled;
+bool blMusicTriggered;
 bool blWelcomeEnabled;
-
-EHandle hMusic;
 
 void PluginInit()
 {
@@ -25,36 +30,47 @@ void MapInit()
 {
 	if( LOBBY_MAPS.find( string(g_Engine.mapname) ) >= 0 )
 	{
-		if( WelcomeMusic != "" )
+		if( strWelcomeMusic != "" )
 		{
-			g_SoundSystem.PrecacheSound( WelcomeMusic );
+			g_SoundSystem.PrecacheSound( strWelcomeMusic );
 			blMusicEnabled = true;
 		}
 
-		if( WelcomeModel != "" )
+		if( strWelcomeModel != "" )
 		{
-			g_Game.PrecacheModel( WelcomeModel );
-                        blWelcomeEnabled = true;
+			g_Game.PrecacheModel( strWelcomeModel );
+			blWelcomeEnabled = true;
 		}
 	}
 	else
-        {
+	{
 		blMusicEnabled = false;
-                blWelcomeEnabled = false;
+		blWelcomeEnabled = false;
 	}
 }
-		
-HookReturnCode DrawGordonAnimation(CBasePlayer@ pPlayer)
+
+void MapActivate()
 {
-    if( blWelcomeEnabled )
-       pPlayer.pev.viewmodel = WelcomeModel;
-	
-    if( blMusicEnabled )
-{
-    NetworkMessage msg(MSG_ONE, NetworkMessages::SVC_STUFFTEXT, edict);
-        msg.WriteString("mp3 loop \""+WelcomeMusic+"\"");
-    msg.End();
+	dictionary music;
+	music ["targetname"]	= ( "welkum_muzak" );
+	music ["message"]		= ( "" + strWelcomeMusic );
+	music ["volume"]		= ( "" + flMusicVolume );
+	music ["spawnflags"]	= ( "3" );
+	CBaseEntity@ pWelcomeMusic = g_EntityFuncs.CreateEntity( "ambient_music", music, true );
 }
 
-return HOOK_CONTINUE;
+HookReturnCode DrawGordonAnimation(CBasePlayer@ pPlayer)
+{
+	if( pPlayer !is null )
+	{
+		if( blWelcomeEnabled )
+			pPlayer.pev.viewmodel = strWelcomeModel;
+		
+		if( blMusicEnabled && !blMusicTriggered )
+		{
+			g_EntityFuncs.FireTargets( "welkum_muzak", null, null, USE_ON, 0.0f, 0.0f );
+			blMusicTriggered = true;
+		}
+	}
+	return HOOK_CONTINUE;
 }
