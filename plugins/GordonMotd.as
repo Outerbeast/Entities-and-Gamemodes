@@ -5,12 +5,6 @@ Edit GordonMotd_conf to customise the model and music played
 Model by: ra4fhe
 Original AMXX plugin by: KORD_12.7
 */
-/* Gordon MOTD Welcome Animation
-Plays dancing Gordon animation with welcome message in your selected maps
-Edit GordonMotd_conf to customise the model and music played
-Model by: ra4fhe
-Original AMXX plugin by: KORD_12.7
-*/
 
 #include "GordonMotd_conf"
 
