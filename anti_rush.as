@@ -103,7 +103,7 @@ class anti_rush : ScriptBaseEntity
     void Precache()
 	{
 		BaseClass.Precache();
-        g_Game.PrecacheModel( "" + IconName );
+        g_Game.PrecacheGeneric( "" + IconName );
 		g_SoundSystem.PrecacheSound( "" + SoundName );
 	}
 
