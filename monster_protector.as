@@ -15,7 +15,7 @@ float flProtectionTime;
 
 void Activate(const float flProtectionTimeSetting)
 {
-    flProtectionTime = Math.clamp( 0.1, 3.0, flProtectionTimeSetting );
+    flProtectionTime = Math.clamp( 0.1, 6.0, flProtectionTimeSetting );
 
     CBaseEntity@ pNpcSpawner;
     while( ( @pNpcSpawner = g_EntityFuncs.FindEntityByClassname( pNpcSpawner, "squadmaker" ) ) !is null )
