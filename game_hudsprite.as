@@ -82,7 +82,7 @@ class game_hudsprite : ScriptBaseEntity
 
 	void Precache()
 	{
-		g_Game.PrecacheModel( m_hsp.spritename );
+		g_Game.PrecacheGeneric( "sprites/" + m_hsp.spritename );
 	}
 
 	void Spawn()
