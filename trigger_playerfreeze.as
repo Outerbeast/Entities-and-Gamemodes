@@ -23,40 +23,36 @@ Entity can be set to delete itself using the "removeonfire" key if set to 1.
 
 class trigger_playerfreeze : ScriptBaseEntity
 {
-	private bool m_fTriggered	= false;
-	private bool m_fActivated	= false;
-	private string TargetPlayer	= "";
-
-	uint RenderInvisible		= 0;
-	uint StartOn			= 0;
-	uint szRemoveOnFire		= 0;
-	float waitTime 			= 0.0f;
+	private bool blTriggered, blActivated;
+	private string strTargetPlayer;
+	uint iRenderInvisible, iStartOn, iRemoveOnFire;
+	float flWaitTime;
 
 	bool KeyValue( const string& in szKey, const string& in szValue )
 	{
 		if( szKey == "targetplayer" ) 
 		{
-			TargetPlayer = szValue;
+			strTargetPlayer = szValue;
 			return true;
 		}
 		else if( szKey == "wait" ) 
 		{
-			waitTime = atof( szValue );
+			flWaitTime = atof( szValue );
 			return true;
 		}
 		else if( szKey == "renderinvisible" ) 
 		{
-			RenderInvisible = atoi( szValue );
+			iRenderInvisible = atoi( szValue );
 			return true;
 		}
 		else if( szKey == "starton" )
 		{
-			StartOn = atoi( szValue );
+			iStartOn = atoi( szValue );
 			return true;
 		}
 		else if( szKey == "removeonfire" ) 
 		{
-			szRemoveOnFire = atoi( szValue );
+			iRemoveOnFire = atoi( szValue );
 			return true;
 		}
 		else
@@ -78,7 +74,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 	void TriggerThink()
 	{
-		if( m_fTriggered || m_fActivated )
+		if( blTriggered || blActivated )
 		{
 			for( int playerID = 0; playerID <= g_Engine.maxClients; playerID++ )
 			{
@@ -103,30 +99,30 @@ class trigger_playerfreeze : ScriptBaseEntity
                 				pPlayer.pev.flags |= FL_FROZEN;
 						//g_EngineFuncs.ServerPrint("-- DEBUG: All Players Frozen!\n");
 
-						if( RenderInvisible == 1 && pPlayer.pev.rendermode != kRenderTransTexture)
+						if( iRenderInvisible == 1 && pPlayer.pev.rendermode != kRenderTransTexture)
 						{
 							pPlayer.pev.rendermode = kRenderTransTexture;
 							//g_EngineFuncs.ServerPrint( "-- DEBUG: All Players made Invisible!\n");
 						}
 					}
-					m_fActivated = true;
+					blActivated = true;
 				}
 			}
 		}
-		if( m_fActivated ){ self.pev.nextthink = g_Engine.time + 0.1f; }
+		if( blActivated ){ self.pev.nextthink = g_Engine.time + 0.1f; }
 	}
 
 	void Use( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value )
 	{
-		m_fTriggered = true;
-		if( waitTime != 0.0f )
+		blActivated = true;
+		if( flWaitTime != 0.0f )
 		{
-			Wait();
+		g_EntityFuncs.FireTargets( "" + self.GetTargetname(), null, null, USECBasePflWaitTime )
 		}
 
 		//g_EngineFuncs.ServerPrint("-- DEBUG: trigger_playerfreeze status- triggered: " + m_fTriggered + " and activated: " + m_fActivated + "\n");
 		
-		if( m_fTriggered && m_fActivated )
+		if( blTriggered && blActivated )
 		{
 			for( int playerID = 0; playerID <= g_Engine.maxClients; playerID++ )
 			{
@@ -148,28 +144,12 @@ class trigger_playerfreeze : ScriptBaseEntity
 					m_fTriggered = false;
 				}
 			}
-			if( szRemoveOnFire == 1 ){ g_EntityFuncs.Remove( self ); }
+			if( iRemoveOnFire == 1 ){ g_EntityFuncs.Remove( self ); }
 		}
 		else
 			self.pev.nextthink = g_Engine.time + 0.1f;
 	}
-
- 	void Wait()
-	{
-		dictionary keys;
-        	keys ["target"]		= ( "" + self.pev.targetname );
-		keys ["targetname"] 	= ( "" + self.pev.targetname + "_playerfreeze_wait_rly" );
-		keys ["delay"] 		= ( "" + waitTime );
-		keys ["triggerstate"] 	= ( "2" );
-		keys ["spawnflags"] 	= ( "65" );
-
-		CBaseEntity@ WaitRelay = g_EntityFuncs.CreateEntity( "trigger_relay", keys, true );
-    		WaitRelay.Think();
-		//g_EngineFuncs.ServerPrint( "-- DEBUG: Created WaitRelay " + self.pev.targetname + "_playerfreeze_wait_rly with wait time " + waitTime + "\n");
-		g_EntityFuncs.FireTargets( "" + self.pev.targetname + "_playerfreeze_wait_rly", WaitRelay, WaitRelay, USE_ON, 0.0f );
-		//g_EngineFuncs.ServerPrint( "-- DEBUG: WaitRelay " + self.pev.targetname + "_playerfreeze_wait with wait time " + waitTime + "triggered. \n");
-		waitTime = 0.0f;
-	}
+		
 }
 
 void RegisterTriggerPlayerFreezeEntity()
