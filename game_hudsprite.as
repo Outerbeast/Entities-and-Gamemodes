@@ -32,8 +32,8 @@ class game_hudsprite : ScriptBaseEntity
 	
 	RGBA StringToRGBA(string& in szColor)
 	{
-    	array<string> arrValues = (szColor + " 0 0 0 0").Split(" ");
-    	return RGBA(atoi(arrValues[0]), atoi(arrValues[1]), atoi(arrValues[2]), atoi(arrValues[3]));
+    	        array<string> arrValues = (szColor + " 0 0 0 0").Split(" ");
+    	        return RGBA(atoi(arrValues[0]), atoi(arrValues[1]), atoi(arrValues[2]), atoi(arrValues[3]));
 	}
 
   	bool KeyValue( const string& in szKey, const string& in szValue )
@@ -92,11 +92,11 @@ class game_hudsprite : ScriptBaseEntity
     		self.pev.solid     = SOLID_NOT;
     
     		g_EntityFuncs.SetOrigin( self, self.pev.origin );
+                m_hsp.flags = self.pev.spawnflags;
   	}
 
 	void Use( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue )
 	{
-		m_hsp.flags = self.pev.spawnflags;
 		g_PlayerFuncs.HudCustomSprite( null, m_hsp );
 	}
 }
