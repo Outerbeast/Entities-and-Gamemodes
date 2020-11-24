@@ -87,7 +87,7 @@ class game_hudsprite : ScriptBaseEntity
 
 	void Spawn()
 	{
-		Precache();
+		self.Precache();
     		self.pev.movetype  = MOVETYPE_NONE;
     		self.pev.solid     = SOLID_NOT;
     
