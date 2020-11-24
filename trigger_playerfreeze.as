@@ -23,7 +23,7 @@ Entity can be set to delete itself using the "removeonfire" key if set to 1.
 
 class trigger_playerfreeze : ScriptBaseEntity
 {
-	private bool blTriggered, blActivated;
+	private bool blTriggered, blActivated, blWaiting;
 	private string strTargetPlayer;
 	private uint iRenderInvisible, iStartOn, iRemoveOnFire;
 	private float flWaitTime;
@@ -79,6 +79,12 @@ class trigger_playerfreeze : ScriptBaseEntity
 		if( blActivated ){ self.pev.nextthink = g_Engine.time + 0.1f; }
 	}
 
+	void ToggleEntity()
+	{
+  		self.Use( self, self, USE_TOGGLE, 0.0f );
+		blWaiting = false;
+	}
+
 	void Use( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value )
 	{
 		blTriggered = true;
@@ -86,10 +92,11 @@ class trigger_playerfreeze : ScriptBaseEntity
 		else
 			self.pev.nextthink = g_Engine.time + 0.1f;
 
-		if( flWaitTime != 0.0f )
+		if( flWaitTime != 0.0f && !blWaiting )
 		{
-		    g_Scheduler.SetTimeout( this, "Use", flWaitTime, null, null, USE_TOGGLE, 0.0f );
+		    g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
 			g_EngineFuncs.ServerPrint("-- DEBUG: trigger_playerfreeze: " + self.GetTargetname() + " timeout in " + flWaitTime + "seconds.\n");
+			blWaiting = true;
 		}
 
 		if( iRemoveOnFire == 1 ){ g_EntityFuncs.Remove( self ); }
