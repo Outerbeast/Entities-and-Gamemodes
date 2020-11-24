@@ -102,14 +102,14 @@ class anti_rush : ScriptBaseEntity
 	
     void Precache()
 	{
-        BaseClass.Precache();
-        g_Game.PrecacheGeneric( "" + strIconName );
-        g_SoundSystem.PrecacheSound( "" + strSoundName );
+               BaseClass.Precache();
+               g_Game.PrecacheGeneric( "" + strIconName );
+               g_SoundSystem.PrecacheSound( "" + strSoundName );
 	}
 
 	void Spawn()
 	{
-        Precache();
+                self.Precache();
 		self.pev.movetype 	= MOVETYPE_NONE;
 		self.pev.solid 		= SOLID_NOT;
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
