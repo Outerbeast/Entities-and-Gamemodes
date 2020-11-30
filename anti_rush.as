@@ -41,57 +41,57 @@ class anti_rush : ScriptBaseEntity
 			strSoundName = szValue;
 			return true;
 		}
-        else if( szKey == "icon_drawtype" ) 
+                else if( szKey == "icon_drawtype" ) 
 		{
 			iVpType = atoi( szValue );
 			return true;
 		}
-        else if( szKey == "master" ) 
+                else if( szKey == "master" ) 
 		{
 			strMasterName = szValue;
 			return true;
 		}
-        else if( szKey == "killtarget" ) 
+                else if( szKey == "killtarget" ) 
 		{
 			strKillTarget = szValue;
 			return true;
 		}
-        else if( szKey == "zonecornermin" ) 
+                else if( szKey == "zonecornermin" ) 
 		{
 			g_Utility.StringToVector( vZoneCornerMin, szValue );
 			return true;
 		}
-        else if( szKey == "zonecornermax" ) 
+                else if( szKey == "zonecornermax" ) 
 		{
 			g_Utility.StringToVector( vZoneCornerMax, szValue );
 			return true;
 		}
-        else if( szKey == "blockercornermin" ) 
+                else if( szKey == "blockercornermin" ) 
 		{
 			g_Utility.StringToVector( vBlockerCornerMin, szValue );
 			return true;
 		}
-        else if( szKey == "blockercornermax" ) 
+                else if( szKey == "blockercornermax" ) 
 		{
 			g_Utility.StringToVector( vBlockerCornerMax, szValue );
 			return true;
 		}
-        else if( szKey == "percentage" ) 
+                else if( szKey == "percentage" ) 
 		{
 			flPercentRequired = atof( szValue )*0.01f;
 			return true;
 		}
-        else if( szKey == "wait" )
+                else if( szKey == "wait" )
 		{
 			flTriggerWait = atof( szValue );
 			return true;
 		}
-        else if( szKey == "delay" )
+                else if( szKey == "delay" )
 		{
 			flTargetDelay = atof( szValue );
 			return true;
 		}
-        else if( szKey == "fadetime" ) 
+                else if( szKey == "fadetime" ) 
 		{
 			flFadeTime = atof( szValue );
 			return true;
@@ -100,7 +100,7 @@ class anti_rush : ScriptBaseEntity
 			return BaseClass.KeyValue( szKey, szValue );
 	}
 	
-    void Precache()
+        void Precache()
 	{
                BaseClass.Precache();
                g_Game.PrecacheGeneric( "" + strIconName );
@@ -159,7 +159,7 @@ class anti_rush : ScriptBaseEntity
         trgr ["target"]             = ( "" + self.GetTargetname() );
         if( strMasterName != "" || strMasterName != "" + self.GetTargetname() ){ trgr ["master"] = ( "" + strMasterName ); }
         if( strPercentTriggerType == "trigger_multiple_mp" ){ trgr ["m_flDelay"] = ( "" + flTriggerWait ); }
-	    CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + strPercentTriggerType, trgr, true );
+	CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + strPercentTriggerType, trgr, true );
     }
 
     void CreateBarrier()
@@ -178,10 +178,10 @@ class anti_rush : ScriptBaseEntity
         spr ["model"]           = ( "" + strIconName );
         spr ["vp_type"]         = ( "" + iVpType );
         spr ["scale"]           = ( "" + self.pev.scale );
-	    spr ["rendercolor"]     = ( "" + string(self.pev.rendercolor.x) + " " + string(self.pev.rendercolor.y) + " " + string(self.pev.rendercolor.z) );
+	spr ["rendercolor"]     = ( "" + string(self.pev.rendercolor.x) + " " + string(self.pev.rendercolor.y) + " " + string(self.pev.rendercolor.z) );
         spr ["renderamt"]       = ( "255" );
         spr ["rendermode"]      = ( "5" );
-	    @pAntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
+	@pAntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
         pAntiRushIcon.Think();
     }
 
@@ -198,7 +198,7 @@ class anti_rush : ScriptBaseEntity
         if( pAntiRushIcon !is null )
         {
             g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "" + strSoundName, 0.5f, ATTN_NORM );
-           	pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
+            pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
             EHandle hIconHandle = pAntiRushIcon;
             if( flFadeTime > 0 )
             {
@@ -239,7 +239,7 @@ class anti_rush : ScriptBaseEntity
 
 void RegisterAntiRushEntity()
 {
-	g_CustomEntityFuncs.RegisterCustomEntity( "anti_rush", "anti_rush" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "anti_rush", "anti_rush" );
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_once_mp", "trigger_once_mp" );
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_multiple_mp", "trigger_multiple_mp" );
     g_CustomEntityFuncs.RegisterCustomEntity( "func_wall_custom", "func_wall_custom" );
