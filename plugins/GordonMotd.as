@@ -22,12 +22,13 @@ void PluginInit()
 
 void MapInit()
 {
-	if( LOBBY_MAPS.find( string(g_Engine.mapname) ) >= 0 )
+	if( LOBBY_MAPS.find( string( g_Engine.mapname ) ) >= 0 )
 	{
 		if( strWelcomeMusic != "" )
 		{
 			g_SoundSystem.PrecacheSound( strWelcomeMusic );
 			blMusicEnabled = true;
+			blMusicTriggered = false;
 		}
 
 		if( strWelcomeModel != "" )
