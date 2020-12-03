@@ -54,7 +54,7 @@ void TriggerDoomFall(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE use
     }
     else if( blStartOn )
     { 
-        StopThink; 
+        StopThink(); 
         blStartOn = false;
     }
 }
