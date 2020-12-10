@@ -12,7 +12,7 @@ class checkpoint_spawner : ScriptBaseEntity
 	private bool m_fSpawnEffect					= false; 
 
     bool KeyValue( const string& in szKey, const string& in szValue )
-	{
+    {
 		if( szKey == "m_flDelayBeforeStart" )
 		{
 			m_flDelayBeforeStart = atof( szValue );
@@ -45,29 +45,29 @@ class checkpoint_spawner : ScriptBaseEntity
 		}
 		else
 			return BaseClass.KeyValue( szKey, szValue );
-	}
+    }
 
     void Precache()
-	{
+    {
         g_Game.PrecacheGeneric( "sprites/glow01.spr" );
         g_Game.PrecacheModel( "models/common/lambda.mdl" );
-		g_SoundSystem.PrecacheSound( "ambience/particle_suck2.wav" );
+	g_SoundSystem.PrecacheSound( "ambience/particle_suck2.wav" );
         g_SoundSystem.PrecacheSound( "debris/beamstart7.wav" );
-	}
+    }
 
     void Spawn()
-	{
+    {
         self.Precache();
-		self.pev.movetype 	= MOVETYPE_NONE;
-		self.pev.solid 		= SOLID_NOT;
-		g_EntityFuncs.SetOrigin( self, self.pev.origin );
-	}
+	self.pev.movetype 	= MOVETYPE_NONE;
+	self.pev.solid 		= SOLID_NOT;
+	g_EntityFuncs.SetOrigin( self, self.pev.origin );
+    }
 
     void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
     {
         if( g_SurvivalMode.IsActive() )
         {
-            g_Scheduler.SetTimeout( this, "PlaySound1", 1.6f );
+            g_Scheduler.SetTimeout( this, "SpawnSnd", 1.6f );
             NetworkMessage m( MSG_BROADCAST, NetworkMessages::SVC_TEMPENTITY, null );
 	            m.WriteByte(TE_LARGEFUNNEL);
 
@@ -83,7 +83,7 @@ class checkpoint_spawner : ScriptBaseEntity
         }
     }
 
-    void PlaySound1()
+    void SpawnSnd()
     {
         g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "ambience/particle_suck2.wav", 1.0f, ATTN_NORM );
     }
@@ -91,15 +91,15 @@ class checkpoint_spawner : ScriptBaseEntity
     void SpawnCheckpoint()
     {
         dictionary cp;
-        cp [ "origin" ]                         = ( "" + string(self.pev.origin.x) + " " + string(self.pev.origin.y) + " " + string(self.pev.origin.z) );
-        cp [ "angles" ]                         = ( "" + string(self.pev.angles.x) + " " + string(self.pev.angles.y) + " " + string(self.pev.angles.z) );
+        cp [ "origin" ]                         = ( "" + self.pev.origin.ToString() );
+        cp [ "angles" ]                         = ( "" + self.pev.angles.ToString() );
         cp [ "target" ]                         = ( "" + self.pev.target );
         cp [ "m_fSpawnEffect" ]                 = ( "" + m_fSpawnEffect );
         cp [ "m_flDelayBeforeReactivation" ]    = ( "" + m_flDelayBeforeReactivation );
         cp [ "m_flDelayBetweenRevive" ]         = ( "" + m_flDelayBetweenRevive );
         cp [ "m_flDelayBeforeStart" ]           = ( "" + m_flDelayBeforeStart );
-
         CBaseEntity@ CheckPoint = g_EntityFuncs.CreateEntity( "point_checkpoint", cp, true );
+	
         g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "debris/beamstart7.wav", 1.0f, ATTN_NORM );
         g_EntityFuncs.Remove( self ); 
     }
@@ -107,6 +107,6 @@ class checkpoint_spawner : ScriptBaseEntity
 
 void RegisterCheckPointSpawnerEntity()
 {
-	g_CustomEntityFuncs.RegisterCustomEntity( "checkpoint_spawner", "checkpoint_spawner" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "checkpoint_spawner", "checkpoint_spawner" );
     g_CustomEntityFuncs.RegisterCustomEntity( "point_checkpoint", "point_checkpoint" );
 }
