@@ -106,8 +106,8 @@ class anti_rush : ScriptBaseEntity
         g_SoundSystem.PrecacheSound( "" + strSoundName );
     }
 
-	void Spawn()
-	{
+    void Spawn()
+    {
         self.Precache();
         self.pev.movetype 	= MOVETYPE_NONE;
         self.pev.solid 		= SOLID_NOT;
@@ -137,7 +137,7 @@ class anti_rush : ScriptBaseEntity
         CreateIcon();
 
         if( self.pev.target != "" || self.pev.target != self.GetTargetname() ){ CreateLock(); }
-	}
+    }
     // Creating auxilliary entities required for antirush logic
     void CreatePercentPlayerTrigger()
     {
