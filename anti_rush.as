@@ -2,7 +2,7 @@
 by Outerbeast
 A percent player trigger zone can be set using "zonecornermin/max" coords and percentage of players required to trigger
 Percentage marker is red and will turn green with a bell sound when triggered, and will trigger its target.
-Supports use of "strKillTarget", "delay" and locking entities with "master" key
+Supports use of "killtarget", "delay" and locking entities with "master" key
 Marker model/sprite and bell sound can be customised with the "icon" and "sound" keys
 
 This script uses the custom entities "trigger_once/multiple_mp" and "func_wall_custom", programmed by CubeMath
@@ -190,16 +190,13 @@ class anti_rush : ScriptBaseEntity
             g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "" + strSoundName, 0.5f, ATTN_NORM );
            	pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
             EHandle hIconHandle = pAntiRushIcon;
+
             if( flFadeTime > 0 )
-            {
                 g_Scheduler.SetTimeout( this, "RemoveIcon", flFadeTime, hIconHandle );
-            }
        	}
 
         if( pAntiRushBarrier !is null )
-        {
             g_EntityFuncs.Remove( pAntiRushBarrier );
-        }
 
         g_Scheduler.SetTimeout( this, "TargetFuncs", flTargetDelay );
 	}
@@ -212,9 +209,7 @@ class anti_rush : ScriptBaseEntity
         if( strKillTarget != "" || strKillTarget != self.GetTargetname() )
         {
             while( ( @pKillTargetEnt = g_EntityFuncs.FindEntityByTargetname( pKillTargetEnt, "" + strKillTarget ) ) !is null )
-            {
                 g_EntityFuncs.Remove( pKillTargetEnt );
-            }
         }
     }
 
