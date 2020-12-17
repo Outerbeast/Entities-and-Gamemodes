@@ -31,73 +31,73 @@ class anti_rush : ScriptBaseEntity
 
 	bool KeyValue(const string& in szKey, const string& in szValue)
 	{
-		if( szKey == "icon" ) 
-		{
-			strIconName = szValue;
-			return true;
-		}
-		else if( szKey == "sound" ) 
-		{
-			strSoundName = szValue;
-			return true;
-		}
+        if( szKey == "icon" ) 
+        {
+            strIconName = szValue;
+            return true;
+        }
+        else if( szKey == "sound" ) 
+        {
+            strSoundName = szValue;
+            return true;
+        }
         else if( szKey == "icon_drawtype" ) 
-		{
-			iVpType = atoi( szValue );
-			return true;
-		}
+        {
+            iVpType = atoi( szValue );
+            return true;
+        }
         else if( szKey == "master" ) 
-		{
-			strMasterName = szValue;
-			return true;
-		}
+        {
+            strMasterName = szValue;
+            return true;
+        }
         else if( szKey == "killtarget" ) 
-		{
-			strKillTarget = szValue;
-			return true;
-		}
+        {
+            strKillTarget = szValue;
+            return true;
+        }
         else if( szKey == "zonecornermin" ) 
-		{
-			g_Utility.StringToVector( vZoneCornerMin, szValue );
-			return true;
-		}
+        {
+            g_Utility.StringToVector( vZoneCornerMin, szValue );
+            return true;
+        }
         else if( szKey == "zonecornermax" ) 
-		{
-			g_Utility.StringToVector( vZoneCornerMax, szValue );
-			return true;
-		}
+        {
+            g_Utility.StringToVector( vZoneCornerMax, szValue );
+            return true;
+        }
         else if( szKey == "blockercornermin" ) 
-		{
-			g_Utility.StringToVector( vBlockerCornerMin, szValue );
-			return true;
-		}
+        {
+            g_Utility.StringToVector( vBlockerCornerMin, szValue );
+            return true;
+        }
         else if( szKey == "blockercornermax" ) 
-		{
-			g_Utility.StringToVector( vBlockerCornerMax, szValue );
-			return true;
-		}
+        {
+            g_Utility.StringToVector( vBlockerCornerMax, szValue );
+            return true;
+        }
         else if( szKey == "percentage" ) 
-		{
-			flPercentRequired = atof( szValue )*0.01f;
-			return true;
-		}
+        {
+            flPercentRequired = atof( szValue )*0.01f;
+            return true;
+        }
         else if( szKey == "wait" )
-		{
-			flTriggerWait = atof( szValue );
-			return true;
-		}
+        {
+            flTriggerWait = atof( szValue );
+            return true;
+        }
         else if( szKey == "delay" )
-		{
-			flTargetDelay = atof( szValue );
-			return true;
-		}
+        {
+            flTargetDelay = atof( szValue );
+            return true;
+        }
         else if( szKey == "fadetime" ) 
-		{
-			flFadeTime = atof( szValue );
-			return true;
-		}
-		else
-			return BaseClass.KeyValue( szKey, szValue );
+        {
+            flFadeTime = atof( szValue );
+            return true;
+        }
+        else
+            return BaseClass.KeyValue( szKey, szValue );
 	}
 	
     void Precache()
@@ -169,10 +169,10 @@ class anti_rush : ScriptBaseEntity
         spr ["model"]           = ( "" + strIconName );
         spr ["vp_type"]         = ( "" + iVpType );
         spr ["scale"]           = ( "" + self.pev.scale );
-	    spr ["rendercolor"]     = ( "" + self.pev.rendercolor.ToString() );
+        spr ["rendercolor"]     = ( "" + self.pev.rendercolor.ToString() );
         spr ["renderamt"]       = ( "255" );
         spr ["rendermode"]      = ( "5" );
-	    @pAntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
+        @pAntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
         pAntiRushIcon.Think();
     }
 
@@ -224,7 +224,7 @@ class anti_rush : ScriptBaseEntity
 
 void RegisterAntiRushEntity()
 {
-	g_CustomEntityFuncs.RegisterCustomEntity( "anti_rush", "anti_rush" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "anti_rush", "anti_rush" );
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_once_mp", "trigger_once_mp" );
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_multiple_mp", "trigger_multiple_mp" );
     g_CustomEntityFuncs.RegisterCustomEntity( "func_wall_custom", "func_wall_custom" );
