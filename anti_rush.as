@@ -148,7 +148,7 @@ class anti_rush : ScriptBaseEntity
         trgr ["target"]             = ( "" + self.GetTargetname() );
         if( strMasterName != "" || strMasterName != "" + self.GetTargetname() ){ trgr ["master"] = ( "" + strMasterName ); }
         if( strPercentTriggerType == "trigger_multiple_mp" ){ trgr ["m_flDelay"] = ( "" + flTriggerWait ); }
-	    CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + strPercentTriggerType, trgr, true );
+        CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + strPercentTriggerType, trgr, true );
     }
 
     void CreateBarrier()
