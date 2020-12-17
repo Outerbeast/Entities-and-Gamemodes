@@ -29,8 +29,8 @@ class anti_rush : ScriptBaseEntity
 
     private uint iVpType = 0;
 
-	bool KeyValue(const string& in szKey, const string& in szValue)
-	{
+    bool KeyValue(const string& in szKey, const string& in szValue)
+    {
         if( szKey == "icon" ) 
         {
             strIconName = szValue;
@@ -98,7 +98,7 @@ class anti_rush : ScriptBaseEntity
         }
         else
             return BaseClass.KeyValue( szKey, szValue );
-	}
+    }
 	
     void Precache()
     {
