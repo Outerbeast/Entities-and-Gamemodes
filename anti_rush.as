@@ -101,17 +101,17 @@ class anti_rush : ScriptBaseEntity
 	}
 	
     void Precache()
-	{
+    {
         g_Game.PrecacheGeneric( "" + strIconName );
         g_SoundSystem.PrecacheSound( "" + strSoundName );
-	}
+    }
 
 	void Spawn()
 	{
         self.Precache();
-		self.pev.movetype 	= MOVETYPE_NONE;
-		self.pev.solid 		= SOLID_NOT;
-		g_EntityFuncs.SetOrigin( self, self.pev.origin );
+        self.pev.movetype 	= MOVETYPE_NONE;
+        self.pev.solid 		= SOLID_NOT;
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
         // Configuring the settings for each antirush component
         if( flTriggerWait > 0.0f ){ strPercentTriggerType = "trigger_multiple_mp"; }
         else
@@ -125,7 +125,7 @@ class anti_rush : ScriptBaseEntity
                     CreatePercentPlayerTrigger();
             }
         }
-   
+
         if( vBlockerCornerMin != g_vecZero && vBlockerCornerMax != g_vecZero ) 
         {
             if( vBlockerCornerMin != vBlockerCornerMax )
@@ -183,23 +183,23 @@ class anti_rush : ScriptBaseEntity
         pAntiRushLock.Think();
     }
     // Main triggering business
-	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
-	{
+    void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
+    {
         if( pAntiRushIcon !is null )
         {
             g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "" + strSoundName, 0.5f, ATTN_NORM );
-           	pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
+            pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
             EHandle hIconHandle = pAntiRushIcon;
 
             if( flFadeTime > 0 )
                 g_Scheduler.SetTimeout( this, "RemoveIcon", flFadeTime, hIconHandle );
-       	}
+        }
 
         if( pAntiRushBarrier !is null )
             g_EntityFuncs.Remove( pAntiRushBarrier );
 
         g_Scheduler.SetTimeout( this, "TargetFuncs", flTargetDelay );
-	}
+    }
 
     void TargetFuncs()
     {
