@@ -121,7 +121,7 @@ class anti_rush : ScriptBaseEntity
         {   
             if( vZoneCornerMin != g_vecZero && vZoneCornerMax != g_vecZero )
             {
-                if(vZoneCornerMin != vZoneCornerMax )
+                if( vZoneCornerMin != vZoneCornerMax )
                     CreatePercentPlayerTrigger();
             }
         }
