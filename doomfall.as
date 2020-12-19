@@ -69,8 +69,8 @@ HookReturnCode OnGround(CBasePlayer@ pSpawnedPlyr)
 {
     if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
 
-        FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].flPlayerFallSpeed = 0.0f;
-        FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].blHasPlayerFell   = false;
+    FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].flPlayerFallSpeed = 0.0f;
+    FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].blHasPlayerFell   = false;
 
     return HOOK_CONTINUE;
 }
@@ -79,13 +79,7 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
     if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
     {
-        if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) || pPlayer.IsOnLadder() )
-        {
-            FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
-            FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
-        }
-
-        if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
+        if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !pPlayer.pev.FlagBitSet( FL_INWATER ) && !pPlayer.IsOnLadder() )
         {
             FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = pPlayer.m_flFallVelocity;
 
@@ -96,13 +90,18 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
                 //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
             }
         }
+        else
+        {
+            FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
+            FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
+        }
     }
     return HOOK_CONTINUE;
 }
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
 { 
-    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !pPlayer.IsOnLadder() && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
+    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
         pPlayer.TakeDamage(world, world, 10000.0f, DMG_FALL);
