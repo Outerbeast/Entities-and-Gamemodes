@@ -3,7 +3,6 @@ Usage:-
 Put the code "DOOMFALL::Enable( flMortalVelocitySetting, blStartOnSetting );" in MapInit
 Replace or assign "flMortalVelocitySetting" to your falling speed
 Replace or assign "blStartOnSetting" to true if you want it active on map start, or false if you want to have inactive
-
 - Outerbeast */
 
 namespace DOOMFALL
@@ -45,7 +44,7 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
     }
 }
 
-void TriggerDoomFall(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
     if( !blStartOn )
     { 
@@ -80,7 +79,7 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
     if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
     {
-        if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
+        if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) || pPlayer.IsOnLadder() )
         {
             FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
             FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
@@ -94,7 +93,7 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
             {
                 g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
                 FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = true;
-                g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
+                //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
             }
         }
     }
@@ -103,12 +102,12 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
 { 
-    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
+    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !pPlayer.IsOnLadder() && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
     {
         entvars_t@ world = g_EntityFuncs.Instance(0).pev;
         pPlayer.TakeDamage(world, world, 10000.0f, DMG_FALL);
         FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = false;
-        g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
+        //g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
     }
     return HOOK_CONTINUE;
 }
