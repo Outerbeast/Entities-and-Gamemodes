@@ -49,10 +49,10 @@ class checkpoint_spawner : ScriptBaseEntity
 
     void Precache()
     {
-        g_Game.PrecacheGeneric( "sprites/glow01.spr" );
-        g_Game.PrecacheModel( "models/common/lambda.mdl" );
+		g_Game.PrecacheGeneric( "sprites/glow01.spr" );
+		g_Game.PrecacheModel( "models/common/lambda.mdl" );
 		g_SoundSystem.PrecacheSound( "ambience/particle_suck2.wav" );
-        g_SoundSystem.PrecacheSound( "debris/beamstart7.wav" );
+		g_SoundSystem.PrecacheSound( "debris/beamstart7.wav" );
     }
 
     void Spawn()
