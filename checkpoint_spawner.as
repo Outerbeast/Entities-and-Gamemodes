@@ -6,10 +6,10 @@
 
 class checkpoint_spawner : ScriptBaseEntity
 {
-	private float m_flDelayBeforeStart			= 3;
-	private float m_flDelayBetweenRevive		= 1;
-	private float m_flDelayBeforeReactivation	= 60; 					
-	private bool m_fSpawnEffect					= false; 
+	private float m_flDelayBeforeStart = 3;
+	private float m_flDelayBetweenRevive = 1;
+	private float m_flDelayBeforeReactivation = 60; 					
+	private bool m_fSpawnEffect = false; 
 
     bool KeyValue( const string& in szKey, const string& in szValue )
     {
@@ -91,13 +91,13 @@ class checkpoint_spawner : ScriptBaseEntity
     void SpawnCheckpoint()
     {
         dictionary cp;
-        cp [ "origin" ]                         = ( "" + self.GetOrigin().ToString() );
-        cp [ "angles" ]                         = ( "" + self.pev.angles.ToString() );
-        cp [ "target" ]                         = ( "" + self.pev.target );
-        cp [ "m_fSpawnEffect" ]                 = ( "" + m_fSpawnEffect );
-        cp [ "m_flDelayBeforeReactivation" ]    = ( "" + m_flDelayBeforeReactivation );
-        cp [ "m_flDelayBetweenRevive" ]         = ( "" + m_flDelayBetweenRevive );
-        cp [ "m_flDelayBeforeStart" ]           = ( "" + m_flDelayBeforeStart );
+        cp ["origin"]                         = ( "" + self.GetOrigin().ToString() );
+        cp ["angles"]                         = ( "" + self.pev.angles.ToString() );
+        cp ["target"]                         = ( "" + self.pev.target );
+        cp ["m_fSpawnEffect"]                 = ( "" + m_fSpawnEffect );
+        cp ["m_flDelayBeforeReactivation"]    = ( "" + m_flDelayBeforeReactivation );
+        cp ["m_flDelayBetweenRevive"]         = ( "" + m_flDelayBetweenRevive );
+        cp ["m_flDelayBeforeStart"]           = ( "" + m_flDelayBeforeStart );
         CBaseEntity@ CheckPoint = g_EntityFuncs.CreateEntity( "point_checkpoint", cp, true );
 	
         g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "debris/beamstart7.wav", 1.0f, ATTN_NORM );
