@@ -6,9 +6,9 @@
 
 class checkpoint_spawner : ScriptBaseEntity
 {
-	private float m_flDelayBeforeStart 			= 3;
-	private float m_flDelayBetweenRevive 		= 1;
-	private float m_flDelayBeforeReactivation 	= 60; 					
+	private float m_flDelayBeforeStart			= 3;
+	private float m_flDelayBetweenRevive		= 1;
+	private float m_flDelayBeforeReactivation	= 60; 					
 	private bool m_fSpawnEffect					= false; 
 
     bool KeyValue( const string& in szKey, const string& in szValue )
@@ -51,16 +51,16 @@ class checkpoint_spawner : ScriptBaseEntity
     {
         g_Game.PrecacheGeneric( "sprites/glow01.spr" );
         g_Game.PrecacheModel( "models/common/lambda.mdl" );
-	g_SoundSystem.PrecacheSound( "ambience/particle_suck2.wav" );
+		g_SoundSystem.PrecacheSound( "ambience/particle_suck2.wav" );
         g_SoundSystem.PrecacheSound( "debris/beamstart7.wav" );
     }
 
     void Spawn()
     {
         self.Precache();
-	self.pev.movetype 	= MOVETYPE_NONE;
-	self.pev.solid 		= SOLID_NOT;
-	g_EntityFuncs.SetOrigin( self, self.pev.origin );
+		self.pev.movetype 	= MOVETYPE_NONE;
+		self.pev.solid 		= SOLID_NOT;
+		g_EntityFuncs.SetOrigin( self, self.pev.origin );
     }
 
     void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -91,7 +91,7 @@ class checkpoint_spawner : ScriptBaseEntity
     void SpawnCheckpoint()
     {
         dictionary cp;
-        cp [ "origin" ]                         = ( "" + self.pev.origin.ToString() );
+        cp [ "origin" ]                         = ( "" + self.GetOrigin().ToString() );
         cp [ "angles" ]                         = ( "" + self.pev.angles.ToString() );
         cp [ "target" ]                         = ( "" + self.pev.target );
         cp [ "m_fSpawnEffect" ]                 = ( "" + m_fSpawnEffect );
