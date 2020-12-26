@@ -1,6 +1,6 @@
 /* Script for enabling friendly fire between players for pvp deathmatch maps
-Only supports 14 players maximum because of limitations imposed by the game + API.
-Ensure the server has only 14 player slots available or extra players will be moved onto Observer Mode
+Only supports 18 players maximum because of limitations imposed by the game + API.
+Ensure the server has only 18 player slots available or extra players will be moved onto Observer Mode
 Use as include in a map script or directly via map cfg.
 Map cfg settings:
 as_command pvp_spawnprotecttime - set the time duration in seconds for how long spawn invulnerbility lasts
@@ -21,8 +21,8 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 
 final class PvpMode
 {
-    public array<uint> PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 99 };
-    private array<bool> _IS_ASSIGNED(33);
+    public array<uint> PLAYER_TEAM = { 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 99 };
+    private array<bool> BL_IS_ASSIGNED(33);
 
     PvpMode()
     {
@@ -31,35 +31,28 @@ final class PvpMode
 
     HookReturnCode OnPlayerSpawn(CBasePlayer@ pSpawnedPlyr)
     {   
-        if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
+        if( pSpawnedPlyr is null )
+           return HOOK_CONTINUE;
 
-        AssignTeam();
+        AssignTeam( pSpawnedPlyr );
         SpawnProtection( pSpawnedPlyr );
         EnterSpectator( pSpawnedPlyr );
-        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, -1, @pSpawnedPlyr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
-        return HOOK_HANDLED;
+        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, g_Scheduler.REPEAT_INFINITE_TIMES, @pSpawnedPlyr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
+        
+        return HOOK_CONTINUE;
     }
 
-    void AssignTeam()
+    void AssignTeam(CBasePlayer@ pPlayer)
     {
-        for( int playerID = 1; playerID <= g_Engine.maxClients; ++playerID )
+        if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() && !BL_IS_ASSIGNED[pPlayer.entindex()] )
         {
-            CBaseEntity@ pEntity = g_PlayerFuncs.FindPlayerByIndex( playerID );
-            CBasePlayer@ pPlayer = cast<CBasePlayer@>( pEntity );
-
-            if( pPlayer !is null && pPlayer.IsAlive() && !_IS_ASSIGNED[playerID] )
-            {
-                pPlayer.SetClassification( PLAYER_TEAM[playerID-1] );
-                _IS_ASSIGNED[playerID] = true;
-                pPlayer.pev.targetname = "dm_plyr_" + playerID;
-                //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + playerID + " was assigned to team: " + PLAYER_TEAM[playerID-1] + "\n" );
-                EHandle hPlayer = pPlayer;
-            }
-            else if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
-            {
-                _IS_ASSIGNED[playerID] = false;
-            }
+            pPlayer.SetClassification( PLAYER_TEAM[pPlayer.entindex()] );
+            BL_IS_ASSIGNED[pPlayer.entindex()] = true;
+            pPlayer.pev.targetname = "dm_plyr_" + pPlayer.entindex();
+            g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + pPlayer.entindex() + " was assigned to team: " + PLAYER_TEAM[pPlayer.entindex()] + "\n" );
         }
+        else if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+            BL_IS_ASSIGNED[pPlayer.entindex()] = false;
     }
 
     void SpawnProtection(CBasePlayer@ pPlayer)
@@ -107,14 +100,12 @@ final class PvpMode
 
     void EnterSpectator(CBasePlayer@ pPlayer)
 	{
-	    if( pPlayer is null )
-		    return;
-        if( !pPlayer.IsConnected() )
+	    if( pPlayer is null || !pPlayer.IsConnected() )
 		    return;
 		// Players not assigned to a team immediately get moved to observer mode
 		if( !pPlayer.GetObserver().IsObserver() && pPlayer.m_iClassSelection == 0 )
 		{
-		    pPlayer.GetObserver().StartObserver( pPlayer.pev.origin, pPlayer.pev.angles, false );
+		    pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
             pPlayer.GetObserver().SetObserverModeControlEnabled( true );
             pPlayer.RemoveAllItems( true );
             g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait until the end of the round." );
@@ -145,12 +136,9 @@ final class PvpMode
     void ViewMode(CBasePlayer@ pPlayer)
     {
         if( pPlayer !is null && pPlayer.IsConnected() )
-        {
             pPlayer.SetViewMode( ViewMode_FirstPerson );
-        }
     }
 }
-
 /* Special thanks to 
 - AnggaraNothing, Zode, Neo and H2 for scripting help
 AlexCorruptor for testing and building a test map*/
