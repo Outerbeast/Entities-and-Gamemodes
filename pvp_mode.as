@@ -26,7 +26,6 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 final class PvpMode
 {
     array<uint> I_PLAYER_TEAM = { 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 99 };
-    array<bool> BL_IS_ASSIGNED(33);
 
     PvpMode()
     {
@@ -48,15 +47,12 @@ final class PvpMode
 
     void AssignTeam(CBasePlayer@ pPlayer)
     {
-        if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() && !BL_IS_ASSIGNED[pPlayer.entindex()] )
+        if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
         {
             pPlayer.SetClassification( I_PLAYER_TEAM[pPlayer.entindex()] );
-            BL_IS_ASSIGNED[pPlayer.entindex()] = true;
             //pPlayer.pev.targetname = "dm_plyr_" + pPlayer.entindex();
             //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + pPlayer.entindex() + " was assigned to team: " + I_PLAYER_TEAM[pPlayer.entindex()] + "\n" );
         }
-        else if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
-            BL_IS_ASSIGNED[pPlayer.entindex()] = false;
     }
 
     void SpawnProtection(CBasePlayer@ pPlayer)
