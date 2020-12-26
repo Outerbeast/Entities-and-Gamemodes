@@ -1,17 +1,21 @@
-/* Script for enabling friendly fire between players for pvp deathmatch maps
+/* PVP Deathmatch Mode Script
+- by Outerbeast
+
+Script for enabling friendly fire between players for pvp deathmatch maps
 Only supports 18 players maximum because of limitations imposed by the game + API.
 Ensure the server has only 18 player slots available or extra players will be moved onto Observer Mode
 Use as include in a map script or directly via map cfg.
+
 Map cfg settings:
-as_command pvp_spawnprotecttime - set the time duration in seconds for how long spawn invulnerbility lasts
-by default this is 5 if let undefined
--Outerbeast */
+"map_script pvp_mode" - install the script to the map
+"as_command pvp_spawnprotecttime" - set the time duration in seconds for how long spawn invulnerbility lasts, by default this is 5 if let undefined
+*/
 
 PvpMode@ g_pvpmode = @PvpMode();
 
 CCVar g_ProtectDuration( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
 
-const bool _IS_ONPLAYERSPAWN_HOOK_REGISTERED = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
+const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
 
 HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 {
@@ -21,23 +25,23 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 
 final class PvpMode
 {
-    public array<uint> PLAYER_TEAM = { 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 99 };
-    private array<bool> BL_IS_ASSIGNED(33);
+    array<uint> I_PLAYER_TEAM = { 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 99 };
+    array<bool> BL_IS_ASSIGNED(33);
 
     PvpMode()
     {
-        PLAYER_TEAM.resize(33);
+        I_PLAYER_TEAM.resize(33);
     }
 
-    HookReturnCode OnPlayerSpawn(CBasePlayer@ pSpawnedPlyr)
+    HookReturnCode OnPlayerSpawn(CBasePlayer@ pSpawnedPlayer)
     {   
-        if( pSpawnedPlyr is null )
+        if( pSpawnedPlayer is null )
            return HOOK_CONTINUE;
 
-        AssignTeam( pSpawnedPlyr );
-        SpawnProtection( pSpawnedPlyr );
-        EnterSpectator( pSpawnedPlyr );
-        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, g_Scheduler.REPEAT_INFINITE_TIMES, @pSpawnedPlyr ); //  Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
+        AssignTeam( pSpawnedPlayer );
+        SpawnProtection( pSpawnedPlayer );
+        EnterSpectator( pSpawnedPlayer );
+        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, g_Scheduler.REPEAT_INFINITE_TIMES, @pSpawnedPlayer ); // Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
         
         return HOOK_CONTINUE;
     }
@@ -46,10 +50,10 @@ final class PvpMode
     {
         if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() && !BL_IS_ASSIGNED[pPlayer.entindex()] )
         {
-            pPlayer.SetClassification( PLAYER_TEAM[pPlayer.entindex()] );
+            pPlayer.SetClassification( I_PLAYER_TEAM[pPlayer.entindex()] );
             BL_IS_ASSIGNED[pPlayer.entindex()] = true;
-            pPlayer.pev.targetname = "dm_plyr_" + pPlayer.entindex();
-            g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + pPlayer.entindex() + " was assigned to team: " + PLAYER_TEAM[pPlayer.entindex()] + "\n" );
+            //pPlayer.pev.targetname = "dm_plyr_" + pPlayer.entindex();
+            //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + pPlayer.entindex() + " was assigned to team: " + I_PLAYER_TEAM[pPlayer.entindex()] + "\n" );
         }
         else if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
             BL_IS_ASSIGNED[pPlayer.entindex()] = false;
@@ -99,23 +103,23 @@ final class PvpMode
     }
 
     void EnterSpectator(CBasePlayer@ pPlayer)
-	{
-	    if( pPlayer is null || !pPlayer.IsConnected() )
+    {
+        if( pPlayer is null || !pPlayer.IsConnected() )
 		    return;
 		// Players not assigned to a team immediately get moved to observer mode
-		if( !pPlayer.GetObserver().IsObserver() && pPlayer.m_iClassSelection == 0 )
-		{
-		    pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
+        if( !pPlayer.GetObserver().IsObserver() && pPlayer.m_iClassSelection == 0 )
+        {
+            pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
             pPlayer.GetObserver().SetObserverModeControlEnabled( true );
             pPlayer.RemoveAllItems( true );
             g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait until the end of the round." );
             g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " was moved into Spectator (no free player slots available\n" );
-		}
+        }
 
         EHandle hPlayer = pPlayer;
         // Stupid hax needed to set the respawn delay, triggering directly in the block does not work
         g_Scheduler.SetTimeout( this, "NoRespawn", 0.1f, hPlayer );
-	}
+    }
     // "Disables" respawning of players in Spectator Mode (just making the respawn delay stupid long)
     void NoRespawn(EHandle hPlayer)
     {
