@@ -30,10 +30,10 @@ class env_healthbar : ScriptBaseEntity
     }
 
     void Spawn()
-	{
+    {
         self.Precache();
-		self.pev.movetype 	= MOVETYPE_NONE;
-		self.pev.solid 		= SOLID_NOT;
+        self.pev.movetype 	= MOVETYPE_NONE;
+        self.pev.solid 		= SOLID_NOT;
         g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         if( self.pev.scale == 0.0f )
@@ -45,12 +45,12 @@ class env_healthbar : ScriptBaseEntity
                 @pTrackedEntity = g_EntityFuncs.FindEntityByTargetname( pTrackedEntity, "" + self.pev.target );
         }
 
-		SetThink( ThinkFunction( this.TrackEntity ) );
+        SetThink( ThinkFunction( this.TrackEntity ) );
         self.pev.nextthink = g_Engine.time + 0.01f;
 
         @pPlayerPostThinkFunc = PlayerPostThinkHook( this.AimingPlayer );
         g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, @pPlayerPostThinkFunc );
-	}
+    }
 
     void TrackEntity()
     {
