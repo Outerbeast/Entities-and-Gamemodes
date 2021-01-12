@@ -13,6 +13,8 @@ Keys:
 TO DO:
 - Render the healthbars individually for each player
 - Shove this bastard into a plugin of sorts (I hope) and apply the healthbars to all entities automatically
+- Add triggering funcs
+- Add support for custom sprites
 */
 
 // For testing convenience, will be removed in the final version of course
@@ -21,10 +23,22 @@ void MapInit()
     HEALTHBAR::RegisterHealthBarEntity();
 }
 
+/* void MapStart()
+{
+    HEALTHBAR::StartHealthBarMode( 5, Vector( 0, 0, 23 ), 0.6f, 0.0f, 0 );
+}
+ */
 namespace HEALTHBAR
 {
 
 array<string> STR_HEALTHBAR_FRAMES = { "h0", "h10", "h20", "h30", "h40", "h50", "h60", "h70", "h80", "h90", "h100" };
+
+enum healthbarsettings
+{
+    PLAYERS     = 1,
+    MONSTERS    = 2,
+    BREAKABLES  = 4
+};
 
 bool blHealthBarEntityRegistered = false;
 
@@ -32,6 +46,12 @@ void RegisterHealthBarEntity()
 {
     g_CustomEntityFuncs.RegisterCustomEntity( "HEALTHBAR::env_healthbar", "env_healthbar" );
     blHealthBarEntityRegistered = true;
+    
+    for( uint p = 0; p < STR_HEALTHBAR_FRAMES.length(); ++p )
+    {
+        g_Game.PrecacheModel( "sprites/misc/" + STR_HEALTHBAR_FRAMES[p] + ".spr" );
+        g_Game.PrecacheGeneric( "sprites/misc/" + STR_HEALTHBAR_FRAMES[p] + ".spr" );
+    }
 }
 
 void NpcSpawned(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster) // Trigger this from a squadmaker via "function_name"
@@ -57,6 +77,97 @@ void RevertNpcTargetname(EHandle hMonster, const string strOldTargetName)
     hMonster.GetEntity().pev.targetname = strOldTargetName;
 }
 
+void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffset, const float flScale, const float flDrawDistance, const uint iSpawnFlags)
+{
+    if( !blHealthBarEntityRegistered )
+        return;
+
+    if( FlagSet( iHealthBarSettings, MONSTERS ) )
+        g_Hooks.RegisterHook( Hooks::Game::EntityCreated, @EntitySpawned );
+    if( FlagSet( iHealthBarSettings, PLAYERS ) )
+        g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PlayerSpawned );
+
+    CBaseEntity@ pExistingHealthBar;
+    CBaseEntity@ pMonsterEntity;
+    CBaseEntity@ pBreakableEntity;
+
+    while( ( @pExistingHealthBar = g_EntityFuncs.FindEntityByClassname( pExistingHealthBar, "env_healthbar*" ) ) !is null )
+        g_EntityFuncs.Remove( pExistingHealthBar );
+
+    while( ( @pMonsterEntity = g_EntityFuncs.FindEntityByClassname( pMonsterEntity, "monster_*" ) ) !is null )
+    {
+        if( !FlagSet( iHealthBarSettings, MONSTERS ) )
+            continue;
+
+        if( pMonsterEntity.GetTargetname() == "" )
+        {
+            string strOldTargetName = pMonsterEntity.GetTargetname();
+            string strTempTargetname = "env_healthbar_" + pMonsterEntity.GetTargetname() + "_" + pMonsterEntity.edict().serialnumber;
+
+            SpawnEnvHealthBar( strTempTargetname, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
+
+            EHandle hMonsterEntity = pMonsterEntity;
+            g_Scheduler.SetTimeout( "RevertNpcTargetname", 0.3f, hMonsterEntity, strOldTargetName );
+        }
+        else
+            SpawnEnvHealthBar( pMonsterEntity.GetTargetname(), vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
+    }
+
+    while( ( @pBreakableEntity = g_EntityFuncs.FindEntityByClassname( pBreakableEntity, "func_*" ) ) !is null )
+    {
+        if( !FlagSet( iHealthBarSettings, BREAKABLES ) )
+            continue;
+
+        if( !( pBreakableEntity.IsBreakable() && pBreakableEntity.pev.SpawnFlagBitSet( 32 ) ) )
+            continue;
+
+        if( pBreakableEntity.GetTargetname() == "" )
+        {
+            string strOldTargetName = pBreakableEntity.GetTargetname();
+            string strTempTargetname = "env_healthbar_" + pBreakableEntity.GetTargetname() + "_" + pBreakableEntity.edict().serialnumber;
+
+            SpawnEnvHealthBar( strTempTargetname, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
+
+            EHandle hBreakableEntity = pBreakableEntity;
+            g_Scheduler.SetTimeout( "RevertNpcTargetname", 0.3f, hBreakableEntity, strOldTargetName );
+        }
+        else
+            SpawnEnvHealthBar( pBreakableEntity.GetTargetname(), vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
+    }
+} 
+
+HookReturnCode EntitySpawned(CBaseEntity@ pEntity)
+{
+    if( pEntity !is null && pEntity.IsMonster() )
+    {
+        CBaseMonster@ pMonster = cast<CBaseMonster@>( pEntity );
+        NpcSpawned( null, pMonster );
+    }
+
+    return HOOK_CONTINUE;
+}
+
+HookReturnCode PlayerSpawned(CBasePlayer@ pPlayer)
+{
+    if( pPlayer !is null )
+    {
+        string strTempTargetname = "env_healthbar_" + pPlayer.pev.netname + "_" + pPlayer.edict().serialnumber;
+
+        pPlayer.pev.targetname = strTempTargetname;
+        SpawnEnvHealthBar( strTempTargetname, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
+    }
+
+    return HOOK_CONTINUE;
+}
+
+bool FlagSet( uint iTargetBits, uint iFlags )
+{
+    if( ( iTargetBits & iFlags ) != 0 )
+        return true;
+    else
+        return false;
+}
+
 void SpawnEnvHealthBar(const string strHealthBarTarget, const Vector vOriginOffset, const float flScale, const float flDrawDistance, const uint iSpawnFlags)
 {
     dictionary hlth;
@@ -70,10 +181,14 @@ void SpawnEnvHealthBar(const string strHealthBarTarget, const Vector vOriginOffs
 
 class env_healthbar : ScriptBaseEntity
 {
+    env_healthbar(){}
+
     PlayerPostThinkHook@ pPlayerPostThinkFunc = null;
 
     private CBaseEntity@ pTrackedEntity;
     private CSprite@ pHealthBar;
+
+    private uint iHealthBar_LastFrame = STR_HEALTHBAR_FRAMES.length() - 1;
 
     private float flTrackedEntity_StartHealth;
     private float flDrawDistance = 12048;
@@ -146,9 +261,9 @@ class env_healthbar : ScriptBaseEntity
 
             if( pHealthBar !is null )
             {
-                uint iPercentHealth = uint( ( pTrackedEntity.pev.health / flTrackedEntity_StartHealth ) * 10 ); // BUG: this monster keeps dividing by 0 because retarded API, causing crashing
+                uint iPercentHealth = uint( ( pTrackedEntity.pev.health / flTrackedEntity_StartHealth ) * iHealthBar_LastFrame );
                 g_EntityFuncs.SetModel( pHealthBar, "sprites/misc/" + STR_HEALTHBAR_FRAMES[iPercentHealth] + ".spr");
-                pHealthBar.pev.scale = self.pev.scale;
+                pHealthBar.SetScale( self.pev.scale );
 
                 if( pTrackedEntity.IsBSPModel() )
                     pHealthBar.pev.origin = pTrackedEntity.pev.absmin + ( pTrackedEntity.pev.size * 0.5 ) + Vector( 0, 0, pTrackedEntity.pev.absmax.z );
@@ -164,8 +279,8 @@ class env_healthbar : ScriptBaseEntity
 
     void CreateHealthBar()
     {
-        @pHealthBar = g_EntityFuncs.CreateSprite( "sprites/misc/" + STR_HEALTHBAR_FRAMES[10] + ".spr", pTrackedEntity.GetOrigin(), false, 0.0f );
-        pHealthBar.pev.scale = self.pev.scale;
+        @pHealthBar = g_EntityFuncs.CreateSprite( "sprites/misc/" + STR_HEALTHBAR_FRAMES[iHealthBar_LastFrame] + ".spr", pTrackedEntity.GetOrigin(), false, 0.0f );
+        pHealthBar.SetScale( self.pev.scale );
         pHealthBar.pev.rendermode = kRenderTransAdd;
 
         if( self.pev.SpawnFlagBitSet( 1 ) )
