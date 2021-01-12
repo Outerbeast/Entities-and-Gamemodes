@@ -40,6 +40,8 @@ enum healthbarsettings
     BREAKABLES  = 4
 };
 
+string strSpriteDir = "sprites/misc/";
+
 bool blHealthBarEntityRegistered = false;
 
 void RegisterHealthBarEntity()
@@ -49,8 +51,8 @@ void RegisterHealthBarEntity()
     
     for( uint p = 0; p < STR_HEALTHBAR_FRAMES.length(); ++p )
     {
-        g_Game.PrecacheModel( "sprites/misc/" + STR_HEALTHBAR_FRAMES[p] + ".spr" );
-        g_Game.PrecacheGeneric( "sprites/misc/" + STR_HEALTHBAR_FRAMES[p] + ".spr" );
+        g_Game.PrecacheModel( strSpriteDir + STR_HEALTHBAR_FRAMES[p] + ".spr" );
+        g_Game.PrecacheGeneric( strSpriteDir + STR_HEALTHBAR_FRAMES[p] + ".spr" );
     }
 }
 
@@ -151,13 +153,14 @@ HookReturnCode PlayerSpawned(CBasePlayer@ pPlayer)
 {
     if( pPlayer !is null )
     {
+
         string strTempTargetname = "env_healthbar_" + pPlayer.pev.netname + "_" + pPlayer.edict().serialnumber;
 
         pPlayer.pev.targetname = strTempTargetname;
         SpawnEnvHealthBar( strTempTargetname, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
 
         EHandle hPlayer = pPlayer;
-        g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hPlayer, strOldTargetName );
+        g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hPlayer, "" );
     }
 
     return HOOK_CONTINUE;
@@ -184,8 +187,6 @@ void SpawnEnvHealthBar(const string strHealthBarTarget, const Vector vOriginOffs
 
 class env_healthbar : ScriptBaseEntity
 {
-    env_healthbar(){}
-
     PlayerPostThinkHook@ pPlayerPostThinkFunc = null;
 
     private CBaseEntity@ pTrackedEntity;
@@ -218,8 +219,8 @@ class env_healthbar : ScriptBaseEntity
     {
         for( uint p = 0; p < STR_HEALTHBAR_FRAMES.length(); ++p )
         {
-            g_Game.PrecacheModel( "sprites/misc/" + STR_HEALTHBAR_FRAMES[p] + ".spr" );
-            g_Game.PrecacheGeneric( "sprites/misc/" + STR_HEALTHBAR_FRAMES[p] + ".spr" );
+            g_Game.PrecacheModel( strSpriteDir + STR_HEALTHBAR_FRAMES[p] + ".spr" );
+            g_Game.PrecacheGeneric( strSpriteDir + STR_HEALTHBAR_FRAMES[p] + ".spr" );
         }
     }
 
@@ -265,7 +266,7 @@ class env_healthbar : ScriptBaseEntity
             if( pHealthBar !is null )
             {
                 uint iPercentHealth = uint( ( pTrackedEntity.pev.health / flTrackedEntity_StartHealth ) * iHealthBar_LastFrame );
-                g_EntityFuncs.SetModel( pHealthBar, "sprites/misc/" + STR_HEALTHBAR_FRAMES[iPercentHealth] + ".spr");
+                g_EntityFuncs.SetModel( pHealthBar, strSpriteDir + STR_HEALTHBAR_FRAMES[iPercentHealth] + ".spr");
                 pHealthBar.SetScale( self.pev.scale );
 
                 if( pTrackedEntity.IsBSPModel() )
@@ -282,7 +283,7 @@ class env_healthbar : ScriptBaseEntity
 
     void CreateHealthBar()
     {
-        @pHealthBar = g_EntityFuncs.CreateSprite( "sprites/misc/" + STR_HEALTHBAR_FRAMES[iHealthBar_LastFrame] + ".spr", pTrackedEntity.GetOrigin(), false, 0.0f );
+        @pHealthBar = g_EntityFuncs.CreateSprite( strSpriteDir + STR_HEALTHBAR_FRAMES[iHealthBar_LastFrame] + ".spr", pTrackedEntity.GetOrigin(), false, 0.0f );
         pHealthBar.SetScale( self.pev.scale );
         pHealthBar.pev.rendermode = kRenderTransAdd;
 
