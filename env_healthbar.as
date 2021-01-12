@@ -65,11 +65,11 @@ void NpcSpawned(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster) // Trigger thi
         SpawnEnvHealthBar( strTempTargetname, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
 
         EHandle hMonster = pMonster;
-        g_Scheduler.SetTimeout( "RevertNpcTargetname", 0.3f, hMonster, strOldTargetName );
+        g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hMonster, strOldTargetName );
     }
 }
 
-void RevertNpcTargetname(EHandle hMonster, const string strOldTargetName)
+void RevertTargetname(EHandle hMonster, const string strOldTargetName)
 {
     if( !hMonster)
         return;
@@ -107,7 +107,7 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
             SpawnEnvHealthBar( strTempTargetname, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
 
             EHandle hMonsterEntity = pMonsterEntity;
-            g_Scheduler.SetTimeout( "RevertNpcTargetname", 0.3f, hMonsterEntity, strOldTargetName );
+            g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hMonsterEntity, strOldTargetName );
         }
         else
             SpawnEnvHealthBar( pMonsterEntity.GetTargetname(), vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
@@ -129,7 +129,7 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
             SpawnEnvHealthBar( strTempTargetname, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
 
             EHandle hBreakableEntity = pBreakableEntity;
-            g_Scheduler.SetTimeout( "RevertNpcTargetname", 0.3f, hBreakableEntity, strOldTargetName );
+            g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hBreakableEntity, strOldTargetName );
         }
         else
             SpawnEnvHealthBar( pBreakableEntity.GetTargetname(), vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
@@ -155,11 +155,14 @@ HookReturnCode PlayerSpawned(CBasePlayer@ pPlayer)
 
         pPlayer.pev.targetname = strTempTargetname;
         SpawnEnvHealthBar( strTempTargetname, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
+
+        EHandle hPlayer = pPlayer;
+        g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hPlayer, strOldTargetName );
     }
 
     return HOOK_CONTINUE;
 }
-
+// Credit to H2 for providing this function
 bool FlagSet( uint iTargetBits, uint iFlags )
 {
     if( ( iTargetBits & iFlags ) != 0 )
