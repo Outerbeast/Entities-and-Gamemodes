@@ -123,6 +123,9 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
         if( !( pBreakableEntity.IsBreakable() && pBreakableEntity.pev.SpawnFlagBitSet( 32 ) ) )
             continue;
 
+        if( pBreakable.GetClassname() == "func_breakable" && pBreakableEntity.pev.SpawnFlagBitSet( 1 ) )
+            continue;
+
         if( pBreakableEntity.GetTargetname() == "" )
         {
             string strOldTargetName = pBreakableEntity.GetTargetname();
@@ -231,12 +234,12 @@ class env_healthbar : ScriptBaseEntity
         self.pev.solid 		= SOLID_NOT;
         g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
-        if( self.pev.scale == 0.0f )
+        if( self.pev.scale <= 0.0f )
             self.pev.scale = 0.3f;
 
         if( pTrackedEntity is null )
         {
-            if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
+            if( self.pev.target != "" || self.pev.target != self.GetTargetname() )
                 @pTrackedEntity = g_EntityFuncs.FindEntityByTargetname( pTrackedEntity, "" + self.pev.target );
         }
 
@@ -258,7 +261,7 @@ class env_healthbar : ScriptBaseEntity
 
     void TrackEntity()
     {
-        if( pTrackedEntity !is null && pTrackedEntity.pev.health != 0 && ( pTrackedEntity.IsPlayer() || pTrackedEntity.IsMonster() || ( pTrackedEntity.IsBreakable() && pTrackedEntity.pev.SpawnFlagBitSet( 32 ) ) ) )
+        if( pTrackedEntity !is null && pTrackedEntity.pev.health != 0 && ( pTrackedEntity.IsPlayer() || pTrackedEntity.IsMonster() || ( pTrackedEntity.IsBreakable() && !pTrackedEntity.pev.SpawnflagBitSet( 1 ) )
         {
             if( pHealthBar is null )
                 CreateHealthBar();
