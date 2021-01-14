@@ -12,7 +12,6 @@ Keys:
 
 TO DO:
 - Render the healthbars individually for each player
-- Shove this bastard into a plugin of sorts (I hope) and apply the healthbars to all entities automatically
 - Add triggering funcs
 - Add support for custom sprites
 */
@@ -23,11 +22,11 @@ void MapInit()
     HEALTHBAR::RegisterHealthBarEntity();
 }
 
-/* void MapStart()
+void MapStart()
 {
-    HEALTHBAR::StartHealthBarMode( 5, Vector( 0, 0, 23 ), 0.6f, 0.0f, 0 );
+    HEALTHBAR::StartHealthBarMode( (HEALTHBAR::PLAYERS | HEALTHBAR::MONSTERS | HEALTHBAR::BREAKABLES), Vector( 0, 0, 23 ), 0.6f, 0.0f, 0 );
 }
- */
+
 namespace HEALTHBAR
 {
 
@@ -56,36 +55,13 @@ void RegisterHealthBarEntity()
     }
 }
 
-void NpcSpawned(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster) // Trigger this from a squadmaker via "function_name"
-{
-    if( blHealthBarEntityRegistered && pMonster !is null && pMonster.GetTargetname() != "" )
-    {
-        string strOldTargetName = pMonster.GetTargetname();
-        string strTempTargetname = "env_healthbar_" + pMonster.GetTargetname() + "_" + pMonster.edict().serialnumber;
-
-        pMonster.pev.targetname = strTempTargetname;
-        SpawnEnvHealthBar( strTempTargetname, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
-
-        EHandle hMonster = pMonster;
-        g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hMonster, strOldTargetName );
-    }
-}
-
-void RevertTargetname(EHandle hMonster, const string strOldTargetName)
-{
-    if( !hMonster)
-        return;
-
-    hMonster.GetEntity().pev.targetname = strOldTargetName;
-}
-
 void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffset, const float flScale, const float flDrawDistance, const uint iSpawnFlags)
 {
     if( !blHealthBarEntityRegistered )
         return;
 
     if( FlagSet( iHealthBarSettings, MONSTERS ) )
-        g_Hooks.RegisterHook( Hooks::Game::EntityCreated, @EntitySpawned );
+        g_Hooks.RegisterHook( Hooks::Game::EntityCreated, @OnEntityCreated );
     if( FlagSet( iHealthBarSettings, PLAYERS ) )
         g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PlayerSpawned );
 
@@ -93,78 +69,64 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
     CBaseEntity@ pMonsterEntity;
     CBaseEntity@ pBreakableEntity;
 
-    while( ( @pExistingHealthBar = g_EntityFuncs.FindEntityByClassname( pExistingHealthBar, "env_healthbar*" ) ) !is null )
+    while( ( @pExistingHealthBar = g_EntityFuncs.FindEntityByClassname( pExistingHealthBar, "env_healthbar" ) ) !is null )
         g_EntityFuncs.Remove( pExistingHealthBar );
 
-    while( ( @pMonsterEntity = g_EntityFuncs.FindEntityByClassname( pMonsterEntity, "monster_*" ) ) !is null )
+    if( FlagSet( iHealthBarSettings, MONSTERS ) )
     {
-        if( !FlagSet( iHealthBarSettings, MONSTERS ) )
-            continue;
-
-        if( pMonsterEntity.GetTargetname() == "" )
-        {
-            string strOldTargetName = pMonsterEntity.GetTargetname();
-            string strTempTargetname = "env_healthbar_" + pMonsterEntity.GetTargetname() + "_" + pMonsterEntity.edict().serialnumber;
-
-            SpawnEnvHealthBar( strTempTargetname, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
-
-            EHandle hMonsterEntity = pMonsterEntity;
-            g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hMonsterEntity, strOldTargetName );
+        while( ( @pMonsterEntity = g_EntityFuncs.FindEntityByClassname( pMonsterEntity, "monster_*" ) ) !is null )
+        {   
+            if( pMonsterEntity.GetClassname() == "monster_generic" || pMonsterEntity.GetClassname() == "monster_gman" || pMonsterEntity.GetClassname() == "monster_furniture" )
+                continue;
+    
+            SpawnEnvHealthBar( @pMonsterEntity, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
         }
-        else
-            SpawnEnvHealthBar( pMonsterEntity.GetTargetname(), vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
     }
 
-    while( ( @pBreakableEntity = g_EntityFuncs.FindEntityByClassname( pBreakableEntity, "func_*" ) ) !is null )
-    {
-        if( !FlagSet( iHealthBarSettings, BREAKABLES ) )
-            continue;
-
-        if( !( pBreakableEntity.IsBreakable() && pBreakableEntity.pev.SpawnFlagBitSet( 32 ) ) )
-            continue;
-
-        if( pBreakable.GetClassname() == "func_breakable" && pBreakableEntity.pev.SpawnFlagBitSet( 1 ) )
-            continue;
-
-        if( pBreakableEntity.GetTargetname() == "" )
+    if( FlagSet( iHealthBarSettings, BREAKABLES ) )
+    {   
+        while( ( @pBreakableEntity = g_EntityFuncs.FindEntityByClassname( pBreakableEntity, "func_*" ) ) !is null )
         {
-            string strOldTargetName = pBreakableEntity.GetTargetname();
-            string strTempTargetname = "env_healthbar_" + pBreakableEntity.GetTargetname() + "_" + pBreakableEntity.edict().serialnumber;
+            if( !pBreakableEntity.IsBreakable() )
+                continue;
+            if( !pBreakableEntity.pev.SpawnFlagBitSet( 32 ) || pBreakableEntity.pev.SpawnFlagBitSet( 1 ) )
+                continue;
 
-            SpawnEnvHealthBar( strTempTargetname, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
-
-            EHandle hBreakableEntity = pBreakableEntity;
-            g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hBreakableEntity, strOldTargetName );
+            SpawnEnvHealthBar( @pBreakableEntity, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
         }
-        else
-            SpawnEnvHealthBar( pBreakableEntity.GetTargetname(), vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
     }
 } 
 
-HookReturnCode EntitySpawned(CBaseEntity@ pEntity)
+// !!AN!! workaround...
+final class Schedulers
+{
+    private void OnEntitySpawned(EHandle hMonster)
+    {
+        NpcSpawned( null, cast<CBaseEntity@>( hMonster ) );
+    }
+}
+
+HookReturnCode OnEntityCreated(CBaseEntity@ pEntity)
 {
     if( pEntity !is null && pEntity.IsMonster() )
     {
         CBaseMonster@ pMonster = cast<CBaseMonster@>( pEntity );
-        NpcSpawned( null, pMonster );
+        g_Scheduler.SetTimeout( Schedulers(), "OnEntitySpawned", 0.05f, EHandle( @pMonster ) );
     }
 
     return HOOK_CONTINUE;
 }
 
+void NpcSpawned(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster) // Trigger this from a squadmaker via "function_name"
+{
+    if( blHealthBarEntityRegistered && pMonster !is null )
+        SpawnEnvHealthBar( @pMonster, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
+}
+
 HookReturnCode PlayerSpawned(CBasePlayer@ pPlayer)
 {
     if( pPlayer !is null )
-    {
-
-        string strTempTargetname = "env_healthbar_" + pPlayer.pev.netname + "_" + pPlayer.edict().serialnumber;
-
-        pPlayer.pev.targetname = strTempTargetname;
-        SpawnEnvHealthBar( strTempTargetname, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
-
-        EHandle hPlayer = pPlayer;
-        g_Scheduler.SetTimeout( "RevertTargetname", 0.3f, hPlayer, "" );
-    }
+        SpawnEnvHealthBar( @pPlayer, Vector( 0, 0, 0 ), 0.0f, 0.0f, 0 );
 
     return HOOK_CONTINUE;
 }
@@ -177,15 +139,24 @@ bool FlagSet( uint iTargetBits, uint iFlags )
         return false;
 }
 
-void SpawnEnvHealthBar(const string strHealthBarTarget, const Vector vOriginOffset, const float flScale, const float flDrawDistance, const uint iSpawnFlags)
+void SpawnEnvHealthBar(CBaseEntity@ pTarget, const Vector vOriginOffset, const float flScale, const float flDrawDistance, const uint iSpawnFlags)
 {
+    if( pTarget is null ) 
+       return;
+
     dictionary hlth;
-    hlth ["target"] = "" + strHealthBarTarget;
-    if( vOriginOffset != g_vecZero ) hlth ["offset"] = "" + vOriginOffset.ToString();
-    if( flScale > 0 )                hlth ["scale"]  = "" + flScale;
-    if( flDrawDistance > 0 )         hlth ["distance"] = "" + flDrawDistance;
-    if( iSpawnFlags > 0 )            hlth ["spawnflags"] = "" + iSpawnFlags;
-    CBaseEntity@ pEnvHealthBar = g_EntityFuncs.CreateEntity( "env_healthbar", hlth, true );
+    if( vOriginOffset != g_vecZero ) hlth ["offset"]        = vOriginOffset.ToString();
+    if( flScale > 0 )                hlth ["scale"]         = string( flScale );
+    if( flDrawDistance > 0 )         hlth ["distance"]      = string( flDrawDistance );
+    if( iSpawnFlags > 0 )            hlth ["spawnflags"]    = string( iSpawnFlags );
+
+    CBaseEntity@ pEnvHealthBar = g_EntityFuncs.CreateEntity( "env_healthbar", hlth, false );
+    if( pEnvHealthBar is null )
+       return;
+
+    @pEnvHealthBar.pev.owner = pTarget.edict();
+    //g_Game.AlertMessage( at_notice, "target: " + pTarget.entindex() + "\n" );
+    g_EntityFuncs.DispatchSpawn( pEnvHealthBar.edict() );
 }
 
 class env_healthbar : ScriptBaseEntity
@@ -230,8 +201,10 @@ class env_healthbar : ScriptBaseEntity
     void Spawn()
     {
         self.Precache();
-        self.pev.movetype 	= MOVETYPE_NONE;
-        self.pev.solid 		= SOLID_NOT;
+        self.pev.movetype   = MOVETYPE_NONE;
+        self.pev.solid      = SOLID_NOT;
+        self.pev.effects    |= EF_NODRAW;
+
         g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         if( self.pev.scale <= 0.0f )
@@ -239,8 +212,22 @@ class env_healthbar : ScriptBaseEntity
 
         if( pTrackedEntity is null )
         {
-            if( self.pev.target != "" || self.pev.target != self.GetTargetname() )
-                @pTrackedEntity = g_EntityFuncs.FindEntityByTargetname( pTrackedEntity, "" + self.pev.target );
+            string strTarget = string( self.pev.target );
+            strTarget.Trim();
+
+            if( !strTarget.IsEmpty() && strTarget != self.GetTargetname() )
+                @pTrackedEntity = g_EntityFuncs.FindEntityByTargetname( pTrackedEntity, strTarget );
+            else
+                @pTrackedEntity = g_EntityFuncs.Instance( self.pev.owner );
+        }
+
+        if( pTrackedEntity !is null )
+        {
+            //g_Game.AlertMessage( at_notice, "env_healthbar owner: " + pTrackedEntity.entindex() + "\n" );
+            flTrackedEntity_StartHealth = pTrackedEntity.pev.max_health;
+
+            if( flTrackedEntity_StartHealth <= 0 )
+                flTrackedEntity_StartHealth = pTrackedEntity.pev.health;
         }
 
         SetThink( ThinkFunction( this.TrackEntity ) );
@@ -253,15 +240,16 @@ class env_healthbar : ScriptBaseEntity
         }
     }
 
-    void PostSpawn()
+    void UpdateOnRemove()
     {
-        if( pTrackedEntity !is null )
-            flTrackedEntity_StartHealth = pTrackedEntity.pev.health;
+        g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, @pPlayerPostThinkFunc );
+        g_EntityFuncs.Remove( pHealthBar );
+        BaseClass.UpdateOnRemove();
     }
 
     void TrackEntity()
     {
-        if( pTrackedEntity !is null && pTrackedEntity.pev.health != 0 && ( pTrackedEntity.IsPlayer() || pTrackedEntity.IsMonster() || ( pTrackedEntity.IsBreakable() && !pTrackedEntity.pev.SpawnflagBitSet( 1 ) )
+        if( pTrackedEntity !is null && ( pTrackedEntity.IsPlayer() || pTrackedEntity.IsMonster() || pTrackedEntity.IsBreakable() ) )
         {
             if( pHealthBar is null )
                 CreateHealthBar();
@@ -279,8 +267,22 @@ class env_healthbar : ScriptBaseEntity
             }
 
             if( !pTrackedEntity.IsAlive() )
-                g_EntityFuncs.Remove( pHealthBar );
+            {
+                if( pTrackedEntity.IsRevivable() )
+                    pHealthBar.pev.renderamt = 0.0f;
+                else
+                {
+                    g_EntityFuncs.Remove( self );
+                    return;
+                }
+            }
         }
+        else
+        {
+            g_EntityFuncs.Remove( self );
+            return;
+        }
+
         self.pev.nextthink = g_Engine.time + 0.01f;
     }
 
