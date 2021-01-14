@@ -95,26 +95,22 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
             SpawnEnvHealthBar( @pBreakableEntity, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
         }
     }
-} 
-
-// !!AN!! workaround...
-final class Schedulers
-{
-    private void OnEntitySpawned(EHandle hMonster)
-    {
-        NpcSpawned( null, cast<CBaseEntity@>( hMonster ) );
-    }
 }
 
 HookReturnCode OnEntityCreated(CBaseEntity@ pEntity)
 {
     if( pEntity !is null && pEntity.IsMonster() )
-    {
-        CBaseMonster@ pMonster = cast<CBaseMonster@>( pEntity );
-        g_Scheduler.SetTimeout( Schedulers(), "OnEntitySpawned", 0.05f, EHandle( @pMonster ) );
-    }
+        g_Scheduler.SetTimeout( Schedulers(), "OnEntitySpawned", 0.05f, EHandle( @pEntity ) );
 
     return HOOK_CONTINUE;
+}
+// !!AN!! workaround...
+final class Schedulers
+{
+    private void OnEntitySpawned(EHandle hEntity)
+    {
+        NpcSpawned( null, hEntity.GetEntity() );
+    }
 }
 
 void NpcSpawned(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster) // Trigger this from a squadmaker via "function_name"
