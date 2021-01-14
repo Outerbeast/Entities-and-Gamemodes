@@ -60,20 +60,18 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
     if( !blHealthBarEntityRegistered )
         return;
 
-    if( FlagSet( iHealthBarSettings, MONSTERS ) )
-        g_Hooks.RegisterHook( Hooks::Game::EntityCreated, @OnEntityCreated );
     if( FlagSet( iHealthBarSettings, PLAYERS ) )
         g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PlayerSpawned );
 
-    CBaseEntity@ pExistingHealthBar;
-    CBaseEntity@ pMonsterEntity;
-    CBaseEntity@ pBreakableEntity;
+    CBaseEntity@ pExistingHealthBar, pMonsterEntity, pBreakableEntity;
 
     while( ( @pExistingHealthBar = g_EntityFuncs.FindEntityByClassname( pExistingHealthBar, "env_healthbar" ) ) !is null )
         g_EntityFuncs.Remove( pExistingHealthBar );
 
     if( FlagSet( iHealthBarSettings, MONSTERS ) )
     {
+        g_Hooks.RegisterHook( Hooks::Game::EntityCreated, @OnEntityCreated ); // Accounting for npcs spawning in later during the level
+
         while( ( @pMonsterEntity = g_EntityFuncs.FindEntityByClassname( pMonsterEntity, "monster_*" ) ) !is null )
         {   
             if( pMonsterEntity.GetClassname() == "monster_generic" || pMonsterEntity.GetClassname() == "monster_gman" || pMonsterEntity.GetClassname() == "monster_furniture" )
