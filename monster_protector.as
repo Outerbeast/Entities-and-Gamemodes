@@ -5,7 +5,7 @@ The SC Ethics Committee have enforced measures to prevent this."
 --------------------------------------------------------------
 A script that allows a few seconds of spawn invulnerblity for npcs spawning
 Usage:-
-Call "MONSTERPROTECTOR::Activate( flProtectionTimeSetting );" where "flProtectionTimeSetting is any number between 0 and 3, fractions allowed 
+Call "MONSTERPROTECTOR::Activate( flProtectionTimeSetting );" where "flProtectionTimeSetting is any number between 0 and 6, fractions allowed 
 - Outerbeast*/
 
 namespace MONSTERPROTECTOR
@@ -19,9 +19,7 @@ void Activate(const float flProtectionTimeSetting)
 
     CBaseEntity@ pNpcSpawner;
     while( ( @pNpcSpawner = g_EntityFuncs.FindEntityByClassname( pNpcSpawner, "squadmaker" ) ) !is null )
-    {
         g_EntityFuncs.DispatchKeyValue( pNpcSpawner.edict(), "function_name", "MONSTERPROTECTOR::NpcSpawnProtect" );
-    }
 }
 
 void NpcSpawnProtect(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster)
@@ -29,9 +27,7 @@ void NpcSpawnProtect(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster)
     if( pMonster !is null )
     {
         pMonster.pev.takedamage = DAMAGE_NO;
-
-        EHandle hMonster = pMonster;
-        g_Scheduler.SetTimeout( "NpcProtectionOff", flProtectionTime, hMonster );
+        g_Scheduler.SetTimeout( "NpcProtectionOff", flProtectionTime, EHandle( pMonster ) );
     }
 }
 
