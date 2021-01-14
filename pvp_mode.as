@@ -50,7 +50,6 @@ final class PvpMode
         if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
         {
             pPlayer.SetClassification( I_PLAYER_TEAM[pPlayer.entindex()] );
-            //pPlayer.pev.targetname = "dm_plyr_" + pPlayer.entindex();
             //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + pPlayer.entindex() + " was assigned to team: " + I_PLAYER_TEAM[pPlayer.entindex()] + "\n" );
         }
     }
@@ -63,10 +62,9 @@ final class PvpMode
             pPlayer.pev.takedamage  = DAMAGE_NO;
         }
 
-        EHandle hPlayer = pPlayer;
-        g_Scheduler.SetTimeout( this, "ProtectionOff", g_ProtectDuration.GetFloat(), hPlayer );
+        g_Scheduler.SetTimeout( this, "ProtectionOff", g_ProtectDuration.GetFloat(), EHandle( pPlayer ) );
         // For some retarded reason the render settings don't work instantly so had to delay it a tiny bit after PlayerSpawn
-        g_Scheduler.SetTimeout( this, "RenderGhost", 0.01f, hPlayer );
+        g_Scheduler.SetTimeout( this, "RenderGhost", 0.01f, EHandle( pPlayer ) );
     }
     
     void RenderGhost(EHandle hPlayer)
