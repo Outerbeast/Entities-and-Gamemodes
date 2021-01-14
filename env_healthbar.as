@@ -70,8 +70,6 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
 
     if( FlagSet( iHealthBarSettings, MONSTERS ) )
     {
-        g_Hooks.RegisterHook( Hooks::Game::EntityCreated, @OnEntityCreated ); // Accounting for npcs spawning in later during the level
-
         while( ( @pMonsterEntity = g_EntityFuncs.FindEntityByClassname( pMonsterEntity, "monster_*" ) ) !is null )
         {   
             if( pMonsterEntity.GetClassname() == "monster_generic" || pMonsterEntity.GetClassname() == "monster_gman" || pMonsterEntity.GetClassname() == "monster_furniture" )
@@ -79,6 +77,8 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
     
             SpawnEnvHealthBar( @pMonsterEntity, vOriginOffset, flScale, flDrawDistance, iSpawnFlags );
         }
+
+        g_Hooks.RegisterHook( Hooks::Game::EntityCreated, @EntityCreated ); // Accounting for npcs spawning in later during the level
     }
 
     if( FlagSet( iHealthBarSettings, BREAKABLES ) )
@@ -95,17 +95,17 @@ void StartHealthBarMode(const uint iHealthBarSettings, const Vector vOriginOffse
     }
 }
 
-HookReturnCode OnEntityCreated(CBaseEntity@ pEntity)
+HookReturnCode EntityCreated(CBaseEntity@ pEntity)
 {
     if( pEntity !is null && pEntity.IsMonster() )
-        g_Scheduler.SetTimeout( Schedulers(), "OnEntitySpawned", 0.05f, EHandle( @pEntity ) );
+        g_Scheduler.SetTimeout( Schedulers(), "EntitySpawned", 0.05f, EHandle( @pEntity ) );
 
     return HOOK_CONTINUE;
 }
 // !!AN!! workaround...
 final class Schedulers
 {
-    private void OnEntitySpawned(EHandle hEntity)
+    private void EntitySpawned(EHandle hEntity)
     {
         NpcSpawned( null, hEntity.GetEntity() );
     }
@@ -218,7 +218,7 @@ class env_healthbar : ScriptBaseEntity
         if( pTrackedEntity !is null )
         {
             //g_Game.AlertMessage( at_notice, "env_healthbar owner: " + pTrackedEntity.entindex() + "\n" );
-            flTrackedEntity_StartHealth = pTrackedEntity.pev.max_health;
+           flTrackedEntity_StartHealth = pTrackedEntity.pev.max_health;
 
             if( flTrackedEntity_StartHealth <= 0 )
                 flTrackedEntity_StartHealth = pTrackedEntity.pev.health;
