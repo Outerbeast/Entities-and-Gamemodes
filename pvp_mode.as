@@ -99,8 +99,8 @@ final class PvpMode
     void EnterSpectator(CBasePlayer@ pPlayer)
     {
         if( pPlayer is null || !pPlayer.IsConnected() )
-		    return;
-		// Players not assigned to a team immediately get moved to observer mode
+            return;
+	    // Players not assigned to a team immediately get moved to observer mode
         if( !pPlayer.GetObserver().IsObserver() && pPlayer.m_iClassSelection == 0 )
         {
             pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
@@ -109,10 +109,8 @@ final class PvpMode
             g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait until the end of the round." );
             //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " with targetname: " + pPlayer.GetTargetname() + " in slot: " + pPlayer.entindex() + " was moved into Spectator (no free player slots available\n" );
         }
-
-        EHandle hPlayer = pPlayer;
         // Stupid hax needed to set the respawn delay, triggering directly in the block does not work
-        g_Scheduler.SetTimeout( this, "NoRespawn", 0.1f, hPlayer );
+        g_Scheduler.SetTimeout( this, "NoRespawn", 0.1f, EHandle( pPlayer ) );
     }
     // "Disables" respawning of players in Spectator Mode (just making the respawn delay stupid long)
     void NoRespawn(EHandle hPlayer)
