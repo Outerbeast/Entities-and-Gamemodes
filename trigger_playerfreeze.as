@@ -13,16 +13,15 @@ Add the lines to your main mapscript:-
 RegisterTriggerPlayerFreezeEntity(); <-- this goes inside "void MapInit()"
 
 TO DO:-
--fix found entities being stored twice in GetFreezeEnts()
--implement flags
+- implement flags
 - add support for !activator/!caller
 */
 
 enum freezestate
 {
-	DEFROST	= -1,
-	NONE,
-	FREEZING
+	DEFROST  = -1,
+	NONE	 = 0,
+	FREEZING = 1
 };
 
 enum playerfreezespawnflags
@@ -35,7 +34,7 @@ enum playerfreezespawnflags
 
 class trigger_playerfreeze : ScriptBaseEntity
 {
-	private int iFreezeState;
+	private int iFreezeState = NONE;
 	private float flWaitTime;
 
 	private array<EHandle> H_FREEZE_ENTS;
@@ -62,21 +61,13 @@ class trigger_playerfreeze : ScriptBaseEntity
 		SetThink( ThinkFunction( this.FreezeThink ) );
 
 		if( self.pev.SpawnFlagBitSet( STARTON ) || self.GetTargetname() == "" )
-		{
-			GetFreezeEnts( null );
-			iFreezeState = FREEZING;
-			self.pev.nextthink = g_Engine.time + 0.1f;
-		}
+			ToggleEntity();
 		else
-		{
-			iFreezeState = NONE;
 			self.pev.nextthink = 0.0f;
-		}
 	}
 
 	void FreezeThink()
 	{
-		g_EngineFuncs.ServerPrint("-- DEBUG: trigger_playerfreeze: " + self.GetTargetname() + " is thinking...\n");
 		GetFreezeEnts( null );
 
 		if( H_FREEZE_ENTS.length() < 1 )
@@ -92,10 +83,12 @@ class trigger_playerfreeze : ScriptBaseEntity
 				case FREEZING:
 					Freezer( H_FREEZE_ENTS[i] );
 					self.pev.nextthink = g_Engine.time + 0.1f;
+					//g_EngineFuncs.ServerPrint( "-- DEBUG: Freezing On\n");
 					break;
 				case DEFROST:
 					Defroster( H_FREEZE_ENTS[i] );
 					self.pev.nextthink = g_Engine.time + 0.1f;
+					//g_EngineFuncs.ServerPrint( "-- DEBUG: Defrosting On\n");
 					break;
 				default:
 					self.pev.nextthink = 0.0f;
@@ -108,14 +101,19 @@ class trigger_playerfreeze : ScriptBaseEntity
 	{
 		GetFreezeEnts( pActivator );
 
+		if( H_FREEZE_ENTS.length() < 1 )
+			return;
+
 		if( iFreezeState == NONE )
 		{
 			iFreezeState = FREEZING;
 			self.pev.nextthink = g_Engine.time + 0.1f;
 		}
-
-		if( iFreezeState != NONE )
+		else
 			iFreezeState *= -1;
+
+		if( flWaitTime > 0 && iFreezeState == FREEZING ) 
+			g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
 	}
 
 	void ToggleEntity()
@@ -127,9 +125,11 @@ class trigger_playerfreeze : ScriptBaseEntity
 	{
 		CBaseEntity@ pFreezeEntity;
 
-		if( pActivator !is null && self.pev.SpawnFlagBitSet( ACTIVATOR )  )
+		if( self.pev.SpawnFlagBitSet( ACTIVATOR ) )
 		{
-			@pFreezeEntity = pActivator;
+			if( pActivator !is null )
+				@pFreezeEntity = pActivator;
+			
 			H_FREEZE_ENTS[pFreezeEntity.entindex()] = pFreezeEntity;
 		}
 		else if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
@@ -144,7 +144,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 		}
 		else
 		{
-			for( int playerID = 1; playerID <= g_Engine.maxClients; playerID )
+			for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
 			{
 				@pFreezeEntity = g_EntityFuncs.Instance( playerID );
 
@@ -156,7 +156,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 				for( uint i = 0; i < H_FREEZE_ENTS.length(); i++ )
 					P_FREEZE_ENTS.insertLast( H_FREEZE_ENTS[i].GetEntity() );
 
-				if( P_FREEZE_ENTS.find( pFreezeEntity ) >= 0)
+				if( P_FREEZE_ENTS.find( pFreezeEntity ) >= 0 )
 					continue;
 
 				H_FREEZE_ENTS.insertLast( pFreezeEntity );
@@ -174,16 +174,13 @@ class trigger_playerfreeze : ScriptBaseEntity
 		if( pEntity !is null && !pEntity.pev.FlagBitSet( FL_FROZEN ))
 			pEntity.pev.flags |= FL_FROZEN;
 
-		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.rendermode != kRenderTransTexture )
+		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) )
 		{
 			pEntity.pev.rendermode = kRenderTransTexture;
-			g_EngineFuncs.ServerPrint( "-- DEBUG: All Players made Invisible!\n");
+			pEntity.pev.renderamt = 0.0f;
 		}
 
 		iFreezeState = FREEZING;
-
-		if( flWaitTime > 0 && iFreezeState == FREEZING )
-			g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
 	}
 
 	void Defroster(EHandle hEntity)
@@ -193,13 +190,13 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 		CBaseEntity@ pEntity = hEntity.GetEntity();
 
-		if( pEntity !is null && pEntity.pev.FlagBitSet( FL_FROZEN ))
+		if( pEntity !is null )
 			pEntity.pev.flags &= ~FL_FROZEN;
 
 		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.rendermode == kRenderTransTexture )
 		{
 			pEntity.pev.rendermode = kRenderNormal;
-			g_EngineFuncs.ServerPrint( "-- DEBUG: All Players made Visible!\n");
+			pEntity.pev.renderamt = 255.0f;
 		}
 
 		iFreezeState = DEFROST;
