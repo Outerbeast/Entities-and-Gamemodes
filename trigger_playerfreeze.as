@@ -148,10 +148,10 @@ class trigger_playerfreeze : ScriptBaseEntity
 			{
 				@pFreezeEntity = g_EntityFuncs.Instance( playerID );
 
+				array<CBaseEntity@> P_FREEZE_ENTS;
+
 				if( pFreezeEntity is null || !pFreezeEntity.IsPlayer() )
 					continue;
-
-				array<CBaseEntity@> P_FREEZE_ENTS;
 
 				for( uint i = 0; i < H_FREEZE_ENTS.length(); i++ )
 					P_FREEZE_ENTS.insertLast( H_FREEZE_ENTS[i].GetEntity() );
