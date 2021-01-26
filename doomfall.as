@@ -23,7 +23,8 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 {
     g_SoundSystem.PrecacheSound( "sc_persia/scream.wav" );
 
-    if( flMortalVelocitySetting <= 0.0f ){ flMortalVelocity = 700.0f; }
+    if( flMortalVelocitySetting <= 0.0f )
+        flMortalVelocity = 700.0f;
     else
         flMortalVelocity = flMortalVelocitySetting;
     
@@ -37,10 +38,10 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 
     for( int i = 0; i < g_Engine.maxClients; i++ )
     {
-        FallingPlayer plrdata;
-        plrdata.flPlayerFallSpeed = 0.0f;
-        plrdata.blHasPlayerFell = false;
-        FALLING_PLAYER_DATA.insertLast(plrdata);
+        FallingPlayer fpInfo;
+        fpInfo.flPlayerFallSpeed = 0.0f;
+        fpInfo.blHasPlayerFell = false;
+        FALLING_PLAYER_DATA.insertLast( fpInfo );
     }
 }
 
@@ -65,12 +66,13 @@ void StartThink()
     g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, @Splat );
 }
 
-HookReturnCode OnGround(CBasePlayer@ pSpawnedPlyr)
+HookReturnCode OnGround(CBasePlayer@ pPlayer)
 {
-    if( pSpawnedPlyr is null ){ return HOOK_CONTINUE; }
+    if( pPlayer is null )
+        return HOOK_CONTINUE;
 
-    FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].flPlayerFallSpeed = 0.0f;
-    FALLING_PLAYER_DATA[pSpawnedPlyr.entindex()-1].blHasPlayerFell   = false;
+    FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
+    FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
 
     return HOOK_CONTINUE;
 }
@@ -104,7 +106,7 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
     if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
     {
         CBaseEntity@ pWorld = g_EntityFuncs.Instance( 0 );
-        pPlayer.TakeDamage( pWorld.pev, pWorld.pev, 10000.0f, DMG_FALL);
+        pPlayer.TakeDamage( pWorld.pev, pWorld.pev, 10000.0f, DMG_FALL );
         FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = false;
         //g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
     }
