@@ -164,11 +164,11 @@ class trigger_playerfreeze : ScriptBaseEntity
 		}
 	}
 
-    void Freezer(EHandle hEntity)
-    {
+	void Freezer(EHandle hEntity)
+	{
 		if( !hEntity )
 			return;
-		
+
 		CBaseEntity@ pEntity = hEntity.GetEntity();
 
 		if( pEntity !is null && !pEntity.pev.FlagBitSet( FL_FROZEN ))
@@ -181,16 +181,16 @@ class trigger_playerfreeze : ScriptBaseEntity
 		}
 
 		iFreezeState = FREEZING;
-		
+
 		if( flWaitTime > 0 && iFreezeState == FREEZING )
 			g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
-    }
+	}
 
 	void Defroster(EHandle hEntity)
 	{
 		if( !hEntity )
 			return;
-		
+
 		CBaseEntity@ pEntity = hEntity.GetEntity();
 
 		if( pEntity !is null && pEntity.pev.FlagBitSet( FL_FROZEN ))
