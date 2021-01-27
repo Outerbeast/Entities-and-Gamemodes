@@ -28,7 +28,7 @@ enum freezespawnflags
 {
 	STARTON			= 1,
 	RENDERINVIS		= 2,
-	REMOVEONFIRE	= 4,
+	REMOVEONFIRE	        = 4,
 	ACTIVATOR		= 8
 };
 
@@ -124,14 +124,14 @@ class trigger_playerfreeze : ScriptBaseEntity
 	void PutEntsInFridge(CBaseEntity@ pActivator)
 	{
 		CBaseEntity@ pFreezeEntity;
-        array<CBaseEntity@> P_OPENED_FRIDGE;
+                array<CBaseEntity@> P_OPENED_FRIDGE;
 
 		if( self.pev.SpawnFlagBitSet( ACTIVATOR ) )
 		{
 			if( pActivator !is null )
 				@pFreezeEntity = pActivator;
 			
-			H_FRIDGE.insertAt(pFreezeEntity.entindex(), pFreezeEntity];
+			H_FRIDGE.insertAt(pFreezeEntity.entindex(), pFreezeEntity);
 		}
 		else if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
 		{
@@ -141,7 +141,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 			        P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
 
 			    if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
-					continue;
+				continue;
 
 				H_FRIDGE.insertLast( pFreezeEntity );
 			}
@@ -181,7 +181,6 @@ class trigger_playerfreeze : ScriptBaseEntity
 			pEntity.pev.rendermode = kRenderTransTexture;
 			pEntity.pev.renderamt = 0.0f;
 		}
-
 		iFridgeSetting = FREEZING;
 	}
 
@@ -200,7 +199,6 @@ class trigger_playerfreeze : ScriptBaseEntity
 			pEntity.pev.rendermode = kRenderNormal;
 			pEntity.pev.renderamt = 255.0f;
 		}
-
 		iFridgeSetting = DEFROST;
 	}
 }
