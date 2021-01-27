@@ -28,7 +28,7 @@ enum playerfreezespawnflags
 {
 	STARTON			= 1,
 	RENDERINVIS		= 2,
-	REMOVEONFIRE	= 4,
+	REMOVEONFIRE	        = 4,
 	ACTIVATOR		= 8
 };
 
@@ -124,6 +124,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 	void GetFreezeEnts(CBaseEntity@ pActivator)
 	{
 		CBaseEntity@ pFreezeEntity;
+                array<CBaseEntity@> P_FREEZE_ENTS;
 
 		if( self.pev.SpawnFlagBitSet( ACTIVATOR ) )
 		{
@@ -136,7 +137,10 @@ class trigger_playerfreeze : ScriptBaseEntity
 		{
 			while( ( @pFreezeEntity = g_EntityFuncs.FindEntityByTargetname( pFreezeEntity, "" + self.pev.target ) ) !is null )
 			{
-				if( H_FREEZE_ENTS.find( EHandle( pFreezeEntity ) ) >= 0 )
+			        for( uint i = 0; i < H_FREEZE_ENTS.length(); i++ )
+					P_FREEZE_ENTS.insertLast( H_FREEZE_ENTS[i].GetEntity() );
+
+			        if( P_FREEZE_ENTS.find( pFreezeEntity ) >= 0 )
 					continue;
 
 				H_FREEZE_ENTS.insertLast( pFreezeEntity );
@@ -147,8 +151,6 @@ class trigger_playerfreeze : ScriptBaseEntity
 			for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
 			{
 				@pFreezeEntity = g_EntityFuncs.Instance( playerID );
-
-				array<CBaseEntity@> P_FREEZE_ENTS;
 
 				if( pFreezeEntity is null || !pFreezeEntity.IsPlayer() )
 					continue;
