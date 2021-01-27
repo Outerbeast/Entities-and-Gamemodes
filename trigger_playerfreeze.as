@@ -12,9 +12,8 @@ Add the lines to your main mapscript:-
 
 RegisterTriggerPlayerFreezeEntity(); <-- this goes inside "void MapInit()"
 
-TO DO:-
-- implement flags
-- add support for !activator/!caller
+TO-DO:-
+- Fix "Start On" flag not working
 */
 
 enum fridgesetting
@@ -27,21 +26,18 @@ enum fridgesetting
 enum freezespawnflags
 {
 	STARTON			= 1,
-	RENDERINVIS		= 2,
-	REMOVEONFIRE	        = 4,
-	ACTIVATOR		= 8
+	RENDERINVIS		= 2
 };
 
 class trigger_playerfreeze : ScriptBaseEntity
 {
-	private int iFridgeSetting = NONE;
+	private int iFridgeSetting;
 	private float flWaitTime;
 
 	private array<EHandle> H_FRIDGE;
 
 	bool KeyValue(const string& in szKey, const string& in szValue)
 	{
-
 		if( szKey == "wait" ) 
 		{
 			flWaitTime = atof( szValue );
@@ -59,16 +55,25 @@ class trigger_playerfreeze : ScriptBaseEntity
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
 		SetThink( ThinkFunction( this.Refrigerator ) );
-
+		
 		if( self.pev.SpawnFlagBitSet( STARTON ) || self.GetTargetname() == "" )
-			ToggleEntity();
+		{
+			iFridgeSetting = FREEZING;
+			self.pev.nextthink = g_Engine.time + 0.1f;
+			g_EngineFuncs.ServerPrint( "-- DEBUG: playefreeze is START ON\n");
+		}
 		else
+		{
 			self.pev.nextthink = 0.0f;
+			g_EngineFuncs.ServerPrint( "-- DEBUG: playefreeze is START OFF\n");
+		}
+		g_EngineFuncs.ServerPrint( "-- DEBUG: playefreeze spawnflags is " + self.pev.spawnflags + "\n");
 	}
 
 	void Refrigerator()
 	{
-		PutEntsInFridge( null );
+		g_EngineFuncs.ServerPrint( "-- DEBUG: playerfreeze is thinking...\n");
+		PutEntsInFridge();
 
 		if( H_FRIDGE.length() < 1 )
 			return;
@@ -83,15 +88,15 @@ class trigger_playerfreeze : ScriptBaseEntity
 				case FREEZING:
 					Freezer( H_FRIDGE[i] );
 					self.pev.nextthink = g_Engine.time + 0.1f;
-					//g_EngineFuncs.ServerPrint( "-- DEBUG: Freezing On\n");
+					g_EngineFuncs.ServerPrint( "-- DEBUG: Freezing On\n");
 					break;
 				case DEFROST:
 					Defroster( H_FRIDGE[i] );
 					self.pev.nextthink = g_Engine.time + 0.1f;
-					//g_EngineFuncs.ServerPrint( "-- DEBUG: Defrosting On\n");
+					g_EngineFuncs.ServerPrint( "-- DEBUG: Defrosting On\n");
 					break;
 				default:
-					self.pev.nextthink = 0.0f;
+					self.pev.nextthink = g_Engine.time + 0.5f;
 					break;
 			}
 		}
@@ -99,7 +104,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
 	{
-		PutEntsInFridge( pActivator );
+		PutEntsInFridge();
 
 		if( H_FRIDGE.length() < 1 )
 			return;
@@ -119,21 +124,15 @@ class trigger_playerfreeze : ScriptBaseEntity
 	void ToggleEntity()
 	{
   		self.Use( self, self, USE_TOGGLE, 0.0f );
+		g_EngineFuncs.ServerPrint( "-- DEBUG: playerfreeze " + self.GetTargetname() + " has been triggered and fridge setting is " + iFridgeSetting + "\n");
 	}
 
-	void PutEntsInFridge(CBaseEntity@ pActivator)
+	void PutEntsInFridge()
 	{
 		CBaseEntity@ pFreezeEntity;
-                array<CBaseEntity@> P_OPENED_FRIDGE;
+        array<CBaseEntity@> P_OPENED_FRIDGE;
 
-		if( self.pev.SpawnFlagBitSet( ACTIVATOR ) )
-		{
-			if( pActivator !is null )
-				@pFreezeEntity = pActivator;
-			
-			H_FRIDGE.insertAt(pFreezeEntity.entindex(), pFreezeEntity);
-		}
-		else if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
+		if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
 		{
 			while( ( @pFreezeEntity = g_EntityFuncs.FindEntityByTargetname( pFreezeEntity, "" + self.pev.target ) ) !is null )
 			{
@@ -141,12 +140,12 @@ class trigger_playerfreeze : ScriptBaseEntity
 			        P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
 
 			    if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
-				continue;
+					continue;
 
 				H_FRIDGE.insertLast( pFreezeEntity );
 			}
 		}
-		else
+		else // Default behaviour if "target" is undefined, cycle through players
 		{
 			for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
 			{
@@ -173,7 +172,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 		CBaseEntity@ pEntity = hEntity.GetEntity();
 
-		if( pEntity !is null && !pEntity.pev.FlagBitSet( FL_FROZEN ))
+		if( pEntity !is null && !pEntity.pev.FlagBitSet( FL_FROZEN ) )
 			pEntity.pev.flags |= FL_FROZEN;
 
 		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) )
@@ -191,7 +190,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 		CBaseEntity@ pEntity = hEntity.GetEntity();
 
-		if( pEntity !is null )
+		if( pEntity !is null && pEntity.pev.FlagBitSet( FL_FROZEN ) )
 			pEntity.pev.flags &= ~FL_FROZEN;
 
 		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.rendermode == kRenderTransTexture )
