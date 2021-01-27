@@ -130,7 +130,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 	void PutEntsInFridge()
 	{
 		CBaseEntity@ pFreezeEntity;
-        array<CBaseEntity@> P_OPENED_FRIDGE;
+		array<CBaseEntity@> P_OPENED_FRIDGE;
 
 		if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
 		{
