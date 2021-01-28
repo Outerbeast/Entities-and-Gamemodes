@@ -13,7 +13,8 @@ Map cfg settings:
 
 PvpMode@ g_pvpmode = @PvpMode();
 
-CCVar g_ProtectDuration( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
+CCVar cvarProtectDuration( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
+CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
 
 const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
 const bool blPlayerDisconnectRegister = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @PvpOnPlayerLeave );
@@ -54,7 +55,7 @@ final class PvpMode
         EnterSpectator( EHandle( pPlayer ) );
 
         g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) );
-        g_Scheduler.SetInterval( this, "ViewMode", 0.1f, g_Scheduler.REPEAT_INFINITE_TIMES, EHandle( pPlayer ) ); // Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
+        g_Scheduler.SetInterval( this, "ForceViewMode", 0.05f, g_Scheduler.REPEAT_INFINITE_TIMES, EHandle( pPlayer ) ); // Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
         
         return HOOK_CONTINUE;
     }
@@ -71,10 +72,10 @@ final class PvpMode
             pPlayer.pev.flags       |= FL_FROZEN;
             pPlayer.pev.takedamage  = DAMAGE_NO;
             pPlayer.pev.rendermode  = kRenderTransTexture;
-            pPlayer.pev.renderamt = 50.0f;
+            pPlayer.pev.renderamt   = 50.0f;
         }
 
-        g_Scheduler.SetTimeout( this, "ProtectionOff", g_ProtectDuration.GetFloat(), EHandle( pPlayer ) );
+        g_Scheduler.SetTimeout( this, "ProtectionOff", cvarProtectDuration.GetFloat(), EHandle( pPlayer ) );
     }
 
     void ProtectionOff(EHandle hPlayer)
@@ -84,7 +85,7 @@ final class PvpMode
         
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
-        if( pPlayer.m_iClassSelection > 0 )
+        if( pPlayer !is null && pPlayer.m_iClassSelection > 0 )
         {
             pPlayer.pev.flags       &= ~FL_FROZEN;
             pPlayer.pev.takedamage  = DAMAGE_YES;
@@ -109,9 +110,9 @@ final class PvpMode
             pPlayer.GetObserver().SetObserverModeControlEnabled( true );
             pPlayer.RemoveAllItems( true );
             g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait until the end of the round." );
-            //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " in slot: " + pPlayer.entindex() + " was moved into Spectator (no free player slots available\n" );
+            //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " was moved into Spectator (no free player slots available ) \n" );
         }
-        // Stupid hax needed to set the respawn delay, triggering directly in the block does not work
+
         g_Scheduler.SetTimeout( this, "NoRespawn", 0.1f, EHandle( pPlayer ) );
     }
     // "Disables" respawning of players in Spectator Mode (just making the respawn delay stupid long)
@@ -131,15 +132,20 @@ final class PvpMode
         g_Scheduler.SetTimeout( this, "NoRespawn", 1.0f, EHandle( pPlayer ) );
     }
 
-    void ViewMode(EHandle hPlayer)
+    void ForceViewMode(EHandle hPlayer)
     {
         if( !hPlayer )
             return;
         
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
-        if( pPlayer !is null && pPlayer.IsConnected() )
-            pPlayer.SetViewMode( ViewMode_FirstPerson );
+        if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
+        {
+            if( cvarViewModeSetting.GetInt() <= 0 )
+                pPlayer.SetViewMode( ViewMode_FirstPerson );
+            else
+                pPlayer.SetViewMode( ViewMode_ThirdPerson );
+        }
     }
 
     HookReturnCode OnPlayerLeave(CBasePlayer@ pDisconnectedPlayer)
@@ -165,4 +171,4 @@ final class PvpMode
 /* Special thanks to 
 - AnggaraNothing, Zode, Neo and H2 for scripting help
 AlexCorruptor for testing and building a test map
-Gauna, SV BOY, Jumpy for helping test*/
+Gauna, SV BOY, Jumpy for helping test */
