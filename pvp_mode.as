@@ -49,6 +49,7 @@ final class PvpMode
     {
         I_PLAYER_TEAM.resize(33);
         BL_PLAYER_SLOT.resize(33);
+        H_SPECTATOR.resize(33);
     }
 
     HookReturnCode OnPlayerSpawn(CBasePlayer@ pPlayer)
@@ -230,6 +231,7 @@ final class PvpMode
 
         CBasePlayer@ pObserverPlayer;
         array<CBaseEntity@> P_SPECTATOR;
+
         for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
         {
             if( BL_PLAYER_SLOT.find( false ) < 0 )
