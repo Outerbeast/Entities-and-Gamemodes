@@ -127,7 +127,7 @@ final class PvpMode
 
         if( pPlayer !is null && pPlayer.GetMaxSpeedOverride() != -1 )
         {
-            if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
+            if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_JUMP | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
                 ProtectionOff( EHandle( pPlayer ) );
         }
         return HOOK_CONTINUE;
