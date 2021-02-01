@@ -17,8 +17,8 @@ Chat commands:
 
 PvpMode@ g_pvpmode = @PvpMode();
 
-CCVar cvarProtectDuration( "pvp_spawnprotecttime", 7.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
-CCVar cvarViewModeSetting( "pvp_viewmode", 1.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
+CCVar cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
+CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
 
 const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
 const bool blPlayerPreThink = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PvpPlayerPreThink );
