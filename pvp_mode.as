@@ -21,12 +21,18 @@ CCVar cvarProtectDuration( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invu
 CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
 
 const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
+const bool blPlayerPreThink = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PvpPlayerPreThink );
 const bool blPlayerDisconnectRegister = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @PvpOnPlayerLeave );
 const bool blClientSayRegister = g_Hooks.RegisterHook( Hooks::Player::ClientSay, @PvpPlayerChatCommand );
 
 HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 {
     return g_pvpmode.OnPlayerSpawn( pPlayer );
+}
+
+HookReturnCode PvpPlayerPreThink(CBasePlayer@ pPlayer, uint& out uiFlags)
+{
+    return g_pvpmode.PlayerPreThink( pPlayer, uiFlags );
 }
 
 HookReturnCode PvpOnPlayerLeave(CBasePlayer@ pPlayer)
@@ -65,10 +71,8 @@ final class PvpMode
         }
         
         EnterSpectator( EHandle( pPlayer ), false );
-
         g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) );
-        g_Scheduler.SetInterval( this, "ForceViewMode", 0.05f, g_Scheduler.REPEAT_INFINITE_TIMES, EHandle( pPlayer ) ); // Have to constantly keep updating the viewmode since it doesn't persist hence the scheduler
-        
+
         return HOOK_CONTINUE;
     }
 
@@ -104,6 +108,38 @@ final class PvpMode
             pPlayer.pev.rendermode  = kRenderNormal;
             pPlayer.pev.renderamt   = 255.0f;
         }
+    }
+
+    HookReturnCode PlayerPreThink(CBasePlayer@ pPlayer, uint& out uiFlags)
+    {
+        if( pPlayer is null )
+            return HOOK_CONTINUE;
+
+        if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
+        {
+            if( cvarViewModeSetting.GetInt() <= 0 )
+                pPlayer.SetViewMode( ViewMode_FirstPerson );
+            else
+                pPlayer.SetViewMode( ViewMode_ThirdPerson );
+        }
+        // THIS DOESN'T WORK!!! Button input does not register while the player is frozen >:E
+        if( pPlayer !is null && pPlayer.pev.FlagBitSet( FL_FROZEN ) )
+        {
+            if( FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK ) || FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK2 ) || FlagSet( pPlayer.m_afButtonPressed, IN_FORWARD ) || FlagSet( pPlayer.m_afButtonPressed, IN_BACK ) || FlagSet( pPlayer.m_afButtonPressed, IN_MOVELEFT ) || FlagSet( pPlayer.m_afButtonPressed, IN_MOVERIGHT ) )
+            {
+                g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " overridden spawn protection \n" );
+                ProtectionOff( EHandle( pPlayer) );
+            }
+        }
+        return HOOK_CONTINUE;
+    }
+
+    bool FlagSet(uint iTargetBits, uint iFlags)
+    {
+        if( ( iTargetBits & iFlags ) != 0 )
+            return true;
+        else
+            return false;
     }
 
     void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
@@ -154,22 +190,6 @@ final class PvpMode
         }
         // Just to make sure the respawn delay never counts down, keep updating the time in a loop
         g_Scheduler.SetTimeout( this, "NoRespawn", 1.0f, EHandle( pPlayer ) );
-    }
-
-    void ForceViewMode(EHandle hPlayer)
-    {
-        if( !hPlayer )
-            return;
-        
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
-        if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
-        {
-            if( cvarViewModeSetting.GetInt() <= 0 )
-                pPlayer.SetViewMode( ViewMode_FirstPerson );
-            else
-                pPlayer.SetViewMode( ViewMode_ThirdPerson );
-        }
     }
 
     HookReturnCode PlayerChatCommand(SayParameters@ pParams)
