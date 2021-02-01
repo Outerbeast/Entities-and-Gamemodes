@@ -18,7 +18,7 @@ Chat commands:
 PvpMode@ g_pvpmode = @PvpMode();
 
 CCVar cvarProtectDuration( "pvp_spawnprotecttime", 7.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
-CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
+CCVar cvarViewModeSetting( "pvp_viewmode", 1.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
 
 const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
 const bool blPlayerPreThink = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PvpPlayerPreThink );
@@ -56,6 +56,8 @@ final class PvpMode
         I_PLAYER_TEAM.resize(33);
         BL_PLAYER_SLOT.resize(33);
         H_SPECTATOR.resize(33);
+
+        g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
     }
 
     HookReturnCode OnPlayerSpawn(CBasePlayer@ pPlayer)
@@ -85,7 +87,7 @@ final class PvpMode
 
         if( pPlayer !is null && pPlayer.m_iClassSelection > 0 )
         {
-            pPlayer.m_afPhysicsFlags |= PFLAG_OBSERVER;
+            pPlayer.SetMaxSpeedOverride( 0 );
             pPlayer.pev.takedamage  = DAMAGE_NO;
             pPlayer.pev.rendermode  = kRenderTransTexture;
             pPlayer.pev.renderamt   = 50.0f;
@@ -103,7 +105,7 @@ final class PvpMode
 
         if( pPlayer !is null && pPlayer.m_iClassSelection > 0 )
         {
-            pPlayer.m_afPhysicsFlags &= ~PFLAG_OBSERVER;
+            pPlayer.SetMaxSpeedOverride( -1 );
             pPlayer.pev.takedamage  = DAMAGE_YES;
             pPlayer.pev.rendermode  = kRenderNormal;
             pPlayer.pev.renderamt   = 255.0f;
@@ -123,10 +125,10 @@ final class PvpMode
                 pPlayer.SetViewMode( ViewMode_ThirdPerson );
         }
 
-        if( pPlayer !is null && FlagSet( pPlayer.m_afPhysicsFlags, PFLAG_OBSERVER ) )
+        if( pPlayer !is null && pPlayer.GetMaxSpeedOverride() != -1 )
         {
             if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
-                ProtectionOff( EHandle( pPlayer) );
+                ProtectionOff( EHandle( pPlayer ) );
         }
         return HOOK_CONTINUE;
     }
