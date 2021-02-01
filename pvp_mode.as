@@ -17,7 +17,7 @@ Chat commands:
 
 PvpMode@ g_pvpmode = @PvpMode();
 
-CCVar cvarProtectDuration( "pvp_spawnprotecttime", 5.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
+CCVar cvarProtectDuration( "pvp_spawnprotecttime", 7.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
 CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
 
 const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
@@ -85,7 +85,7 @@ final class PvpMode
 
         if( pPlayer !is null && pPlayer.m_iClassSelection > 0 )
         {
-            pPlayer.pev.flags       |= FL_FROZEN;
+            pPlayer.m_afPhysicsFlags |= PFLAG_OBSERVER;
             pPlayer.pev.takedamage  = DAMAGE_NO;
             pPlayer.pev.rendermode  = kRenderTransTexture;
             pPlayer.pev.renderamt   = 50.0f;
@@ -103,7 +103,7 @@ final class PvpMode
 
         if( pPlayer !is null && pPlayer.m_iClassSelection > 0 )
         {
-            pPlayer.pev.flags       &= ~FL_FROZEN;
+            pPlayer.m_afPhysicsFlags &= ~PFLAG_OBSERVER;
             pPlayer.pev.takedamage  = DAMAGE_YES;
             pPlayer.pev.rendermode  = kRenderNormal;
             pPlayer.pev.renderamt   = 255.0f;
@@ -122,17 +122,10 @@ final class PvpMode
             else
                 pPlayer.SetViewMode( ViewMode_ThirdPerson );
         }
-        // THIS DOESN'T WORK!!! Button input does not register while the player is frozen >:E
-        if( pPlayer !is null && pPlayer.pev.FlagBitSet( FL_FROZEN ) )
+
+        if( pPlayer !is null && FlagSet( pPlayer.m_afPhysicsFlags, PFLAG_OBSERVER ) )
         {
-            if( 
-            FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK ) || 
-            FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK2 ) || 
-            FlagSet( pPlayer.m_afButtonPressed, IN_FORWARD ) || 
-            FlagSet( pPlayer.m_afButtonPressed, IN_BACK ) || 
-            FlagSet( pPlayer.m_afButtonPressed, IN_MOVELEFT ) || 
-            FlagSet( pPlayer.m_afButtonPressed, IN_MOVERIGHT ) 
-            )
+            if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
                 ProtectionOff( EHandle( pPlayer) );
         }
         return HOOK_CONTINUE;
