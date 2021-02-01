@@ -25,8 +25,8 @@ enum fridgesetting
 
 enum freezespawnflags
 {
-	STARTON			= 1,
-	RENDERINVIS		= 2
+	STARTON	    = 1,
+	RENDERINVIS = 2
 };
 
 class trigger_playerfreeze : ScriptBaseEntity
@@ -90,11 +90,13 @@ class trigger_playerfreeze : ScriptBaseEntity
 					self.pev.nextthink = g_Engine.time + 0.1f;
 					g_EngineFuncs.ServerPrint( "-- DEBUG: Freezing On\n");
 					break;
+
 				case DEFROST:
 					Defroster( H_FRIDGE[i] );
 					self.pev.nextthink = g_Engine.time + 0.1f;
 					g_EngineFuncs.ServerPrint( "-- DEBUG: Defrosting On\n");
 					break;
+
 				default:
 					self.pev.nextthink = g_Engine.time + 0.5f;
 					break;
@@ -132,17 +134,17 @@ class trigger_playerfreeze : ScriptBaseEntity
 		CBaseEntity@ pFreezeEntity;
 		array<CBaseEntity@> P_OPENED_FRIDGE;
 
+                for( uint i = 0; i < H_FRIDGE.length(); i++ )
+			 P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
+
 		if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
 		{
-			while( ( @pFreezeEntity = g_EntityFuncs.FindEntityByTargetname( pFreezeEntity, "" + self.pev.target ) ) !is null )
+		        while( ( @pFreezeEntity = g_EntityFuncs.FindEntityByTargetname( pFreezeEntity, "" + self.pev.target ) ) !is null )
 			{
-			    for( uint i = 0; i < H_FRIDGE.length(); i++ )
-			        P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
-
 			    if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
 					continue;
 
-				H_FRIDGE.insertLast( pFreezeEntity );
+			    H_FRIDGE.insertLast( pFreezeEntity );
 			}
 		}
 		else // Default behaviour if "target" is undefined, cycle through players
@@ -152,12 +154,8 @@ class trigger_playerfreeze : ScriptBaseEntity
 				@pFreezeEntity = g_EntityFuncs.Instance( playerID );
 
 				if( pFreezeEntity is null || !pFreezeEntity.IsPlayer() )
-					continue;
-
-				for( uint i = 0; i < H_FRIDGE.length(); i++ )
-					P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
-
-				if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
+	          			continue;
+                                if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
 					continue;
 
 				H_FRIDGE.insertLast( pFreezeEntity );
@@ -175,7 +173,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 		if( pEntity !is null && !pEntity.pev.FlagBitSet( FL_FROZEN ) )
 			pEntity.pev.flags |= FL_FROZEN;
 
-		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) )
+		if( pEntity !is null && self.pev.SpawnFlagBitSet( RENDERINVIS ) )
 		{
 			pEntity.pev.rendermode = kRenderTransTexture;
 			pEntity.pev.renderamt = 0.0f;
@@ -193,7 +191,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 		if( pEntity !is null && pEntity.pev.FlagBitSet( FL_FROZEN ) )
 			pEntity.pev.flags &= ~FL_FROZEN;
 
-		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.rendermode == kRenderTransTexture )
+		if( pEntity !is null && self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.rendermode == kRenderTransTexture )
 		{
 			pEntity.pev.rendermode = kRenderNormal;
 			pEntity.pev.renderamt = 255.0f;
