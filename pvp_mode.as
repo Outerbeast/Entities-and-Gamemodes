@@ -125,11 +125,15 @@ final class PvpMode
         // THIS DOESN'T WORK!!! Button input does not register while the player is frozen >:E
         if( pPlayer !is null && pPlayer.pev.FlagBitSet( FL_FROZEN ) )
         {
-            if( FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK ) || FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK2 ) || FlagSet( pPlayer.m_afButtonPressed, IN_FORWARD ) || FlagSet( pPlayer.m_afButtonPressed, IN_BACK ) || FlagSet( pPlayer.m_afButtonPressed, IN_MOVELEFT ) || FlagSet( pPlayer.m_afButtonPressed, IN_MOVERIGHT ) )
-            {
-                g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " overridden spawn protection \n" );
+            if( 
+            FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK ) || 
+            FlagSet( pPlayer.m_afButtonPressed, IN_ATTACK2 ) || 
+            FlagSet( pPlayer.m_afButtonPressed, IN_FORWARD ) || 
+            FlagSet( pPlayer.m_afButtonPressed, IN_BACK ) || 
+            FlagSet( pPlayer.m_afButtonPressed, IN_MOVELEFT ) || 
+            FlagSet( pPlayer.m_afButtonPressed, IN_MOVERIGHT ) 
+            )
                 ProtectionOff( EHandle( pPlayer) );
-            }
         }
         return HOOK_CONTINUE;
     }
@@ -252,15 +256,15 @@ final class PvpMode
         CBasePlayer@ pObserverPlayer;
         array<CBaseEntity@> P_SPECTATOR;
 
+        for( uint i = 0; i < H_SPECTATOR.length(); i++ )
+            @P_SPECTATOR[i] = H_SPECTATOR[i].GetEntity();
+
         for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
         {
             if( BL_PLAYER_SLOT.find( false ) < 0 )
                break;
 
             @pObserverPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
-
-            for( uint i = 0; i < H_SPECTATOR.length(); i++ )
-                @P_SPECTATOR[i] = H_SPECTATOR[i].GetEntity();
 
             if( pObserverPlayer is null || !pObserverPlayer.GetObserver().IsObserver() )
                 continue;
