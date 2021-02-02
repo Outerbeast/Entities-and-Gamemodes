@@ -1,18 +1,30 @@
-/* PVP Deathmatch Mode Script
+/* Sven Co-op PVP Deathmatch Mode Script
 - by Outerbeast
 
 Script for enabling friendly fire between players for pvp deathmatch maps
-Only supports 18 players maximum because of limitations imposed by the game + API.
-Ensure the server has only 17 player slots available or extra players will be moved onto Observer Mode
+Useful for Half-Life Deathmatch map ports to SC
 
-Map cfg settings:
+Usage:-
+- Put this script in scripts/maps folder
+- In your map cfg file put this code in to enable
+map_script pvp_mode
+- Add your optional cvars
+
+Map cfg settings:-
 "map_script pvp_mode" - install the script to the map
 "as_command pvp_spawnprotecttime" - set the time duration in seconds for how long spawn invulnerbility lasts, by default this is 5 if not set
 "as_command pvp_viewmode" - set the force viewmode, 0 for first person or 1 for third person, by default this is first person if not set
+"as_command pvp_afktimeout" - set the time after a player goes idle to put them into Spectator mode
 
-Chat commands:
+Chat commands:-
 !pvp_spectate - enter Spectator mode
 !pvp_player - exit Spectator mode
+
+Issues:-
+- Only supports 17 player slots maximum because of limitations imposed by the game + API. 18th player and following will automatically
+be moved to Spectator mode until a slot becomes free.
+- Some players will have colored usernames in the scoreboard and in chat, this is due to the classification system assigning them to
+TEAM classification which apply these colored.
 */
 
 PvpMode@ g_pvpmode = @PvpMode();
@@ -175,7 +187,6 @@ final class PvpMode
                 pPlayer.GetObserver().SetObserverModeControlEnabled( true );
                 pPlayer.RemoveAllItems( true );
                 g_PlayerFuncs.SayText( pPlayer, "SPECTATING: No player slots available. Please wait." );
-                //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " was moved into Spectator (no free player slots available ) \n" );
             }
             else if( blSpectatorOverride )
             {
