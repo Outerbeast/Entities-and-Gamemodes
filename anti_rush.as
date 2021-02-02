@@ -113,7 +113,8 @@ class anti_rush : ScriptBaseEntity
         self.pev.solid 		= SOLID_NOT;
         g_EntityFuncs.SetOrigin( self, self.pev.origin );
         // Configuring the settings for each antirush component
-        if( flTriggerWait > 0.0f ){ strPercentTriggerType = "trigger_multiple_mp"; }
+        if( flTriggerWait > 0.0f )
+            strPercentTriggerType = "trigger_multiple_mp";
         else
             strPercentTriggerType = "trigger_once_mp";
 
@@ -142,10 +143,10 @@ class anti_rush : ScriptBaseEntity
     void CreatePercentPlayerTrigger()
     {
         dictionary trgr;
-        trgr ["minhullsize"]        = ( "" + vZoneCornerMin.ToString() );
-        trgr ["maxhullsize"]        = ( "" + vZoneCornerMax.ToString() );
-        trgr ["m_flPercentage"]     = ( "" + flPercentRequired );
-        trgr ["target"]             = ( "" + self.GetTargetname() );
+        trgr ["minhullsize"]        = "" + vZoneCornerMin.ToString();
+        trgr ["maxhullsize"]        = "" + vZoneCornerMax.ToString();
+        trgr ["m_flPercentage"]     = "" + flPercentRequired;
+        trgr ["target"]             = "" + self.GetTargetname();
         if( strMasterName != "" || strMasterName != "" + self.GetTargetname() ){ trgr ["master"] = ( "" + strMasterName ); }
         if( strPercentTriggerType == "trigger_multiple_mp" ){ trgr ["m_flDelay"] = ( "" + flTriggerWait ); }
         CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + strPercentTriggerType, trgr, true );
@@ -164,16 +165,16 @@ class anti_rush : ScriptBaseEntity
     void CreateIcon()
     {
         dictionary spr;
-        spr ["origin"]          = ( "" + self.GetOrigin().ToString() );
-        spr ["angles"]          = ( "" + self.pev.angles.ToString() );
-        spr ["model"]           = ( "" + strIconName );
-        spr ["vp_type"]         = ( "" + iVpType );
-        spr ["scale"]           = ( "" + self.pev.scale );
-        spr ["rendercolor"]     = ( "" + self.pev.rendercolor.ToString() );
-        spr ["renderamt"]       = ( "255" );
-        spr ["rendermode"]      = ( "5" );
+        spr ["origin"]          =  "" + self.GetOrigin().ToString();
+        spr ["angles"]          =  "" + self.pev.angles.ToString();
+        spr ["model"]           =  "" + strIconName;
+        spr ["vp_type"]         =  "" + iVpType;
+        spr ["scale"]           =  "" + self.pev.scale;
+        spr ["rendercolor"]     =  "" + self.pev.rendercolor.ToString();
+        spr ["renderamt"]       =  "255";
+        spr ["rendermode"]      =  "5";
         @pAntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
-        pAntiRushIcon.Think();
+        pAntiRushIcon.pev.nextthink = 0;
     }
 
     void CreateLock()
@@ -189,10 +190,9 @@ class anti_rush : ScriptBaseEntity
         {
             g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "" + strSoundName, 0.5f, ATTN_NORM );
             pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
-            EHandle hIconHandle = pAntiRushIcon;
 
             if( flFadeTime > 0 )
-                g_Scheduler.SetTimeout( this, "RemoveIcon", flFadeTime, hIconHandle );
+                g_Scheduler.SetTimeout( this, "RemoveIcon", flFadeTime, EHandle( pAntiRushIcon ) );
         }
 
         if( pAntiRushBarrier !is null )
