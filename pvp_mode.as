@@ -19,6 +19,7 @@ PvpMode@ g_pvpmode = @PvpMode();
 
 CCVar cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
 CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
+CCVar cvarAFKTimeoutSetting( "pvp_afktimeout", 20.0f, "AFK timeout before moving to Spectator mode", ConCommandFlag::AdminOnly );
 
 const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
 const bool blPlayerPreThink = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PvpPlayerPreThink );
@@ -69,7 +70,7 @@ final class PvpMode
         {
             pPlayer.SetClassification( I_PLAYER_TEAM[BL_PLAYER_SLOT.find( false )] );
             BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = true;
-            g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " in slot: " + I_PLAYER_TEAM.find( pPlayer.m_iClassSelection ) + " was assigned to team: " + pPlayer.m_iClassSelection + "\n" );
+            //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " in slot: " + I_PLAYER_TEAM.find( pPlayer.m_iClassSelection ) + " was assigned to team: " + pPlayer.m_iClassSelection + "\n" );
         }
         
         EnterSpectator( EHandle( pPlayer ), false );
@@ -112,6 +113,14 @@ final class PvpMode
         }
     }
 
+    bool FlagSet(uint iTargetBits, uint iFlags)
+    {
+        if( ( iTargetBits & iFlags ) != 0 )
+            return true;
+        else
+            return false;
+    }
+
     HookReturnCode PlayerPreThink(CBasePlayer@ pPlayer, uint& out uiFlags)
     {
         if( pPlayer is null )
@@ -127,18 +136,25 @@ final class PvpMode
 
         if( pPlayer !is null && pPlayer.GetMaxSpeedOverride() != -1 )
         {
-            if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_JUMP | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
+            if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
                 ProtectionOff( EHandle( pPlayer ) );
         }
+
+        if( pPlayer !is null && !pPlayer.IsMoving() )
+            g_Scheduler.SetTimeout( this, "AFKTimeout", cvarAFKTimeoutSetting.GetFloat(), EHandle( pPlayer ), pPlayer.m_flLastMove );
+
         return HOOK_CONTINUE;
     }
 
-    bool FlagSet(uint iTargetBits, uint iFlags)
+    void AFKTimeout(EHandle hPlayer, const float flSpawnLastMove)
     {
-        if( ( iTargetBits & iFlags ) != 0 )
-            return true;
-        else
-            return false;
+        if( !hPlayer )
+            return;
+        
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
+        
+        if( pPlayer !is null && flSpawnLastMove == pPlayer.m_flLastMove )
+            EnterSpectator( EHandle( pPlayer ), true );
     }
 
     void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
@@ -165,6 +181,7 @@ final class PvpMode
             {
                 H_SPECTATOR[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = pPlayer;
                 BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = false;
+
                 pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
                 pPlayer.GetObserver().SetObserverModeControlEnabled( true );
                 pPlayer.RemoveAllItems( true );
