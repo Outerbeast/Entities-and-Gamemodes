@@ -214,9 +214,9 @@ final class PvpMode
         { 
             pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX;
             pPlayer.RemoveAllItems( true );
+            // Just to make sure the respawn delay never counts down, keep updating the time in a loop
+            g_Scheduler.SetTimeout( this, "NoRespawn", 1.0f, EHandle( pPlayer ) );
         }
-        // Just to make sure the respawn delay never counts down, keep updating the time in a loop
-        g_Scheduler.SetTimeout( this, "NoRespawn", 1.0f, EHandle( pPlayer ) );
     }
 
     HookReturnCode PlayerChatCommand(SayParameters@ pParams)
