@@ -34,7 +34,8 @@ CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommand
 CCVar cvarAFKTimeoutSetting( "pvp_afktimeout", 20.0f, "AFK timeout before moving to Spectator mode", ConCommandFlag::AdminOnly );
 
 const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
-const bool blPlayerPreThink = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PvpPlayerPreThink );
+const bool blPlayerPreThinkRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PvpPlayerPreThink );
+const bool blPlayerKilledRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, @PvpPlayerKilled );
 const bool blPlayerDisconnectRegister = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @PvpOnPlayerLeave );
 const bool blClientSayRegister = g_Hooks.RegisterHook( Hooks::Player::ClientSay, @PvpPlayerChatCommand );
 
@@ -46,6 +47,11 @@ HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
 HookReturnCode PvpPlayerPreThink(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
     return g_pvpmode.PlayerPreThink( pPlayer, uiFlags );
+}
+
+HookReturnCode PvpPlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
+{
+    return g_pvpmode.PlayerKilled( pPlayer, pAttacker, iGib );
 }
 
 HookReturnCode PvpOnPlayerLeave(CBasePlayer@ pPlayer)
@@ -135,10 +141,10 @@ final class PvpMode
 
     HookReturnCode PlayerPreThink(CBasePlayer@ pPlayer, uint& out uiFlags)
     {
-        if( pPlayer is null )
+        if( pPlayer is null || !pPlayer.IsConnected() )
             return HOOK_CONTINUE;
 
-        if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
+        if( pPlayer.IsAlive() )
         {
             if( cvarViewModeSetting.GetInt() <= 0 )
                 pPlayer.SetViewMode( ViewMode_FirstPerson );
@@ -146,15 +152,18 @@ final class PvpMode
                 pPlayer.SetViewMode( ViewMode_ThirdPerson );
         }
 
-        if( pPlayer !is null && pPlayer.GetMaxSpeedOverride() != -1 )
+        if( pPlayer.GetMaxSpeedOverride() != -1 )
         {
             if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
                 ProtectionOff( EHandle( pPlayer ) );
         }
 
-        if( pPlayer !is null && !pPlayer.IsMoving() )
+        if( pPlayer.IsAlive() && !pPlayer.IsMoving() )
             g_Scheduler.SetTimeout( this, "AFKTimeout", cvarAFKTimeoutSetting.GetFloat(), EHandle( pPlayer ), pPlayer.m_flLastMove );
 
+        if( pPlayer.GetObserver().IsObserver() )
+            pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX;
+        
         return HOOK_CONTINUE;
     }
 
@@ -165,7 +174,7 @@ final class PvpMode
         
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
         
-        if( pPlayer !is null && flSpawnLastMove == pPlayer.m_flLastMove )
+        if( pPlayer !is null && !pPlayer.GetObserver().IsObserver() && flSpawnLastMove == pPlayer.m_flLastMove )
             EnterSpectator( EHandle( pPlayer ), true );
     }
 
@@ -176,10 +185,7 @@ final class PvpMode
         
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
-        if( pPlayer is null || !pPlayer.IsConnected() )
-		    return;
-
-        if( !pPlayer.GetObserver().IsObserver() )
+        if( pPlayer !is null && pPlayer.IsConnected() && !pPlayer.GetObserver().IsObserver() )
         {
             if( !blSpectatorOverride && pPlayer.m_iClassSelection < 1 )
             {
@@ -193,29 +199,13 @@ final class PvpMode
                 H_SPECTATOR[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = pPlayer;
                 BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = false;
 
+                pPlayer.pev.frags = 0;
+
                 pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
                 pPlayer.GetObserver().SetObserverModeControlEnabled( true );
                 pPlayer.RemoveAllItems( true );
                 g_PlayerFuncs.SayText( pPlayer, "You are in Spectator mode. Type '!pvp_play' to exit." );
             }
-        }
-
-        g_Scheduler.SetTimeout( this, "NoRespawn", 0.1f, EHandle( pPlayer ) );
-    }
-    // "Disables" respawning of players in Spectator Mode (just making the respawn delay stupid long)
-    void NoRespawn(EHandle hPlayer)
-    {
-        if( !hPlayer )
-            return;
-
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
-        if( pPlayer !is null && pPlayer.GetObserver().IsObserver() )
-        { 
-            pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX;
-            pPlayer.RemoveAllItems( true );
-            // Just to make sure the respawn delay never counts down, keep updating the time in a loop
-            g_Scheduler.SetTimeout( this, "NoRespawn", 1.0f, EHandle( pPlayer ) );
         }
     }
 
@@ -236,7 +226,6 @@ final class PvpMode
         {
             if( !pPlayer.GetObserver().IsObserver() )
             {
-                pPlayer.pev.frags = 0;
                 EnterSpectator( EHandle( pPlayer ), true );
                 return HOOK_HANDLED;
             }
@@ -264,7 +253,31 @@ final class PvpMode
                 return HOOK_HANDLED;
             }
         }
+
+        if( cmdArgs[0] == "!pvp_stats" /* && !pPlayer.GetObserver().IsObserver() */ )
+        {
+            // !-BUG-! : GetClassificationName() causes the game to crash, produce by putting !pvp_stats in chat
+            string strStats = "" + pPlayer.pev.netname + "'s stats:-\n -Team: " + pPlayer.m_iClassSelection + " - " + pPlayer.GetClassificationName() + "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + pPlayer.m_hActiveItem.GetEntity().GetClassname() + "\n";
+            g_PlayerFuncs.SayText( pPlayer, strStats );
+            return HOOK_HANDLED;            
+        }
         return HOOK_CONTINUE;
+    }
+
+    HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
+    {
+        if( pPlayer is null || pAttacker is null )
+            return HOOK_CONTINUE;
+
+        CBasePlayer@ pAttackingPlayer = cast<CBasePlayer@>( pAttacker );
+
+        if( pAttackingPlayer is pPlayer ) // check if the player suicided
+        {
+            iGib = GIB_ALWAYS;
+            g_Scheduler.SetTimeout( this, "EnterSpectator", 0.1f, EHandle( pPlayer ), true ); // delay because otherwise the suicided player can't control their camera in observer mode xC
+        }
+
+	   return HOOK_CONTINUE;
     }
 
     HookReturnCode OnPlayerLeave(CBasePlayer@ pDisconnectedPlayer)
