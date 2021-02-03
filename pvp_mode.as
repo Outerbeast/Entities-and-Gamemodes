@@ -158,7 +158,7 @@ final class PvpMode
                 ProtectionOff( EHandle( pPlayer ) );
         }
 
-        if( pPlayer.IsAlive() && !pPlayer.IsMoving() )
+        if( pPlayer.IsAlive() && !pPlayer.IsMoving() && !pPlayer.GetObserver().IsObserver() )
             g_Scheduler.SetTimeout( this, "AFKTimeout", cvarAFKTimeoutSetting.GetFloat(), EHandle( pPlayer ), pPlayer.m_flLastMove );
 
         if( pPlayer.GetObserver().IsObserver() )
@@ -254,11 +254,15 @@ final class PvpMode
             }
         }
 
-        if( cmdArgs[0] == "!pvp_stats" /* && !pPlayer.GetObserver().IsObserver() */ )
+        if( cmdArgs[0] == "!pvp_stats" && !pPlayer.GetObserver().IsObserver() )
         {
+            g_PlayerFuncs.SayText( pPlayer, "" + pPlayer.pev.netname + "'s Stats:-\n" );
             // !-BUG-! : GetClassificationName() causes the game to crash, produce by putting !pvp_stats in chat
-            string strStats = "" + pPlayer.pev.netname + "'s stats:-\n -Team: " + pPlayer.m_iClassSelection + " - " + pPlayer.GetClassificationName() + "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + pPlayer.m_hActiveItem.GetEntity().GetClassname() + "\n";
-            g_PlayerFuncs.SayText( pPlayer, strStats );
+            //g_PlayerFuncs.SayText( pPlayer, "-Team: " + pPlayer.m_iClassSelection + " - " + pPlayer.GetClassificationName() + "\n" );
+            g_PlayerFuncs.SayText( pPlayer, "-Points: " + pPlayer.pev.frags + "\n" );
+            g_PlayerFuncs.SayText( pPlayer, "-Deaths: " + pPlayer.m_iDeaths + "\n" );
+            g_PlayerFuncs.SayText( pPlayer, "-Weapon: " + pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) + "\n" );
+
             return HOOK_HANDLED;            
         }
         return HOOK_CONTINUE;
