@@ -34,36 +34,11 @@ CCVar cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn inv
 CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
 CCVar cvarAFKTimeoutSetting( "pvp_afktimeout", 30.0f, "AFK timeout before moving to Spectator mode", ConCommandFlag::AdminOnly );
 
-const bool blPlayerSpawnHookRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PvpOnPlayerSpawn );
-const bool blPlayerPreThinkRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PvpPlayerPreThink );
-const bool blPlayerKilledRegister = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, @PvpPlayerKilled );
-const bool blPlayerDisconnectRegister = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @PvpOnPlayerLeave );
-const bool blClientSayRegister = g_Hooks.RegisterHook( Hooks::Player::ClientSay, @PvpPlayerChatCommand );
-
-HookReturnCode PvpOnPlayerSpawn(CBasePlayer@ pPlayer)
-{
-    return g_pvpmode.OnPlayerSpawn( pPlayer );
-}
-
-HookReturnCode PvpPlayerPreThink(CBasePlayer@ pPlayer, uint& out uiFlags)
-{
-    return g_pvpmode.PlayerPreThink( pPlayer, uiFlags );
-}
-
-HookReturnCode PvpPlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
-{
-    return g_pvpmode.PlayerKilled( pPlayer, pAttacker, iGib );
-}
-
-HookReturnCode PvpOnPlayerLeave(CBasePlayer@ pPlayer)
-{
-    return g_pvpmode.OnPlayerLeave( pPlayer );
-}
-
-HookReturnCode PvpPlayerChatCommand(SayParameters@ pParams)
-{
-    return g_pvpmode.PlayerChatCommand( pParams );
-}
+const bool blPlayerSpawnHookRegister    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PlayerSpawnHook( @g_pvpmode.OnPlayerSpawn ) );
+const bool blPlayerPreThinkRegister     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PlayerPreThinkHook( @g_pvpmode.PlayerPreThink ) );
+const bool blPlayerKilledRegister       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, @PlayerKilledHook( @g_pvpmode.PlayerKilled ) );
+const bool blPlayerDisconnectRegister   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @ClientDisconnectHook( @g_pvpmode.OnPlayerLeave ) );
+const bool blClientSayRegister          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, @ClientSayHook( @g_pvpmode.PlayerChatCommand ) );
 
 final class PvpMode
 {
@@ -259,7 +234,7 @@ final class PvpMode
         {
             // !-BUG-! : GetClassificationName() causes the game to crash, produce by putting !pvp_stats in chat
             HUDTextParams txtStats;
-                string strStats =  "" + pPlayer.pev.netname + "'s Stats:-\n -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) + "\n";
+                string strStats =  " -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) + "\n";
 
                 txtStats.x = 0.7;
                 txtStats.y = 0.7;
@@ -275,7 +250,7 @@ final class PvpMode
                 txtStats.fadeoutTime = 0.0;
                 txtStats.holdTime = 10.0;
                 txtStats.fxTime = 0.0;
-            g_PlayerFuncs.HudMessage( pPlayer, txtStats, strStats );
+            g_PlayerFuncs.HudMessage( pPlayer, txtStats, "" + pPlayer.pev.netname + "'s Stats:-\n" + strStats );
 
             return HOOK_HANDLED;            
         }
@@ -302,11 +277,11 @@ final class PvpMode
             txtWinner.r1 = 0;
 
             txtLoser.g1 = 0;
-			txtWinner.g1 = txtWinner.g2 = 128;
+            txtWinner.g1 = txtWinner.g2 = 128;
 
-			txtWinner.b1 = txtLoser.b1 = 0;
+            txtWinner.b1 = txtLoser.b1 = 0;
 
-			txtWinner.effect = txtLoser.effect = 0;
+            txtWinner.effect = txtLoser.effect = 0;
             txtWinner.fadeinTime = txtLoser.fadeinTime = 0;
             txtWinner.fadeoutTime = txtLoser.fadeoutTime = 0;
             txtWinner.holdTime = txtLoser.holdTime = 3;
@@ -316,7 +291,7 @@ final class PvpMode
         if( pAttackingPlayer !is pPlayer )
         {
             g_PlayerFuncs.HudMessage( pAttackingPlayer, txtWinner, "You killed\n\n" + string( pPlayer.pev.netname).ToUppercase() + "\nwith " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) );
-            g_PlayerFuncs.HudMessage( pPlayer, txtLoser, "You were killed by\n\n" + string( pAttackingPlayer.pev.netname ).ToUppercase() + "\nwith " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) );
+            g_PlayerFuncs.HudMessage( pPlayer, txtLoser, "" + string( pAttackingPlayer.pev.netname ).ToUppercase() + "\nkilled you with " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) );
         }
 
 	   return HOOK_CONTINUE;
