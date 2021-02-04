@@ -14,7 +14,6 @@ Map cfg settings:-
 "map_script pvp_mode" - install the script to the map
 "as_command pvp_spawnprotecttime" - set the time duration in seconds for how long spawn invulnerbility lasts, by default this is 5 if not set
 "as_command pvp_viewmode" - set the force viewmode, 0 for first person or 1 for third person, by default this is first person if not set
-"as_command pvp_afktimeout" - set the time after a player goes idle to put them into Spectator mode
 
 Chat commands:-
 !pvp_stats - show your stats
