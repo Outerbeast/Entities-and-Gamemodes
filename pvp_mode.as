@@ -17,8 +17,8 @@ Map cfg settings:-
 
 Chat commands:-
 !pvp_stats - show your stats
-!pvp_spectate - enter Spectator mode
-!pvp_play - exit Spectator mode
+!pvp_leave/spectate - enter Spectator mode
+!pvp_join/play - exit Spectator mode
 
 Issues:-
 - Only supports 17 player slots maximum because of limitations imposed by the game + API. 18th player and following will automatically
@@ -35,21 +35,23 @@ CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommand
 const bool blPlayerSpawnHookRegister    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PlayerSpawnHook( @g_pvpmode.OnPlayerSpawn ) );
 const bool blPlayerPreThinkRegister     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PlayerPreThinkHook( @g_pvpmode.PlayerPreThink ) );
 const bool blPlayerKilledRegister       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, @PlayerKilledHook( @g_pvpmode.PlayerKilled ) );
-const bool blPlayerDisconnectRegister   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @ClientDisconnectHook( @g_pvpmode.OnPlayerLeave ) );
+const bool blPlayerTakeDamageRegister   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, @PlayerTakeDamageHook( @g_pvpmode.DisableGoombaStomp ) );
 const bool blClientSayRegister          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, @ClientSayHook( @g_pvpmode.PlayerChatCommand ) );
+const bool blClientDisconnectRegister   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @ClientDisconnectHook( @g_pvpmode.OnPlayerLeave ) );
 
 final class PvpMode
 {
-    array<uint> I_PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 19, 99 };
-    array<bool> BL_PLAYER_SLOT(33, false);
-    array<EHandle> H_SPECTATOR;
+    array<uint8> I_PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 19, 99 };
+    array<bool> BL_PLAYER_SLOT( g_Engine.maxClients, false );
+    array<EHandle> H_SPECTATORS( g_Engine.maxClients );
 
     PvpMode()
     {
-        I_PLAYER_TEAM.resize(33);
-        H_SPECTATOR.resize(33);
+        if( I_PLAYER_TEAM.length() < uint( g_Engine.maxClients ) )
+            I_PLAYER_TEAM.resize( g_Engine.maxClients );
 
-        g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
+        if( g_EngineFuncs.CVarGetFloat( "mp_forcerespawn" ) < 1 )
+            g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
     }
 
     HookReturnCode OnPlayerSpawn(CBasePlayer@ pPlayer)
@@ -81,8 +83,7 @@ final class PvpMode
             pPlayer.SetClassification( I_PLAYER_TEAM[BL_PLAYER_SLOT.find( false )] );
             BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = true;
         }
-
-        if( !blSetTeam )
+        else if( !blSetTeam )
         {
             BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = false;
             pPlayer.SetClassification( CLASS_FORCE_NONE );
@@ -174,11 +175,11 @@ final class PvpMode
             }
             else if( blSpectatorOverride )
             {
+                //!-BUG-! - Index out of bounds in 2 player slot server - why????
+                H_SPECTATORS[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = pPlayer;
                 AssignTeam( EHandle( pPlayer ), false );
-                BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = false;
 
                 pPlayer.pev.frags = 0;
-
                 pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
                 pPlayer.GetObserver().SetObserverModeControlEnabled( true );
                 pPlayer.RemoveAllItems( true );
@@ -218,7 +219,7 @@ final class PvpMode
         {
             if( pPlayer.GetObserver().IsObserver() )
             {
-                if( BL_PLAYER_SLOT.find( false ) >= 0 )
+                if( BL_PLAYER_SLOT.find( false ) < 17 )
                     pPlayer.GetObserver().StopObserver( true );
                 else
                     g_PlayerFuncs.SayText( pPlayer, "There are no free slots available yet. Please try again later." );
@@ -234,15 +235,10 @@ final class PvpMode
 
         if( cmdArgs[0] == "!pvp_stats" && !pPlayer.GetObserver().IsObserver() )
         {
-            // !-BUG-! : GetClassificationName() causes the game to crash, produce by putting !pvp_stats in chat
             HUDTextParams txtStats;
-                string strActiveWeapon;
-                if( pPlayer.m_hActiveItem.GetEntity() !is null )
-                    strActiveWeapon = "" + pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX );
-                else
-                    strActiveWeapon = "No weapon selected";
-                
-                string strStats =  " -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strActiveWeapon + "\n";
+                string strMyWeapon = pPlayer.m_hActiveItem.GetEntity() !is null ? string( pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "No weapon selected";
+                // !-BUG-! : GetClassificationName() causes the game to crash
+                string strStats =  " -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
 
                 txtStats.x = 0.7;
                 txtStats.y = 0.7;
@@ -265,23 +261,30 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
+    HookReturnCode DisableGoombaStomp(DamageInfo@ pDamageInfo)
+    {
+        if( pDamageInfo is null || pDamageInfo.pVictim is null || pDamageInfo.pAttacker is null || pDamageInfo.pInflictor is null )
+            return HOOK_CONTINUE;
+    
+        if( FlagSet( pDamageInfo.bitsDamageType, DMG_CRUSH ) && ( pDamageInfo.pAttacker.IsPlayer() || pDamageInfo.pInflictor.IsPlayer() ) )
+            pDamageInfo.flDamage = 0.0f;
+
+        return HOOK_CONTINUE;
+    }
+
     HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
     {
         if( pPlayer is null || pAttacker is null )
             return HOOK_CONTINUE;
 
-        CBasePlayer@ pAttackingPlayer = cast<CBasePlayer@>( pAttacker );
-
         AssignTeam( EHandle( pPlayer ), false );
 
-        if( pAttackingPlayer is pPlayer ) // check if the player suicided
-        {
-            iGib = GIB_ALWAYS;
-            g_Scheduler.SetTimeout( this, "EnterSpectator", 0.1f, EHandle( pPlayer ), true ); // delay because otherwise the suicided player can't control their camera in observer mode xC
-        }
+        CBasePlayer@ pAttackingPlayer = cast<CBasePlayer@>( pAttacker );
+        string strAttackerWeapon = pAttackingPlayer.m_hActiveItem.GetEntity() !is null ? " with " + string( pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "";
+        int iDamageDone = int( pPlayer.pev.dmg_take );
 
         HUDTextParams txtWinner, txtLoser;
-            txtWinner.y = txtLoser.y = 0.55;
+            txtWinner.y = txtLoser.y = 0.6;
 
             txtLoser.r1 = txtLoser.r2 = 128;
             txtWinner.r1 = 0;
@@ -300,9 +303,13 @@ final class PvpMode
         
         if( pAttackingPlayer !is pPlayer )
         {
-            // !-BUG-! - Null pointer access for pAttackingPlayer.m_hActiveItem.GetEntity() under certain conditions
-            g_PlayerFuncs.HudMessage( pAttackingPlayer, txtWinner, "You killed\n\n" + string( pPlayer.pev.netname).ToUppercase() + "\nwith " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) );
-            g_PlayerFuncs.HudMessage( pPlayer, txtLoser, "" + string( pAttackingPlayer.pev.netname ).ToUppercase() + "\nkilled you with " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) );
+            g_PlayerFuncs.HudMessage( pAttackingPlayer, txtWinner, "You killed\n\n" + string( pPlayer.pev.netname ).ToUppercase() + "\n" + strAttackerWeapon + "\n Damage done: " + iDamageDone + "\n" );
+            g_PlayerFuncs.HudMessage( pPlayer, txtLoser, "" + string( pAttackingPlayer.pev.netname ).ToUppercase() + "\nyou" + strAttackerWeapon + "\n Damage taken: " + iDamageDone + "\n" );
+        }
+        else if( pAttackingPlayer is pPlayer ) // check if the player suicided
+        {
+            iGib = GIB_ALWAYS;
+            g_Scheduler.SetTimeout( this, "EnterSpectator", 0.1f, EHandle( pPlayer ), true ); // delay because otherwise the suicided player can't control their camera in observer mode xC
         }
 
 	   return HOOK_CONTINUE;
@@ -318,14 +325,14 @@ final class PvpMode
         pDisconnectedPlayer.pev.frags = 0;
 
         CBasePlayer@ pObserverPlayer;
-        array<CBaseEntity@> P_SPECTATOR(33);
+        array<CBaseEntity@> P_SPECTATORS( H_SPECTATORS.length() );
 
-        for( uint i = 0; i < H_SPECTATOR.length(); i++ )
+        for( uint i = 0; i < H_SPECTATORS.length(); i++ )
         {
-            if( H_SPECTATOR[i].GetEntity() is null )
+            if( H_SPECTATORS[i].GetEntity() is null )
                 continue;
 
-            @P_SPECTATOR[i] = H_SPECTATOR[i].GetEntity();
+            @P_SPECTATORS[i] = H_SPECTATORS[i].GetEntity();
         }
 
         for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
@@ -338,7 +345,7 @@ final class PvpMode
             if( pObserverPlayer is null || !pObserverPlayer.GetObserver().IsObserver() )
                 continue;
 
-            if( P_SPECTATOR.find( cast<CBaseEntity@>( pObserverPlayer ) ) > 0 )
+            if( P_SPECTATORS.find( cast<CBaseEntity@>( pObserverPlayer ) ) > 0 )
                 continue;
 
             pObserverPlayer.GetObserver().StopObserver( true );
