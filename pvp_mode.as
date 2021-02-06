@@ -45,6 +45,8 @@ final class PvpMode
     array<bool> BL_PLAYER_SLOT( g_Engine.maxClients, false );
     array<EHandle> H_SPECTATORS( g_Engine.maxClients );
 
+    int8 iTotalTeams = I_PLAYER_TEAM.length();
+
     PvpMode()
     {
         if( I_PLAYER_TEAM.length() < uint( g_Engine.maxClients ) )
@@ -102,7 +104,7 @@ final class PvpMode
             pPlayer.SetMaxSpeedOverride( 0 );
             pPlayer.pev.takedamage  = DAMAGE_NO;
             pPlayer.pev.rendermode  = kRenderTransTexture;
-            pPlayer.pev.renderamt   = 50.0f;
+            pPlayer.pev.renderamt   = 60.0f;
         }
 
         g_Scheduler.SetTimeout( this, "ProtectionOff", cvarProtectDuration.GetFloat(), EHandle( pPlayer ) );
@@ -119,8 +121,8 @@ final class PvpMode
         {
             pPlayer.SetMaxSpeedOverride( -1 );
             pPlayer.pev.takedamage  = DAMAGE_YES;
-            pPlayer.pev.rendermode  = kRenderNormal;
-            pPlayer.pev.renderamt   = 255.0f;
+            pPlayer.pev.rendermode  = pPlayer.m_iOriginalRenderMode;
+            pPlayer.pev.renderamt   = pPlayer.m_flOriginalRenderAmount;
         }
     }
 
@@ -145,7 +147,7 @@ final class PvpMode
                 pPlayer.SetViewMode( ViewMode_ThirdPerson );
         }
 
-        if( pPlayer.GetMaxSpeedOverride() != -1 )
+        if( pPlayer.IsAlive() && pPlayer.GetMaxSpeedOverride() == 0 )
         {
             if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
                 ProtectionOff( EHandle( pPlayer ) );
@@ -168,6 +170,7 @@ final class PvpMode
         {
             if( !blSpectatorOverride && pPlayer.m_iClassSelection < 1 )
             {
+                pPlayer.SetMaxSpeedOverride( -1 );
                 pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
                 pPlayer.GetObserver().SetObserverModeControlEnabled( true );
                 pPlayer.RemoveAllItems( true );
@@ -179,6 +182,7 @@ final class PvpMode
                 H_SPECTATORS[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = pPlayer;
                 AssignTeam( EHandle( pPlayer ), false );
 
+                pPlayer.SetMaxSpeedOverride( -1 );
                 pPlayer.pev.frags = 0;
                 pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
                 pPlayer.GetObserver().SetObserverModeControlEnabled( true );
@@ -210,7 +214,7 @@ final class PvpMode
             }
             else
             {
-                g_PlayerFuncs.SayText( pPlayer, "You are already spectating. Type '!pvp_play' to start playing." );
+                g_PlayerFuncs.SayText( pPlayer, "You are already spectating. Type '!pvp_join' to start playing." );
                 return HOOK_HANDLED;
             }
         }
@@ -219,7 +223,7 @@ final class PvpMode
         {
             if( pPlayer.GetObserver().IsObserver() )
             {
-                if( BL_PLAYER_SLOT.find( false ) < 17 )
+                if( BL_PLAYER_SLOT.find( false ) <= iTotalTeams )
                     pPlayer.GetObserver().StopObserver( true );
                 else
                     g_PlayerFuncs.SayText( pPlayer, "There are no free slots available yet. Please try again later." );
@@ -236,7 +240,7 @@ final class PvpMode
         if( cmdArgs[0] == "!pvp_stats" && !pPlayer.GetObserver().IsObserver() )
         {
             HUDTextParams txtStats;
-                string strMyWeapon = pPlayer.m_hActiveItem.GetEntity() !is null ? string( pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "No weapon selected";
+                string strMyWeapon = pPlayer.m_hActiveItem ? string( pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "No weapon selected";
                 // !-BUG-! : GetClassificationName() causes the game to crash
                 string strStats =  " -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
 
@@ -280,8 +284,8 @@ final class PvpMode
         AssignTeam( EHandle( pPlayer ), false );
 
         CBasePlayer@ pAttackingPlayer = cast<CBasePlayer@>( pAttacker );
-        string strAttackerWeapon = pAttackingPlayer.m_hActiveItem.GetEntity() !is null ? " with " + string( pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "";
-        int iDamageDone = int( pPlayer.pev.dmg_take );
+        string strAttackerWeapon = pAttackingPlayer.m_hActiveItem ? " with: " + string( pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "";
+        int iDamageDone = pPlayer.m_lastPlayerDamageAmount >= int( pPlayer.pev.dmg_take ) ? pPlayer.m_lastPlayerDamageAmount : int( pPlayer.pev.dmg_take );
 
         HUDTextParams txtWinner, txtLoser;
             txtWinner.y = txtLoser.y = 0.6;
