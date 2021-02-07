@@ -42,7 +42,7 @@ const bool blClientDisconnectRegister   = g_Hooks.RegisterHook( Hooks::Player::C
 final class PvpMode
 {
     array<uint8> I_PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 19, 99 };
-    array<bool> BL_PLAYER_SLOT( g_Engine.maxClients, false );
+    array<bool> BL_PLAYER_SLOT( g_Engine.maxClients );
     array<EHandle> H_SPECTATORS( g_Engine.maxClients );
 
     int8 iTotalTeams = I_PLAYER_TEAM.length();
@@ -62,8 +62,6 @@ final class PvpMode
            return HOOK_CONTINUE;
 
         AssignTeam( EHandle( pPlayer ), true );
-        g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " in slot: " + I_PLAYER_TEAM.find( pPlayer.m_iClassSelection ) + " was assigned to team: " + pPlayer.m_iClassSelection + "\n" );
-        
         EnterSpectator( EHandle( pPlayer ), false );
         g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) );
 
@@ -84,6 +82,7 @@ final class PvpMode
         {
             pPlayer.SetClassification( I_PLAYER_TEAM[BL_PLAYER_SLOT.find( false )] );
             BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = true;
+            //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " in slot: " + I_PLAYER_TEAM.find( pPlayer.m_iClassSelection ) + " was assigned to team: " + pPlayer.m_iClassSelection + "\n" );
         }
         else if( !blSetTeam )
         {
@@ -104,7 +103,7 @@ final class PvpMode
             pPlayer.SetMaxSpeedOverride( 0 );
             pPlayer.pev.takedamage  = DAMAGE_NO;
             pPlayer.pev.rendermode  = kRenderTransTexture;
-            pPlayer.pev.renderamt   = 60.0f;
+            pPlayer.pev.renderamt   = 100.0f;
         }
 
         g_Scheduler.SetTimeout( this, "ProtectionOff", cvarProtectDuration.GetFloat(), EHandle( pPlayer ) );
