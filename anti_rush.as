@@ -15,7 +15,7 @@ Those scripts must already be installed for this one to work
 
 class anti_rush : ScriptBaseEntity
 {
-    private CBaseEntity@ pAntiRushBarrier, pAntiRushIcon;
+    private EHandle hAntiRushBarrier, hAntiRushIcon;
 
     private string strIconName             = "sprites/adamr/arrow_gohere.spr"; // Placeholder default icon, use your own custom one
     private string strSoundName            = "buttons/bell1.wav";
@@ -27,7 +27,7 @@ class anti_rush : ScriptBaseEntity
     private float flPercentRequired, flTargetDelay, flTriggerWait;
     private float flFadeTime = 5.0f;
 
-    private uint iVpType = 0;
+    private uint8 iVpType = 0;
 
     bool KeyValue(const string& in szKey, const string& in szValue)
     {
@@ -133,11 +133,16 @@ class anti_rush : ScriptBaseEntity
                 CreateBarrier();
         }
 
-        if( self.pev.rendercolor == g_vecZero ){ self.pev.rendercolor = Vector( 255, 0, 0 ); }
-        if( self.pev.scale <= 0 ){ self.pev.scale = 0.15; }
+        if( self.pev.rendercolor == g_vecZero )
+            self.pev.rendercolor = Vector( 255, 0, 0 );
+
+        if( self.pev.scale <= 0 )
+            self.pev.scale = 0.15;
+        
         CreateIcon();
 
-        if( self.pev.target != "" || self.pev.target != self.GetTargetname() ){ CreateLock(); }
+        if( self.pev.target != "" || self.pev.target != self.GetTargetname() )
+            CreateLock();
     }
     // Creating auxilliary entities required for antirush logic
     void CreatePercentPlayerTrigger()
@@ -147,8 +152,8 @@ class anti_rush : ScriptBaseEntity
         trgr ["maxhullsize"]        = "" + vZoneCornerMax.ToString();
         trgr ["m_flPercentage"]     = "" + flPercentRequired;
         trgr ["target"]             = "" + self.GetTargetname();
-        if( strMasterName != "" || strMasterName != "" + self.GetTargetname() ){ trgr ["master"] = ( "" + strMasterName ); }
-        if( strPercentTriggerType == "trigger_multiple_mp" ){ trgr ["m_flDelay"] = ( "" + flTriggerWait ); }
+        if( strMasterName != "" || strMasterName != "" + self.GetTargetname() ) trgr ["master"] = "" + strMasterName;
+        if( strPercentTriggerType == "trigger_multiple_mp" ) trgr ["m_flDelay"] = "" + flTriggerWait;
         CBaseEntity@ pPercentPlayerTrigger = g_EntityFuncs.CreateEntity( "" + strPercentTriggerType, trgr, true );
     }
 
@@ -159,7 +164,8 @@ class anti_rush : ScriptBaseEntity
             { "minhullsize", "" + vBlockerCornerMin.ToString() },
             { "maxhullsize", "" + vBlockerCornerMax.ToString() }
         };
-        @pAntiRushBarrier = g_EntityFuncs.CreateEntity( "func_wall_custom", wall, true );
+        CBaseEntity@ pAntiRushBarrier = g_EntityFuncs.CreateEntity( "func_wall_custom", wall, true );
+        hAntiRushBarrier = pAntiRushBarrier;
     }
 
     void CreateIcon()
@@ -173,8 +179,9 @@ class anti_rush : ScriptBaseEntity
         spr ["rendercolor"]     =  "" + self.pev.rendercolor.ToString();
         spr ["renderamt"]       =  "255";
         spr ["rendermode"]      =  "5";
-        @pAntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
+        CBaseEntity@ pAntiRushIcon = g_EntityFuncs.CreateEntity( "env_sprite", spr, true );
         pAntiRushIcon.pev.nextthink = 0;
+        hAntiRushIcon = pAntiRushIcon;
     }
 
     void CreateLock()
@@ -186,17 +193,17 @@ class anti_rush : ScriptBaseEntity
     // Main triggering business
     void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
     {
-        if( pAntiRushIcon !is null )
+        if( hAntiRushIcon )
         {
-            g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, "" + strSoundName, 0.5f, ATTN_NORM );
-            pAntiRushIcon.pev.rendercolor = Vector( 0, 255, 0 );
+            g_SoundSystem.EmitSound( hAntiRushIcon.GetEntity().edict(), CHAN_ITEM, "" + strSoundName, 0.5f, ATTN_NORM );
+            hAntiRushIcon.GetEntity().pev.rendercolor = Vector( 0, 255, 0 );
 
             if( flFadeTime > 0 )
-                g_Scheduler.SetTimeout( this, "RemoveIcon", flFadeTime, EHandle( pAntiRushIcon ) );
+                g_Scheduler.SetTimeout( this, "RemoveIcon", flFadeTime );
         }
 
-        if( pAntiRushBarrier !is null )
-            g_EntityFuncs.Remove( pAntiRushBarrier );
+        if( hAntiRushBarrier )
+            g_EntityFuncs.Remove( hAntiRushBarrier.GetEntity() );
 
         g_Scheduler.SetTimeout( this, "TargetFuncs", flTargetDelay );
     }
@@ -213,12 +220,10 @@ class anti_rush : ScriptBaseEntity
         }
     }
 
-    void RemoveIcon(EHandle hIconHandle)
+    void RemoveIcon()
     {
-        if( !hIconHandle )
-            return;
-
-        g_EntityFuncs.Remove( hIconHandle.GetEntity() );
+        if( hAntiRushIcon )
+            g_EntityFuncs.Remove( hAntiRushIcon.GetEntity() );
     }
 }
 
@@ -229,7 +234,6 @@ void RegisterAntiRushEntity()
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_multiple_mp", "trigger_multiple_mp" );
     g_CustomEntityFuncs.RegisterCustomEntity( "func_wall_custom", "func_wall_custom" );
 }
-
 /* Special Thanks to:
 - CubeMath for creating the custom entities required for building anti-rush setups 
 - Admer456 for coding support
