@@ -38,10 +38,10 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
 
     for( int i = 0; i < g_Engine.maxClients; i++ )
     {
-        FallingPlayer fpInfo;
-        fpInfo.flPlayerFallSpeed = 0.0f;
-        fpInfo.blHasPlayerFell = false;
-        FALLING_PLAYER_DATA.insertLast( fpInfo );
+        FallingPlayer plrdata;
+        plrdata.flPlayerFallSpeed = 0.0f;
+        plrdata.blHasPlayerFell = false;
+        FALLING_PLAYER_DATA.insertLast( plrdata );
     }
 }
 
@@ -79,30 +79,34 @@ HookReturnCode OnGround(CBasePlayer@ pPlayer)
 
 HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
-    if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() )
+    if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+        return HOOK_CONTINUE;
+    
+    if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !pPlayer.pev.FlagBitSet( FL_INWATER ) && !pPlayer.IsOnLadder() )
     {
-        if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !pPlayer.pev.FlagBitSet( FL_INWATER ) && !pPlayer.IsOnLadder() )
-        {
-            FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = pPlayer.m_flFallVelocity;
+        FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = pPlayer.m_flFallVelocity;
 
-            if( FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed >= flMortalVelocity && !FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
-            {
-                g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
-                FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = true;
-                //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
-            }
-        }
-        else
+        if( FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed >= flMortalVelocity && !FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
         {
-            FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
-            FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
+            g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
+            FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = true;
+            //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
         }
     }
+    else
+    {
+        FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
+        FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
+    }
+    
     return HOOK_CONTINUE;
 }
 
 HookReturnCode Splat(CBasePlayer@ pPlayer)
-{ 
+{
+    if( pPlayer is null )
+        return HOOK_CONTINUE;
+    
     if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
     {
         CBaseEntity@ pWorld = g_EntityFuncs.Instance( 0 );
