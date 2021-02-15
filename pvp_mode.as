@@ -63,7 +63,7 @@ final class PvpMode
 
         AssignTeam( EHandle( pPlayer ), true );
         EnterSpectator( EHandle( pPlayer ), false );
-        g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) );
+        g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) ); // Why delay? Because rendering won't apply on spawn - but WHY.
 
         return HOOK_CONTINUE;
     }
@@ -139,7 +139,7 @@ final class PvpMode
             return HOOK_CONTINUE;
 
         if( pPlayer.IsAlive() )
-        {
+        {// Utterly retarded. Forced to use the enum and not the actual value.
             if( cvarViewModeSetting.GetInt() <= 0 )
                 pPlayer.SetViewMode( ViewMode_FirstPerson );
             else
@@ -153,7 +153,7 @@ final class PvpMode
         }
 
         if( pPlayer.GetObserver().IsObserver() )
-            pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX;
+            pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX; // Because there isn't away to disable respawn like for survival mode
         
         return HOOK_CONTINUE;
     }
@@ -302,7 +302,7 @@ final class PvpMode
             txtWinner.fadeoutTime = txtLoser.fadeoutTime = 0;
             txtWinner.holdTime = txtLoser.holdTime = 3;
             txtWinner.channel = 5;
-            txtWinner.channel = 7;
+            txtLoser.channel = 7;
         
         if( pAttackingPlayer !is pPlayer )
         {
@@ -319,7 +319,7 @@ final class PvpMode
     }
 
     HookReturnCode OnPlayerLeave(CBasePlayer@ pDisconnectedPlayer)
-    {   
+    {
         if( pDisconnectedPlayer is null )
             return HOOK_CONTINUE;
 
@@ -329,7 +329,7 @@ final class PvpMode
 
         CBasePlayer@ pObserverPlayer;
         array<CBaseEntity@> P_SPECTATORS( H_SPECTATORS.length() );
-
+        // No opEquals for EHandle <=> CBaseEntity types, hence the following cursed code
         for( uint i = 0; i < H_SPECTATORS.length(); i++ )
         {
             if( H_SPECTATORS[i].GetEntity() is null )
