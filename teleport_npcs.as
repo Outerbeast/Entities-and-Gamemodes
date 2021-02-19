@@ -62,5 +62,6 @@ void TransportNpcs(CBaseEntity@ pTriggerScript)
         H_STORED_NPCS[i].GetEntity().pev.origin = H_STORED_NPCS[i].GetEntity().GetOrigin() + ( g_vEndPos - g_vStartPos ) + Vector( 0, 0, 36 );
         g_EngineFuncs.ServerPrint( "-- DEBUG: TransportNpcs script teleported: " + H_STORED_NPCS[i].GetEntity().GetClassname() + " to end point: " + g_vEndPos.ToString() + " - New origin: " + H_STORED_NPCS[i].GetEntity().GetOrigin().ToString() + "\n" );
     }
+    H_STORED_NPCS.resize( 0 );
     g_EntityFuncs.FireTargets( pTriggerScript.GetTargetname(), pTriggerScript, pTriggerScript, USE_OFF, 0.0f, 0.0f );
 }
