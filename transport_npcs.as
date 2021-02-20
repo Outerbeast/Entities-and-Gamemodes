@@ -12,7 +12,7 @@ Template entity:-
 "targetname" "transport_npcs"
 "origin" "x1 y1 z1" // Starting position
 "angles" "p y r" // custom angles
-"$v_destination" "x2 y2 z2"
+"$v_destination" "x2 y2 z2" // Ending position
 "$f_range" "72" // search radius
 "$v_mins" "x y z" // box min origin
 "$v_maxs" "x y z" // box max origin
@@ -36,16 +36,10 @@ void TransportNpcs(CBaseEntity@ pTriggerScript)
     else
         return;
 
-    g_EngineFuncs.ServerPrint( "-- DEBUG: Triggered TransportNpcs script: " + pTriggerScript.GetTargetname() + " at start position " + vStartPos.ToString() + " and destination position " + vEndPos.ToString() + "\n" );
-    
-
     if( kvTriggerScript.GetKeyvalue( "$v_mins" ).Exists() && kvTriggerScript.GetKeyvalue( "$v_maxs" ).Exists() )
     {
         if( kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector() != kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector() )
-        {
             iNumEntities = g_EntityFuncs.EntitiesInBox( @P_ENTITIES, kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector(), kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector(), FL_MONSTER );
-            g_EngineFuncs.ServerPrint( "-- DEBUG: TransportNpcs script: " + pTriggerScript.GetTargetname() + " is transporting entities in box with bounds: Min- " + kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector().ToString() + " - Max- " + kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector().ToString() + "\n" );
-        }
     }
     else
         iNumEntities = g_EntityFuncs.MonstersInSphere( @P_ENTITIES, vStartPos, flSearchRange );
@@ -57,8 +51,6 @@ void TransportNpcs(CBaseEntity@ pTriggerScript)
 
         P_ENTITIES[i].pev.origin = P_ENTITIES[i].GetOrigin() + ( vEndPos - vStartPos ) + Vector( 0, 0, 36 );
         P_ENTITIES[i].pev.angles = P_ENTITIES[i].pev.angles + pTriggerScript.pev.angles;
-
-        g_EngineFuncs.ServerPrint( "-- DEBUG: TransportNpcs Script teleported entity " + P_ENTITIES[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_ENTITIES[i].GetOrigin().ToString() + "\n" );
     }
     P_ENTITIES.resize( 0 );
     pTriggerScript.Use( pTriggerScript, pTriggerScript, USE_OFF, 0.0f );
