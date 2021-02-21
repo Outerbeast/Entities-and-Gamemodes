@@ -28,11 +28,8 @@ void TransportNpcs(CBaseEntity@ pTriggerScript)
     float flSearchRange = kvTriggerScript.GetKeyvalue( "$f_range" ).Exists() ? kvTriggerScript.GetKeyvalue("$f_range").GetFloat() : 128.0f;
     vStartPos = pTriggerScript.GetOrigin();
 
-    CBaseEntity@ pDestination = g_EntityFuncs.FindEntityByTargetname( pDestination, "" + pTriggerScript.pev.target );
     if( kvTriggerScript.GetKeyvalue( "$v_destination" ).Exists() )
         vEndPos = kvTriggerScript.GetKeyvalue( "$v_destination" ).GetVector();
-    else if( pDestination !is null && pDestination !is pTriggerScript )
-        vEndPos = pDestination.GetOrigin();
     else
         return;
 
