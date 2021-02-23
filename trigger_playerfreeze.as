@@ -200,8 +200,8 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 		if( pEntity !is null && self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.rendermode == kRenderTransTexture )
 		{
-            pEntity.pev.rendermode  = pPlayer.m_iOriginalRenderMode;
-            pEntity.pev.renderamt   = pPlayer.m_flOriginalRenderAmount;
+			pEntity.pev.rendermode  = pPlayer.m_iOriginalRenderMode;
+			pEntity.pev.renderamt   = pPlayer.m_flOriginalRenderAmount;
 		}
 		iFridgeSetting = DEFROST;
 	}
