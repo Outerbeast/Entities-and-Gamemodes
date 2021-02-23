@@ -134,17 +134,20 @@ class trigger_playerfreeze : ScriptBaseEntity
 		CBaseEntity@ pFreezeEntity;
 		array<CBaseEntity@> P_OPENED_FRIDGE;
 
-                for( uint i = 0; i < H_FRIDGE.length(); i++ )
-			 P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
+		for( uint i = 0; i < H_FRIDGE.length(); i++ )
+			P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
 
 		if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
 		{
-		        while( ( @pFreezeEntity = g_EntityFuncs.FindEntityByTargetname( pFreezeEntity, "" + self.pev.target ) ) !is null )
+		    while( ( @pFreezeEntity = g_EntityFuncs.FindEntityByTargetname( pFreezeEntity, "" + self.pev.target ) ) !is null )
 			{
 			    if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
 					continue;
 
-			    H_FRIDGE.insertLast( pFreezeEntity );
+			    if( P_OPENED_FRIDGE.find( null ) >= 0 )
+					H_FRIDGE.insertAt( P_OPENED_FRIDGE.find( null ), pFreezeEntity );
+				else
+					H_FRIDGE.insertLast( pFreezeEntity );
 			}
 		}
 		else // Default behaviour if "target" is undefined, cycle through players
@@ -154,11 +157,15 @@ class trigger_playerfreeze : ScriptBaseEntity
 				@pFreezeEntity = g_EntityFuncs.Instance( playerID );
 
 				if( pFreezeEntity is null || !pFreezeEntity.IsPlayer() )
-	          			continue;
-                                if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
-					continue;
+	          		continue;
 
-				H_FRIDGE.insertLast( pFreezeEntity );
+                if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
+					continue;
+				
+				if( P_OPENED_FRIDGE.find( null ) >= 0 )
+					H_FRIDGE.insertAt( P_OPENED_FRIDGE.find( null ), pFreezeEntity );
+				else
+					H_FRIDGE.insertLast( pFreezeEntity );
 			}
 		}
 	}
@@ -193,8 +200,8 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 		if( pEntity !is null && self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.rendermode == kRenderTransTexture )
 		{
-			pEntity.pev.rendermode = kRenderNormal;
-			pEntity.pev.renderamt = 255.0f;
+            pEntity.pev.rendermode  = pPlayer.m_iOriginalRenderMode;
+            pEntity.pev.renderamt   = pPlayer.m_flOriginalRenderAmount;
 		}
 		iFridgeSetting = DEFROST;
 	}
