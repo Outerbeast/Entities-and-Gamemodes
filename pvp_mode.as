@@ -63,7 +63,7 @@ final class PvpMode
 
         AssignTeam( EHandle( pPlayer ), true );
         EnterSpectator( EHandle( pPlayer ), false );
-        g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) ); // Why delay? Because rendering won't apply on spawn - but WHY.
+        g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) );// Why delay? Because rendering won't apply on spawn - but WHY.
 
         return HOOK_CONTINUE;
     }
@@ -137,9 +137,9 @@ final class PvpMode
     {
         if( pPlayer is null || !pPlayer.IsConnected() )
             return HOOK_CONTINUE;
-
+        // Utterly retarded. Forced to use the enum and not the actual value.
         if( pPlayer.IsAlive() )
-        {// Utterly retarded. Forced to use the enum and not the actual value.
+        {
             if( cvarViewModeSetting.GetInt() <= 0 )
                 pPlayer.SetViewMode( ViewMode_FirstPerson );
             else
@@ -148,12 +148,12 @@ final class PvpMode
 
         if( pPlayer.IsAlive() && pPlayer.GetMaxSpeedOverride() == 0 )
         {
-            if( FlagSet( pPlayer.pev.button, IN_ATTACK | IN_ATTACK2 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) )
+            if( FlagSet( pPlayer.pev.button, IN_DUCK | IN_JUMP | IN_USE | IN_ATTACK | IN_ATTACK2 | IN_ALT1 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN ) )
                 ProtectionOff( EHandle( pPlayer ) );
         }
 
         if( pPlayer.GetObserver().IsObserver() )
-            pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX; // Because there isn't away to disable respawn like for survival mode
+            pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX;
         
         return HOOK_CONTINUE;
     }
@@ -238,11 +238,11 @@ final class PvpMode
 
         if( cmdArgs[0] == "!pvp_stats" && !pPlayer.GetObserver().IsObserver() )
         {
-            HUDTextParams txtStats;
-                string strMyWeapon = pPlayer.m_hActiveItem ? string( pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "No weapon selected";
-                // !-BUG-! : GetClassificationName() causes the game to crash
-                string strStats =  " -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
+            string strMyWeapon = pPlayer.m_hActiveItem ? string( pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) ) : "No weapon selected";
+            // !-BUG-! : GetClassificationName() causes the game to crash since SC 5.23
+            string strStats =  " -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
 
+            HUDTextParams txtStats;
                 txtStats.x = 0.7;
                 txtStats.y = 0.7;
 
@@ -302,24 +302,23 @@ final class PvpMode
             txtWinner.fadeoutTime = txtLoser.fadeoutTime = 0;
             txtWinner.holdTime = txtLoser.holdTime = 3;
             txtWinner.channel = 5;
-            txtLoser.channel = 7;
+            txtWinner.channel = 7;
         
         if( pAttackingPlayer !is pPlayer )
         {
             g_PlayerFuncs.HudMessage( pAttackingPlayer, txtWinner, "You killed\n\n" + string( pPlayer.pev.netname ).ToUppercase() + "\n" + strAttackerWeapon + "\n Damage done: " + iDamageDone + "\n" );
             g_PlayerFuncs.HudMessage( pPlayer, txtLoser, "" + string( pAttackingPlayer.pev.netname ).ToUppercase() + "\nyou" + strAttackerWeapon + "\n Damage taken: " + iDamageDone + "\n" );
         }
-        else if( pAttackingPlayer is pPlayer ) // check if the player suicided
+        else if( pAttackingPlayer is pPlayer ) // Case player suicided
         {
             iGib = GIB_ALWAYS;
             g_Scheduler.SetTimeout( this, "EnterSpectator", 0.1f, EHandle( pPlayer ), true ); // delay because otherwise the suicided player can't control their camera in observer mode xC
         }
-
-	   return HOOK_CONTINUE;
+        return HOOK_CONTINUE;
     }
 
     HookReturnCode OnPlayerLeave(CBasePlayer@ pDisconnectedPlayer)
-    {
+    {   
         if( pDisconnectedPlayer is null )
             return HOOK_CONTINUE;
 
@@ -329,7 +328,7 @@ final class PvpMode
 
         CBasePlayer@ pObserverPlayer;
         array<CBaseEntity@> P_SPECTATORS( H_SPECTATORS.length() );
-        // No opEquals for EHandle <=> CBaseEntity types, hence the following cursed code
+        // No opEquals/opCmp for EHandle <=> CBaseEntity types, hence the following cursed code
         for( uint i = 0; i < H_SPECTATORS.length(); i++ )
         {
             if( H_SPECTATORS[i].GetEntity() is null )
