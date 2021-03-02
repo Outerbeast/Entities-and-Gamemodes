@@ -1,8 +1,6 @@
 /* Script for swapping default weapons with classic ones without Classic Mode.
 Usage: Add CLASSICMODE::Enable() in MapInit in your main amp script
-
 -Outerbeast */
-
 #include "hl_weapons/weapon_hl357"
 #include "hl_weapons/weapon_hlcrowbar"
 #include "hl_weapons/weapon_hlmp5"
