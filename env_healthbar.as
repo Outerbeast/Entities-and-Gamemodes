@@ -4,8 +4,8 @@ by Outerbeast
 
 Keys:
 * "target"          - target entity to show a healthbar for. Can be a player, npc or breakable item ( with hud info enabled )
-* "sprite"          - Path to a custom sprite if desired. Otherwise uses default
-* "offset" "x y z"  - adds an offset from the health bar origin
+* "sprite"          - path to a custom sprite if desired. Otherwise uses default
+* "offset" "x y z"  - adds an offset for the health bar origin
 * "scale" "0.0"     - resize the health bar, this is 0.3 by default
 * "distance" "0.0"  - the distance you have to be to be able to see the health bar
 * "spawnflags" "1"  - forces the healthbar to stay on for the entity
@@ -47,9 +47,13 @@ const array<string> EXCLUDED_NPCS =
     "monster_gman",
     "monster_furniture",
     "monster_snark",
+    "monster_sqknest",
     "monster_rat",
     "monster_cockroach",
-    "monster_leech"
+    "monster_leech",
+    "monster_handgrenade",
+	"monster_satchel",
+	"monster_tripmine"
 };
 
 void RegisterHealthBarEntity()
@@ -165,14 +169,13 @@ class env_healthbar : ScriptBaseEntity
 {
     PlayerPostThinkHook@ pPlayerPostThinkFunc = null;
 
-    private CBaseEntity@ pTrackedEntity;
-    private CSprite@ pHealthBar;
+    private EHandle hTrackedEntity, hHealthBar;
 
     private string strSpriteName = strDefaultSpriteName;
 
     private bool m_blOnOffState;
-    private float m_flStartHealth;
 
+    private float m_flStartHealth;
     private float flDrawDistance = 12048;
     
     private Vector vOffset = Vector( 0, 0, 16 );
@@ -230,7 +233,9 @@ class env_healthbar : ScriptBaseEntity
 
     void UpdateOnRemove()
     {
-        g_EntityFuncs.Remove( pHealthBar );
+        if( hHealthBar )
+            g_EntityFuncs.Remove( hHealthBar.GetEntity() );
+        
         BaseClass.UpdateOnRemove();
 
         if( pPlayerPostThinkFunc !is null )
@@ -239,13 +244,17 @@ class env_healthbar : ScriptBaseEntity
 
     void TrackEntity()
     {
+        CBaseEntity@ pTrackedEntity = hTrackedEntity.GetEntity();
+
         if( pTrackedEntity !is null && ( pTrackedEntity.IsPlayer() || pTrackedEntity.IsMonster() || pTrackedEntity.IsBreakable() ) )
         {
-            if( pHealthBar is null )
+            if( !hHealthBar )
                 CreateHealthBar();
 
-            if( pHealthBar !is null )
+            if( hHealthBar )
             {
+                CSprite@ pHealthBar = cast<CSprite@>( hHealthBar.GetEntity() );
+
                 if( !pTrackedEntity.IsAlive() )
                 {
                     if( pTrackedEntity.IsRevivable() )
@@ -264,7 +273,8 @@ class env_healthbar : ScriptBaseEntity
                     float flCurrentFrame    = flPercentHealth * GetMaxFrame();
 
                     // !!AN!! Fix zero current frame if it's still alive.
-                    if( floor(flCurrentFrame) <= 0 && flPercentHealth > 0 ) flCurrentFrame = Math.min( 1, GetMaxFrame() );
+                    if( floor(flCurrentFrame) <= 0 && flPercentHealth > 0 )
+                        flCurrentFrame = Math.min( 1, GetMaxFrame() );
 
                     // !!AN!! This is horribly wrong.
                     // From API doc: `Advances this sprite's frame by the given amount of frames.`
@@ -290,9 +300,10 @@ class env_healthbar : ScriptBaseEntity
         self.pev.nextthink = g_Engine.time + 0.01f;
     }
     // !!AN!! Trigger-able.
-    void TrackUse( CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue = 0.0f )
+    void TrackUse(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue = 0.0f)
     {
-        if( !self.ShouldToggle( useType, m_blOnOffState ) ) return;
+        if( !self.ShouldToggle( useType, m_blOnOffState ) )
+            return;
 
         m_blOnOffState = ( useType == USE_TOGGLE ? !m_blOnOffState : useType == USE_ON );
 
@@ -303,6 +314,7 @@ class env_healthbar : ScriptBaseEntity
             return;
         }
 
+        CBaseEntity@ pTrackedEntity;
         string strTarget = string( self.pev.target );
         strTarget.Trim();
 
@@ -311,26 +323,33 @@ class env_healthbar : ScriptBaseEntity
         else
             @pTrackedEntity = g_EntityFuncs.Instance( self.pev.owner );
 
-        if( pTrackedEntity !is null ) m_flStartHealth = pTrackedEntity.pev.health;
-
+        if( pTrackedEntity !is null )
+        {
+            m_flStartHealth = pTrackedEntity.pev.health;
+            hTrackedEntity = pTrackedEntity;
+        }
         self.pev.nextthink = g_Engine.time + 0.01f;
     }
 
     void Show()
     {
-        if( pTrackedEntity is null ) return;
-        pHealthBar.pev.renderamt = 255.0f;
+        if( !hHealthBar )
+            return;
+        
+        hHealthBar.GetEntity().pev.renderamt = 255.0f;
     }
 
     void Hide()
     {
-        if( pTrackedEntity is null ) return;
-        pHealthBar.pev.renderamt = 0.0f;
+        if( !hHealthBar )
+            return;
+        
+        hHealthBar.GetEntity().pev.renderamt = 0.0f;
     }
 
     void CreateHealthBar()
     {
-        @pHealthBar = g_EntityFuncs.CreateSprite( strSpriteName, pTrackedEntity.GetOrigin(), false, 0.0f );
+        CSprite@ pHealthBar = g_EntityFuncs.CreateSprite( strSpriteName, hTrackedEntity.GetEntity().GetOrigin(), false, 0.0f );
         pHealthBar.SetScale( self.pev.scale );
         pHealthBar.pev.rendermode = kRenderTransAdd;
         pHealthBar.pev.nextthink = 0;
@@ -341,20 +360,23 @@ class env_healthbar : ScriptBaseEntity
         pHealthBar.pev.frame = GetMaxFrame();
         //g_Game.AlertMessage( at_notice, "env_healthbar GetMaxFrame(): " + GetMaxFrame() + "\n" );
 
-        if( self.pev.SpawnFlagBitSet( 1 ) ) Show();
+        if( self.pev.SpawnFlagBitSet( 1 ) )
+            Show();
+
+        hHealthBar = pHealthBar;
     }
 
     float GetHealth()
     {
-        if( pTrackedEntity !is null ) return Math.clamp( 0, pTrackedEntity.pev.health, GetMaxHealth() );
-        return 0;
+        if( hTrackedEntity ) return Math.clamp( 0, hTrackedEntity.GetEntity().pev.health, GetMaxHealth() );
+            return 0;
     }
 
     float GetMaxHealth()
     {
-        if( pTrackedEntity !is null )
+        if( hTrackedEntity )
         {
-            float flMaxHP = pTrackedEntity.pev.max_health;
+            float flMaxHP = hTrackedEntity.GetEntity().pev.max_health;
             if( flMaxHP <= 0 ) flMaxHP = m_flStartHealth;
             if( flMaxHP <= 0 ) flMaxHP = 1; // !!AN!! "Divided by Zero" still haunts you...
             return flMaxHP;
@@ -365,23 +387,22 @@ class env_healthbar : ScriptBaseEntity
     int GetMaxFrame()
     {
         // !!AN!! Zero is minimum.
-        if( pHealthBar !is null ) return Math.max( 0, g_EngineFuncs.ModelFrames( g_EngineFuncs.ModelIndex( pHealthBar.pev.model ) ) - 1 );
+        if( hHealthBar ) return Math.max( 0, g_EngineFuncs.ModelFrames( g_EngineFuncs.ModelIndex( hHealthBar.GetEntity().pev.model ) ) - 1 );
         return 0;
     }
 
-    protected HookReturnCode AimingPlayer( CBasePlayer@ pPlayer )
+    protected HookReturnCode AimingPlayer(CBasePlayer@ pPlayer)
     {
         if( pPlayer is null )
             return HOOK_CONTINUE;
         
         CBaseEntity@ pAimedEntity = g_Utility.FindEntityForward( pPlayer, flDrawDistance );
 
-        if( pHealthBar !is null )
+        if( hHealthBar )
         {
-            if( pAimedEntity is pTrackedEntity ) Show();
+            if( pAimedEntity is hTrackedEntity.GetEntity() ) Show();
             else Hide();
         }
-
         return HOOK_CONTINUE;
     }
 }
