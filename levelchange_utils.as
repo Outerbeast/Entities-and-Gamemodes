@@ -7,11 +7,13 @@ namespace LEVELCHANGE_UTILS
 {
 
 string strSprite;
+uint iScale;
 
-void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr") // Trigger in MapInit()
+void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr", const uint iScaleIn = 0.25) // Trigger in MapInit()
 {
      g_Game.PrecacheModel( strSpriteIn );
      strSprite = strSpriteIn;
+     iScale = iScaleIn;
 }
 
 void Enable(uint iPercentage = 0) // Trigger in MapStart()
@@ -19,14 +21,14 @@ void Enable(uint iPercentage = 0) // Trigger in MapStart()
 	CBaseEntity@ pChangeLvl;
 	while( ( @pChangeLvl = g_EntityFuncs.FindEntityByClassname( pChangeLvl, "trigger_changelevel" ) ) !is null )
 	{
-		if( pChangeLvl.pev.SpawnFlagBitSet( 2 ) || pChangeLvl.GetTargetname() != "" || pChangeLvl.pev.solid != SOLID_TRIGGER || pChangeLvl.pev.movetype == MOVETYPE_PUSH )
-			continue;
-		
+          if( pChangeLvl.pev.SpawnFlagBitSet( 2 ) || pChangeLvl.GetTargetname() != "" || pChangeLvl.pev.solid != SOLID_TRIGGER || pChangeLvl.pev.movetype == MOVETYPE_PUSH )
+               continue;
+
           if( strSprite != "" )
           {
                CSprite@ pLevelChangeSpr = g_EntityFuncs.CreateSprite( strSprite, pChangeLvl.pev.absmin + ( ( pChangeLvl.pev.absmax - pChangeLvl.pev.absmin ) / 2 ), false, 0.0f );
                g_EntityFuncs.DispatchKeyValue( pLevelChangeSpr.edict(), "vp_type", 0 );
-               pLevelChangeSpr.SetScale( 1 );
+               pLevelChangeSpr.SetScale( iScale );
                pLevelChangeSpr.pev.angles        = g_vecZero;
                pLevelChangeSpr.pev.nextthink     = 0.0f;
                pLevelChangeSpr.pev.rendermode    = 4;
