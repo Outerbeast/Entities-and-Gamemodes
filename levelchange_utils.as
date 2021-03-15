@@ -38,7 +38,7 @@ void Enable(uint iPercentage = 0) // Trigger in MapStart()
 
           if( iPercentage > 0 )
                SetPercentageRequired( EHandle( pChangeLvl ), Math.clamp( 0, 99, iPercentage ) );
-	}
+     }
 }
 
 void SetPercentageRequired(EHandle hChangeLevel, uint iPercentage)
