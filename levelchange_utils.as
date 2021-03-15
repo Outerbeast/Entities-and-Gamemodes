@@ -78,7 +78,6 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
      if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() && pPlayer.GetMaxSpeedOverride() < 0 )
      {
           pPlayer.SetMaxSpeedOverride( 0 );
-          pPlayer.pev.takedamage  = DAMAGE_NO;
           pPlayer.pev.rendermode  = kRenderTransTexture;
           pPlayer.pev.renderamt   = 100.0f;
           g_PlayerFuncs.CenterPrintAll( "" + pCaller.pev.health + "% of players are required to progress to the next level.\n" );
