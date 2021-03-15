@@ -1,8 +1,9 @@
 /* Modes for adding levelchange sprites
 and percent player requirement for trigger_changelevels.
 Comes in handy for massive map series
-- Outerbeast*/
 
+!-BUGS-! - Cannot specifically prevent drown damage (L91-L96) - have to just set DAMAGE_NO xc
+- Outerbeast*/
 namespace LEVELCHANGE_UTILS
 {
 
@@ -16,17 +17,20 @@ void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr", c
      iScale = iScaleIn;
 }
 
-void Enable(uint iPercentage = 0) // Trigger in MapStart()
+void Enable(uint iPercentage = 0, int iKeepInventory = -1) // Trigger in MapStart()
 {
-     CBaseEntity@ pChangeLvl;
-     while( ( @pChangeLvl = g_EntityFuncs.FindEntityByClassname( pChangeLvl, "trigger_changelevel" ) ) !is null )
+     CBaseEntity@ pChangeLevel;
+     while( ( @pChangeLevel = g_EntityFuncs.FindEntityByClassname( pChangeLevel, "trigger_changelevel" ) ) !is null )
      {
-          if( pChangeLvl.pev.SpawnFlagBitSet( 2 ) || pChangeLvl.GetTargetname() != "" || pChangeLvl.pev.solid != SOLID_TRIGGER || pChangeLvl.pev.movetype == MOVETYPE_PUSH )
+          if( iKeepInventory > -1 )
+               g_EntityFuncs.DispatchKeyValue( pChangeLevel.edict(), "keep_inventory", "" + iKeepInventory );
+
+          if( pChangeLevel.pev.SpawnFlagBitSet( 2 ) || pChangeLevel.GetTargetname() != "" || pChangeLevel.pev.solid != SOLID_TRIGGER )
                continue;
 
           if( strSprite != "" )
           {
-               CSprite@ pLevelChangeSpr = g_EntityFuncs.CreateSprite( strSprite, pChangeLvl.pev.absmin + ( ( pChangeLvl.pev.absmax - pChangeLvl.pev.absmin ) / 2 ), false, 0.0f );
+               CSprite@ pLevelChangeSpr = g_EntityFuncs.CreateSprite( strSprite, pChangeLevel.pev.absmin + ( ( pChangeLevel.pev.absmax - pChangeLevel.pev.absmin ) / 2 ), false, 0.0f );
                g_EntityFuncs.DispatchKeyValue( pLevelChangeSpr.edict(), "vp_type", 0 );
                pLevelChangeSpr.SetScale( iScale );
                pLevelChangeSpr.pev.angles        = g_vecZero;
@@ -37,7 +41,7 @@ void Enable(uint iPercentage = 0) // Trigger in MapStart()
           }
 
           if( iPercentage > 0 )
-               SetPercentageRequired( EHandle( pChangeLvl ), Math.clamp( 0, 99, iPercentage ) );
+               SetPercentageRequired( EHandle( pChangeLevel ), Math.clamp( 0, 99, iPercentage ) );
      }
 }
 
@@ -47,6 +51,7 @@ void SetPercentageRequired(EHandle hChangeLevel, uint iPercentage)
           return;
 
      g_EntityFuncs.DispatchKeyValue( hChangeLevel.GetEntity().edict(), "percent_of_players", "" + iPercentage );
+     g_EngineFuncs.ServerPrint( "-- LeveLChangeUtils: Added percentage " + iPercentage + "%\n" );
 
      dictionary trgr =
      {
@@ -80,7 +85,18 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
           pPlayer.SetMaxSpeedOverride( 0 );
           pPlayer.pev.rendermode  = kRenderTransTexture;
           pPlayer.pev.renderamt   = 100.0f;
-          g_PlayerFuncs.CenterPrintAll( "" + pCaller.pev.health + "% of players are required to progress to the next level.\n" );
+          g_PlayerFuncs.CenterPrintAll( "" + pCaller.pev.health + "percent of players are required to progress to the next level.\n" );
+
+          if( pPlayer.pev.waterlevel == WATERLEVEL_HEAD )
+          {    // Can't prevent drown damage with any of these methods!!
+               pPlayer.pev.flags |= FL_IMMUNE_WATER; // Doesn't work
+               pPlayer.m_flEffectRespiration = 3600; // Doesn't work
+               // Only one thing left to do...
+               //pPlayer.pev.takedamage = DAMAGE_NO;
+
+               pPlayer.pev.flags |= FL_FROZEN;
+               g_EngineFuncs.ServerPrint( "-- LevelChangedReached: " + pPlayer.pev.netname + " is immune to water!\n" ); //...oh I wish.
+          }
      }
 }
 
