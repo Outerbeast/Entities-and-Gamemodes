@@ -18,9 +18,9 @@ void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr", c
 
 void Enable(uint iPercentage = 0) // Trigger in MapStart()
 {
-	CBaseEntity@ pChangeLvl;
-	while( ( @pChangeLvl = g_EntityFuncs.FindEntityByClassname( pChangeLvl, "trigger_changelevel" ) ) !is null )
-	{
+     CBaseEntity@ pChangeLvl;
+     while( ( @pChangeLvl = g_EntityFuncs.FindEntityByClassname( pChangeLvl, "trigger_changelevel" ) ) !is null )
+     {
           if( pChangeLvl.pev.SpawnFlagBitSet( 2 ) || pChangeLvl.GetTargetname() != "" || pChangeLvl.pev.solid != SOLID_TRIGGER || pChangeLvl.pev.movetype == MOVETYPE_PUSH )
                continue;
 
