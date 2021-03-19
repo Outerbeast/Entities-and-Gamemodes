@@ -52,6 +52,7 @@ void SetPercentageRequired(EHandle hChangeLevel)
           return;
 
      g_EntityFuncs.DispatchKeyValue( hChangeLevel.GetEntity().edict(), "percent_of_players", "" + iPercentage );
+     string strMaster = string( cast<CBaseToggle@>( hChangeLevel.GetEntity() ).m_sMaster );
 
      dictionary trgr =
      {
@@ -59,6 +60,12 @@ void SetPercentageRequired(EHandle hChangeLevel)
           { "target", "fn_" + hChangeLevel.GetEntity().entindex() },
           { "delay", "0.1" }
      };
+
+     if( hChangeLevel.GetEntity().GetOrigin() != g_vecZero )
+          trgr ["origin"] = "" + hChangeLevel.GetEntity().GetOrigin().ToString();
+     if( strMaster != "" )
+          trgr ["master"] = "" + strMaster;
+     
      dictionary fn =
      {
           { "targetname", "fn_" + hChangeLevel.GetEntity().entindex() },
