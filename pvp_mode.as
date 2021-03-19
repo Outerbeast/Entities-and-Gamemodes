@@ -23,8 +23,8 @@ Chat commands:-
 Issues:-
 - Only supports 17 player slots maximum because of limitations imposed by the game + API. 18th player and following will automatically
 be moved to Spectator mode until a slot becomes free.
-- Some players will have colored usernames in the scoreboard and in chat, this is due to the classification system assigning them to
-TEAM classification which apply these colored.
+- Some players will have colored usernames in the scoreboard, this is due to the classification system assigning them to
+TEAM classification which apply these colors.
 */
 
 PvpMode@ g_pvpmode = @PvpMode();
@@ -63,7 +63,7 @@ final class PvpMode
 
         AssignTeam( EHandle( pPlayer ), true );
         EnterSpectator( EHandle( pPlayer ), false );
-        g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) );// Why delay? Because rendering won't apply on spawn - but WHY.
+        g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ) ); // Why delay? Because rendering won't apply on spawn - but WHY.
 
         return HOOK_CONTINUE;
     }
@@ -82,7 +82,6 @@ final class PvpMode
         {
             pPlayer.SetClassification( I_PLAYER_TEAM[BL_PLAYER_SLOT.find( false )] );
             BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = true;
-            //g_EngineFuncs.ServerPrint( "-- DEBUG -- Player: " + pPlayer.pev.netname + " in slot: " + I_PLAYER_TEAM.find( pPlayer.m_iClassSelection ) + " was assigned to team: " + pPlayer.m_iClassSelection + "\n" );
         }
         else if( !blSetTeam )
         {
@@ -104,9 +103,9 @@ final class PvpMode
             pPlayer.pev.takedamage  = DAMAGE_NO;
             pPlayer.pev.rendermode  = kRenderTransTexture;
             pPlayer.pev.renderamt   = 100.0f;
-        }
 
-        g_Scheduler.SetTimeout( this, "ProtectionOff", cvarProtectDuration.GetFloat(), EHandle( pPlayer ) );
+            g_Scheduler.SetTimeout( this, "ProtectionOff", cvarProtectDuration.GetFloat(), EHandle( pPlayer ) );
+        }
     }
 
     void ProtectionOff(EHandle hPlayer)
@@ -176,8 +175,7 @@ final class PvpMode
                 g_PlayerFuncs.ShowMessage( pPlayer, "SPECTATING\nNo player slots available. Please wait..." );
             }
             else if( blSpectatorOverride )
-            {
-                //!-BUG-! - Index out of bounds in 2 player slot server - why????
+            {   //!-BUG-! - Index out of bounds in 2 player slot server - why????
                 H_SPECTATORS[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = pPlayer;
                 AssignTeam( EHandle( pPlayer ), false );
 
@@ -193,17 +191,26 @@ final class PvpMode
 
     HookReturnCode PlayerChatCommand(SayParameters@ pParams)
     {
+        if( pParams is null )
+            return HOOK_CONTINUE;
+
         CBasePlayer@ pPlayer = pParams.GetPlayer();
         const CCommand@ cmdArgs = pParams.GetArguments();
 
         if( pPlayer is null || !pPlayer.IsConnected() )
             return HOOK_CONTINUE;
+        // Remove the coloration of player chat messages if they are in TEAM1-4
+        if( pPlayer.m_iClassSelection >= CLASS_TEAM1 && pPlayer.m_iClassSelection <= CLASS_TEAM4 )
+        {
+            pParams.set_ShouldHide( true ); // "Remove" the original chat message
+            g_PlayerFuncs.SayTextAll( pPlayer, "" + pPlayer.pev.netname + ": " + cmdArgs.GetCommandString() ); // Replace with decoy
+        }
 
         if( cmdArgs.ArgC() < 1 || cmdArgs[0][0] != "!pvp_" )
             return HOOK_CONTINUE;
 
         pParams.set_ShouldHide( true );
-
+        
         if( cmdArgs[0] == "!pvp_spectate" || cmdArgs[0] == "!pvp_leave" )
         {
             if( !pPlayer.GetObserver().IsObserver() )
@@ -301,8 +308,9 @@ final class PvpMode
             txtWinner.fadeinTime = txtLoser.fadeinTime = 0;
             txtWinner.fadeoutTime = txtLoser.fadeoutTime = 0;
             txtWinner.holdTime = txtLoser.holdTime = 3;
+
             txtWinner.channel = 5;
-            txtWinner.channel = 7;
+            txtLoser.channel = 7;
         
         if( pAttackingPlayer !is pPlayer )
         {
@@ -312,7 +320,7 @@ final class PvpMode
         else if( pAttackingPlayer is pPlayer ) // Case player suicided
         {
             iGib = GIB_ALWAYS;
-            g_Scheduler.SetTimeout( this, "EnterSpectator", 0.1f, EHandle( pPlayer ), true ); // delay because otherwise the suicided player can't control their camera in observer mode xC
+            g_Scheduler.SetTimeout( this, "EnterSpectator", 0.1f, EHandle( pPlayer ), true ); // Delay because otherwise the suicided player can't control their camera in observer mode xC
         }
         return HOOK_CONTINUE;
     }
