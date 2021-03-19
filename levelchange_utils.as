@@ -80,8 +80,9 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
      if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() && pPlayer.GetMaxSpeedOverride() < 0 )
      {
           pPlayer.SetMaxSpeedOverride( 0 );
-          pPlayer.pev.rendermode  = kRenderTransTexture;
-          pPlayer.pev.renderamt   = 100.0f;
+          pPlayer.pev.rendermode   = kRenderTransTexture;
+          pPlayer.pev.renderamt    = 100.0f;
+          pPlayer.pev.solid        = SOLID_NOT;
           g_PlayerFuncs.ShowMessage( pPlayer, "" + pPlayer.pev.netname + " reached the end of the level.\nWaiting for " + iPercentage + "% of all players to transition to the next level...\n" );
 
           if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
