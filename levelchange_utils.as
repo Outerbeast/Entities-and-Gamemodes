@@ -11,6 +11,9 @@ uint iScale, iPercentage;
 void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr", const uint iScaleIn = 0.25) // Trigger in MapInit()
 {
      g_Game.PrecacheModel( strSpriteIn );
+     // !-BUG-!: If the last required player is teleported to the changelevel, for some reason when the next level loads the server crashes
+     // with a late preache error flagging this specific sprite. Quantum physics can't explain this one either.
+     g_Game.PrecacheModel( "sprites/voiceicon.spr" );
      strSprite = strSpriteIn;
      iScale = iScaleIn;
 }
@@ -51,18 +54,16 @@ void SetPercentageRequired(EHandle hChangeLevel)
      if( !hChangeLevel )
           return;
 
-     g_EntityFuncs.DispatchKeyValue( hChangeLevel.GetEntity().edict(), "percent_of_players", "" + iPercentage );
+     g_EntityFuncs.DispatchKeyValue( hChangeLevel.GetEntity().edict(), "percent_of_players", "0." + iPercentage );
      string strMaster = string( cast<CBaseToggle@>( hChangeLevel.GetEntity() ).m_sMaster );
 
      dictionary trgr =
      {
           { "model", "" + hChangeLevel.GetEntity().pev.model },
+          { "origin", "" + hChangeLevel.GetEntity().GetOrigin().ToString() },
           { "target", "fn_" + hChangeLevel.GetEntity().entindex() },
           { "delay", "0.1" }
      };
-
-     if( hChangeLevel.GetEntity().GetOrigin() != g_vecZero )
-          trgr ["origin"] = "" + hChangeLevel.GetEntity().GetOrigin().ToString();
      if( strMaster != "" )
           trgr ["master"] = "" + strMaster;
      
@@ -86,11 +87,12 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
      
      if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() && pPlayer.GetMaxSpeedOverride() < 0 )
      {
+          pPlayer.pev.velocity = g_vecZero;
           pPlayer.SetMaxSpeedOverride( 0 );
           pPlayer.pev.rendermode   = kRenderTransTexture;
           pPlayer.pev.renderamt    = 100.0f;
-          pPlayer.pev.solid        = SOLID_NOT;
-          g_PlayerFuncs.ShowMessage( pPlayer, "" + pPlayer.pev.netname + " reached the end of the level.\nWaiting for " + iPercentage + "% of all players to transition to the next level...\n" );
+          pPlayer.pev.solid        = SOLID_NOT; // I need this to allow players to make room
+          g_PlayerFuncs.ShowMessageAll( "" + pPlayer.pev.netname + " reached the end of the level.\nWaiting for " + iPercentage + "% of all players to transition to the next level...\n" );
 
           if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
                pPlayer.pev.flags |= FL_FROZEN;
@@ -101,7 +103,6 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
                //pPlayer.m_flEffectRespiration = 1000000; // Only comes into effect (or so I'm told) after calling ApplyEffects()
                //pPlayer.ApplyEffects(); // ....and it doesn't work - in fact this resets rendering for the player that was set prior!!!
                pPlayer.pev.air_finished += 1000000; // This is the only way to stop DMG_DROWN
-               pPlayer.pev.flags |= FL_FROZEN;
           }
      }
 }
