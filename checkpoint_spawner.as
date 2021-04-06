@@ -110,6 +110,6 @@ class checkpoint_spawner : ScriptBaseEntity
 
 void RegisterCheckPointSpawnerEntity()
 {
-    g_CustomEntityFuncs.RegisterCustomEntity( "checkpoint_spawner", "checkpoint_spawner" );
-    g_CustomEntityFuncs.RegisterCustomEntity( "point_checkpoint", "point_checkpoint" );
+	g_CustomEntityFuncs.RegisterCustomEntity( "checkpoint_spawner", "checkpoint_spawner" );
+	g_CustomEntityFuncs.RegisterCustomEntity( "point_checkpoint", "point_checkpoint" );
 }
