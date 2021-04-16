@@ -1,7 +1,8 @@
 /* Script for swapping default weapons with classic ones without Classic Mode.
-Usage: Add CLASSICMODE::Enable() in MapInit in your main amp script
+Usage: Add #include "classic_weapons" in the script header
+then add CLASSICWEAPONS::Enable() in MapInit in your main mapp script
 -Outerbeast */
-#include "hl_weapons/weapon_hl357"
+
 #include "hl_weapons/weapon_hlcrowbar"
 #include "hl_weapons/weapon_hlmp5"
 #include "hl_weapons/weapon_hlshotgun"
@@ -17,14 +18,12 @@ array<ItemMapping@> CLASSIC_WEAPONS_LIST =
     ItemMapping( "weapon_uziakimbo", "weapon_hlmp5" ),
     ItemMapping( "weapon_crowbar", "weapon_hlcrowbar" ),
     ItemMapping( "weapon_shotgun", "weapon_hlshotgun" ),
-    ItemMapping( "weapon_357", "weapon_hl357" ),
     ItemMapping( "ammo_556clip", "ammo_9mmAR" ),
     ItemMapping( "ammo_9mmuziclip", "ammo_9mmAR" )
 };
 
 void Enable()
 {
-    RegisterHLPYTHON();
     RegisterHLCrowbar();
     RegisterHLMP5();
     RegisterHLShotgun();
@@ -35,7 +34,7 @@ void Enable()
     g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
 }    
 // World weapon swapper routine (credit to KernCore)
-HookReturnCode ItemSpawned( CBaseEntity@ pOldItem ) 
+HookReturnCode ItemSpawned(CBaseEntity@ pOldItem) 
 {
     if( pOldItem is null ) 
         return HOOK_CONTINUE;
