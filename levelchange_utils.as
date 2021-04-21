@@ -6,16 +6,17 @@ namespace LEVELCHANGE_UTILS
 {
 
 string strSprite;
-uint iScale, iPercentage;
+uint iPercentage;
+float flScale;
 
-void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr", const uint iScaleIn = 0.25) // Trigger in MapInit()
+void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr", const float flScaleIn = 0.25f) // Trigger in MapInit()
 {
      g_Game.PrecacheModel( strSpriteIn );
      // !-BUG-!: If the last required player is teleported to the changelevel, for some reason when the next level loads the server crashes
      // with a late preache error flagging this specific sprite. Quantum physics can't explain this one either.
      g_Game.PrecacheModel( "sprites/voiceicon.spr" );
      strSprite = strSpriteIn;
-     iScale = iScaleIn;
+     flScale = flScaleIn;
 }
 
 void Enable(uint iPercentageSetting = 0, int iKeepInventory = -1) // Trigger in MapStart()
@@ -33,7 +34,7 @@ void Enable(uint iPercentageSetting = 0, int iKeepInventory = -1) // Trigger in 
           {
                CSprite@ pLevelChangeSpr = g_EntityFuncs.CreateSprite( strSprite, pChangeLevel.pev.absmin + ( ( pChangeLevel.pev.absmax - pChangeLevel.pev.absmin ) / 2 ), false, 0.0f );
                g_EntityFuncs.DispatchKeyValue( pLevelChangeSpr.edict(), "vp_type", 0 );
-               pLevelChangeSpr.SetScale( iScale );
+               pLevelChangeSpr.SetScale( flScale );
                pLevelChangeSpr.pev.angles        = g_vecZero;
                pLevelChangeSpr.pev.nextthink     = 0.0f;
                pLevelChangeSpr.pev.rendermode    = 4;
@@ -55,7 +56,7 @@ void SetPercentageRequired(EHandle hChangeLevel)
           return;
 
      g_EntityFuncs.DispatchKeyValue( hChangeLevel.GetEntity().edict(), "percent_of_players", "0." + iPercentage );
-     string strMaster = string( cast<CBaseToggle@>( hChangeLevel.GetEntity() ).m_sMaster );
+     string strMaster = string( cast<CBaseToggle@>( hChangeLevel.GetEntity() ).m_sMaster ); // When will we ever get m_sMaster in CBaseEntity?
 
      dictionary trgr =
      {
@@ -84,7 +85,7 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
           return;
 
      CBasePlayer@ pPlayer = cast<CBasePlayer@>( pActivator );
-     
+     // Player triggered the changelevel, great - now just keep the bastard there and wait for stragglers
      if( pPlayer !is null && pPlayer.IsConnected() && pPlayer.IsAlive() && pPlayer.GetMaxSpeedOverride() < 0 )
      {
           pPlayer.pev.velocity = g_vecZero;
@@ -96,7 +97,7 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
 
           if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
                pPlayer.pev.flags |= FL_FROZEN;
-
+          // If a trigger_changelevel exists underwater, we don't want the players to drown...
           if( pPlayer.pev.waterlevel == WATERLEVEL_HEAD )
           {
                //pPlayer.pev.flags |= FL_IMMUNE_WATER; // Doesn't work - remnant of Quake property. It exists in the API docs as if it were usable.
