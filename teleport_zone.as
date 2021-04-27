@@ -36,40 +36,51 @@ No angles set = entity original angles is preserved
 namespace TELEPORT_ZONE
 {
 
+uint iMaxEntLimit = 128;
+
+enum teleport_zone_flags
+{
+    START_ACTIVE        = 1,
+    TP_DIRECT           = 2,
+    TP_KEEP_VELOCITY    = 4,
+    TP_MISC             = 16,
+    TP_PUSHABLES        = 64
+};
+
 void TeleportEntities(CBaseEntity@ pTriggerScript)
 {
-    array<CBaseEntity@> P_ENTITIES( 128 );
+    array<CBaseEntity@> P_ENTITIES( iMaxEntLimit );
     int iNumEntities, flagMask;
     Vector vStartPos, vEndPos, vMins, vMaxs;
 
     CustomKeyvalues@ kvTriggerScript    = pTriggerScript.GetCustomKeyvalues();
     float flRange                       = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat() : 128.0f;
-    flagMask                            = pTriggerScript.pev.spawnflags & ~( FL_FLY | FL_SWIM | FL_CONVEYOR | FL_INWATER | FL_GODMODE );
+    flagMask                            = pTriggerScript.pev.spawnflags & ~( START_ACTIVE | TP_DIRECT | TP_KEEP_VELOCITY | TP_MISC | TP_PUSHABLES );
     vStartPos                           = pTriggerScript.GetOrigin();
     bool blBoundsChecked                = TeleportBounds( EHandle( pTriggerScript ), vMins, vMaxs );
     
-    if( flagMask == 0 )
-        flagMask = FL_CLIENT | FL_MONSTER;
-
     if( kvTriggerScript.HasKeyvalue( "$v_destination" ) )
         vEndPos = kvTriggerScript.GetKeyvalue( "$v_destination" ).GetVector();
     else
         return;
 
+    if( flagMask == 0 )
+        flagMask = FL_CLIENT | FL_MONSTER;
+
     if( blBoundsChecked )
     {
         iNumEntities = g_EntityFuncs.EntitiesInBox( @P_ENTITIES, vMins, vMaxs, flagMask );
 
-        if( pTriggerScript.pev.SpawnFlagBitSet( 16 ) )
+        if( pTriggerScript.pev.SpawnFlagBitSet( TP_MISC ) )
             TeleportMisc( vStartPos, vEndPos, vMins, vMaxs, pTriggerScript.pev.spawnflags );
         
-        if( pTriggerScript.pev.SpawnFlagBitSet( 64 ) )
+        if( pTriggerScript.pev.SpawnFlagBitSet( TP_PUSHABLES ) )
             TeleportPushables( vStartPos, vEndPos, vMins, vMaxs );
     }
     else
         iNumEntities = g_EntityFuncs.MonstersInSphere( @P_ENTITIES, vStartPos, flRange );
 
-    //g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportEntities " + pTriggerScript.GetTargetname() + " FlagMask(s): " + flagMask + " is thinking...\n" );
+    g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportEntities " + pTriggerScript.GetTargetname() + " FlagMask(s): " + flagMask + " is thinking...\n" );
 
     for( int i = 0; i < iNumEntities; i++ )
     {
@@ -85,27 +96,27 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
         if( P_ENTITIES[i].IsMonster() && ( flagMask & FL_MONSTER ) == 0 )
             continue;
 
-        if( !pTriggerScript.pev.SpawnFlagBitSet( 2 ) )
+        if( !pTriggerScript.pev.SpawnFlagBitSet( TP_DIRECT ) )
             g_EntityFuncs.SetOrigin( P_ENTITIES[i], P_ENTITIES[i].GetOrigin() + vEndPos - vStartPos );
         else
             g_EntityFuncs.SetOrigin( P_ENTITIES[i], vEndPos );
 
         P_ENTITIES[i].pev.angles = P_ENTITIES[i].pev.angles + pTriggerScript.pev.angles;
 
-        if( !pTriggerScript.pev.SpawnFlagBitSet( 4 ) )
+        if( !pTriggerScript.pev.SpawnFlagBitSet( TP_KEEP_VELOCITY ) )
             P_ENTITIES[i].pev.velocity = g_vecZero;
 
-        //g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportZone " + pTriggerScript.GetTargetname() + " teleported entity: " + P_ENTITIES[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_ENTITIES[i].GetOrigin().ToString() + "\n" );
+        g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportZone " + pTriggerScript.GetTargetname() + " teleported entity: " + P_ENTITIES[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_ENTITIES[i].GetOrigin().ToString() + "\n" );
     }
     P_ENTITIES.resize( 0 );
 
-    if( !pTriggerScript.pev.SpawnFlagBitSet( 1 ) || pTriggerScript.GetTargetname() != "" )
+    if( !pTriggerScript.pev.SpawnFlagBitSet( START_ACTIVE ) || pTriggerScript.GetTargetname() != "" )
         pTriggerScript.Use( pTriggerScript, pTriggerScript, USE_OFF, 0.0f );
 }
 // Teleport miscellaneous stuff like items, ammo and weapons
 void TeleportMisc(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs, uint iSpawnflags)
 {
-    array<CBaseEntity@> P_MISC( 128 );
+    array<CBaseEntity@> P_MISC( iMaxEntLimit );
     int iNumEntities = g_EntityFuncs.EntitiesInBox( @P_MISC, vMins, vMaxs, 0 );
 
     if( iNumEntities < 1 || P_MISC.length() < 1 )
@@ -118,7 +129,7 @@ void TeleportMisc(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs, 
         // !-BUG-! : "ammo_" entities teleport, but they disappear
         if( cast<CItem@>( P_MISC[i] ) !is null || cast<CBasePlayerItem@>( P_MISC[i] ) !is null )
         {
-            if( ( iSpawnflags & 2 ) == 0 )
+            if( ( iSpawnflags & TP_DIRECT ) == 0 )
                 g_EntityFuncs.SetOrigin( P_MISC[i], P_MISC[i].GetOrigin() + vEndPos - vStartPos );
             else
                 g_EntityFuncs.SetOrigin( P_MISC[i], vEndPos );
@@ -130,7 +141,7 @@ void TeleportMisc(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs, 
 // Teleporting pushables is kind of buggy
 void TeleportPushables(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs)
 {
-    array<CBaseEntity@> P_BRUSHES( 128 );
+    array<CBaseEntity@> P_BRUSHES( iMaxEntLimit );
     int iNumBrushes = g_EntityFuncs.BrushEntsInBox( @P_BRUSHES, vMins, vMaxs );
 
     if( iNumBrushes < 1 || P_BRUSHES.length() < 1 )
@@ -143,7 +154,7 @@ void TeleportPushables(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vM
 
         g_EntityFuncs.SetOrigin( P_BRUSHES[i], P_BRUSHES[i].GetOrigin() + vEndPos - vStartPos );
 
-        //g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportPushables teleported pushable: " + P_BRUSHES[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_BRUSHES[i].GetOrigin().ToString() + "\n" );
+        g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportPushables teleported pushable: " + P_BRUSHES[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_BRUSHES[i].GetOrigin().ToString() + "\n" );
     }
     P_BRUSHES.resize( 0 );
 }
