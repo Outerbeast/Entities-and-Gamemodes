@@ -7,7 +7,7 @@ Template entity:-
 "m_iszScriptFile" "teleport_zone"
 "m_iMode" "2"
 // Don't change any of the above! //
-"m_iszScriptFunctionName" "TELEPORT_ZONE::TeleportEntities/TeleportPushables" // Pick which one you want
+"m_iszScriptFunctionName" "TELEPORT_ZONE::TeleportEntities"
 "targetname" "target_me"
 "origin" "x1 y1 z1"         // Starting position
 "angles" "p y r"            // Custom angles
@@ -80,8 +80,6 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
     else
         iNumEntities = g_EntityFuncs.MonstersInSphere( @P_ENTITIES, vStartPos, flRange );
 
-    g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportEntities " + pTriggerScript.GetTargetname() + " FlagMask(s): " + flagMask + " is thinking...\n" );
-
     for( int i = 0; i < iNumEntities; i++ )
     {
         if( iNumEntities < 1 || P_ENTITIES.length() < 1 )
@@ -105,8 +103,6 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
 
         if( !pTriggerScript.pev.SpawnFlagBitSet( TP_KEEP_VELOCITY ) )
             P_ENTITIES[i].pev.velocity = g_vecZero;
-
-        g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportZone " + pTriggerScript.GetTargetname() + " teleported entity: " + P_ENTITIES[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_ENTITIES[i].GetOrigin().ToString() + "\n" );
     }
     P_ENTITIES.resize( 0 );
 
@@ -134,7 +130,6 @@ void TeleportMisc(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs, 
             else
                 g_EntityFuncs.SetOrigin( P_MISC[i], vEndPos );
         }
-        g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportZone teleported misc item: " + P_MISC[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_MISC[i].GetOrigin().ToString() + "\n" );
     }
     P_MISC.resize( 0 );
 }
@@ -153,8 +148,6 @@ void TeleportPushables(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vM
             continue;
 
         g_EntityFuncs.SetOrigin( P_BRUSHES[i], P_BRUSHES[i].GetOrigin() + vEndPos - vStartPos );
-
-        g_EngineFuncs.ServerPrint( "-- DEBUG: TeleportPushables teleported pushable: " + P_BRUSHES[i].GetClassname() + " to end point: " + vEndPos.ToString() + " - New origin: " + P_BRUSHES[i].GetOrigin().ToString() + "\n" );
     }
     P_BRUSHES.resize( 0 );
 }
