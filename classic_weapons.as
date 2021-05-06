@@ -1,6 +1,6 @@
 /* Script for swapping default weapons with classic ones without Classic Mode.
 Usage: Add #include "classic_weapons" in the script header
-then add CLASSICWEAPONS::Enable() in MapInit in your main mapp script
+then add CLASSICWEAPONS::Enable() in MapInit in your main map script
 -Outerbeast */
 
 #include "hl_weapons/weapon_hlcrowbar"
@@ -41,25 +41,27 @@ HookReturnCode ItemSpawned(CBaseEntity@ pOldItem)
 
     for( uint w = 0; w < CLASSIC_WEAPONS_LIST.length(); ++w )
     {
-        if( pOldItem.GetClassname() == CLASSIC_WEAPONS_LIST[w].get_From() )
-        {
-            CBaseEntity@ pNewItem = g_EntityFuncs.Create( CLASSIC_WEAPONS_LIST[w].get_To(), pOldItem.GetOrigin(), pOldItem.pev.angles, false );
-            if( pNewItem is null ) 
-                return HOOK_CONTINUE;
+        if( pOldItem.GetClassname() != CLASSIC_WEAPONS_LIST[w].get_From() )
+            continue;
 
-            pNewItem.pev.movetype = pOldItem.pev.movetype;
+        CBaseEntity@ pNewItem = g_EntityFuncs.Create( CLASSIC_WEAPONS_LIST[w].get_To(), pOldItem.GetOrigin(), pOldItem.pev.angles, false );
 
-            if( pOldItem.GetTargetname() != "" )
-                g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
+        if( pNewItem is null ) 
+            continue;
 
-            if( pOldItem.pev.target != "" )
-                g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "target", pOldItem.pev.target );
+        pNewItem.pev.movetype = pOldItem.pev.movetype;
 
-            if( pOldItem.pev.netname != "" )
-                g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
+        if( pOldItem.GetTargetname() != "" )
+            g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
 
-            g_EntityFuncs.Remove( pOldItem );
-        }
+        if( pOldItem.pev.target != "" )
+            g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "target", pOldItem.pev.target );
+
+        if( pOldItem.pev.netname != "" )
+            g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
+
+        g_EntityFuncs.Remove( pOldItem );
+        
     }
     return HOOK_CONTINUE;
 }
