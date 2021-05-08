@@ -49,7 +49,7 @@ void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
         break;
     }
 
-    if( pTriggerScript is null || kvTriggerScript is null )
+    if( pTriggerScript is null || kvTriggerScript is null || !kvTriggerScript.HasKeyvalue( "$s_strip" ) )
         return;
 
     array<string> STR_STRIPWEAPONS = kvTriggerScript.GetKeyvalue( "$s_strip" ).GetString().Split( ";" );
