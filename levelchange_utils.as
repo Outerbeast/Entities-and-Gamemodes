@@ -1,13 +1,16 @@
-/* Modes for adding levelchange sprites
+ /* Modes for adding levelchange sprites
 and percent player requirement for trigger_changelevels.
 Comes in handy for massive map series
 - Outerbeast*/
 namespace LEVELCHANGE_UTILS
 {
 
-string strSprite;
-uint iPercentage;
-float flScale;
+string         strSprite;
+uint           iPercentage;
+float          flScale;
+float          flChangeLevelTimeout = 300.0f;
+bool           blTimeoutSet;
+array<EHandle> H_TIMEOUT_CHANGELEVELS;
 
 void SetLevelChangeSign(const string strSpriteIn = "sprites/level_change.spr", const float flScaleIn = 0.25f) // Trigger in MapInit()
 {
@@ -27,7 +30,7 @@ void Enable(uint iPercentageSetting = 0, int iKeepInventory = -1) // Trigger in 
           if( iKeepInventory > -1 )
                g_EntityFuncs.DispatchKeyValue( pChangeLevel.edict(), "keep_inventory", "" + iKeepInventory );
 
-          if( pChangeLevel.pev.SpawnFlagBitSet( 2 ) || pChangeLevel.GetTargetname() != "" || pChangeLevel.pev.solid != SOLID_TRIGGER )
+          if( pChangeLevel is null || pChangeLevel.pev.SpawnFlagBitSet( 2 ) || pChangeLevel.GetTargetname() != "" || pChangeLevel.pev.solid != SOLID_TRIGGER )
                continue;
 
           if( strSprite != "" )
@@ -57,6 +60,9 @@ void SetPercentageRequired(EHandle hChangeLevel)
 
      g_EntityFuncs.DispatchKeyValue( hChangeLevel.GetEntity().edict(), "percent_of_players", "0." + iPercentage );
      string strMaster = string( cast<CBaseToggle@>( hChangeLevel.GetEntity() ).m_sMaster ); // When will we ever get m_sMaster in CBaseEntity?
+
+     if( flChangeLevelTimeout > 0.0f )
+          H_TIMEOUT_CHANGELEVELS.insertLast( hChangeLevel );
 
      dictionary trgr =
      {
@@ -90,11 +96,13 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
      {
           pPlayer.pev.velocity = g_vecZero;
           pPlayer.SetMaxSpeedOverride( 0 );
+          pPlayer.BlockWeapons( null );
           pPlayer.pev.rendermode   = kRenderTransTexture;
           pPlayer.pev.renderamt    = 100.0f;
           pPlayer.pev.solid        = SOLID_NOT; // I need this to allow players to make room
-          g_PlayerFuncs.ShowMessageAll( "" + pPlayer.pev.netname + " reached the end of the level.\nWaiting for " + iPercentage + "% of all players to transition to the next level...\n" );
-
+          pPlayer.pev.takedamage   = DAMAGE_NO;
+          pPlayer.pev.flags       |= FL_NOTARGET;
+         
           if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) )
                pPlayer.pev.flags |= FL_FROZEN;
           // If a trigger_changelevel exists underwater, we don't want the players to drown...
@@ -105,6 +113,40 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
                //pPlayer.ApplyEffects(); // ....and it doesn't work - in fact this resets rendering for the player that was set prior!!!
                pPlayer.pev.air_finished += 1000000; // This is the only way to stop DMG_DROWN
           }
+
+          g_PlayerFuncs.ShowMessageAll( "" + pPlayer.pev.netname + " reached the end of the level.\nWaiting for " + iPercentage + "% of all players to transition to the next level...\n" );
+     }
+
+     if( flChangeLevelTimeout > 0.0f && !blTimeoutSet )
+     {
+          for( uint i = 0; i < H_TIMEOUT_CHANGELEVELS.length(); i++ )
+          {
+               if( !pActivator.Intersects( H_TIMEOUT_CHANGELEVELS[i].GetEntity() ) )
+                    continue;
+
+               blTimeoutSet = true;
+               g_Scheduler.SetTimeout( "ForceLevelChange", flChangeLevelTimeout, H_TIMEOUT_CHANGELEVELS[i], EHandle( pActivator ) );
+               LevelChangeCountdown( uint( flChangeLevelTimeout ) );
+               break;
+          }
+     }
+}
+// Change the level anyways- prevents trolls from staying behind and stalling the level
+void ForceLevelChange(EHandle hChangeLevel, EHandle hActivator)
+{
+     if( hChangeLevel.IsValid() && hActivator.IsValid() )
+     {
+          g_EntityFuncs.DispatchKeyValue( hChangeLevel.GetEntity().edict(), "percent_of_players", "0" );
+          hChangeLevel.GetEntity().Touch( hActivator.GetEntity() );
+     }
+}
+
+void LevelChangeCountdown(uint seconds)
+{
+     if( seconds > 0 )
+     {
+          g_PlayerFuncs.CenterPrintAll( "" + seconds + " seconds until level change." );
+          g_Scheduler.SetTimeout( "LevelChangeCountdown", 1.0f, seconds-1 );
      }
 }
 
