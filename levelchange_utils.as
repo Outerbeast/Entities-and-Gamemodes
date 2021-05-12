@@ -8,7 +8,7 @@ namespace LEVELCHANGE_UTILS
 string         strSprite;
 uint           iPercentage;
 float          flScale;
-float          flChangeLevelTimeout = 300.0f;
+float          flChangeLevelTimeout = 30.0f;
 bool           blTimeoutSet;
 array<EHandle> H_TIMEOUT_CHANGELEVELS;
 
@@ -121,7 +121,7 @@ void LevelChangeReached(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE 
      {
           for( uint i = 0; i < H_TIMEOUT_CHANGELEVELS.length(); i++ )
           {
-               if( !pActivator.Intersects( H_TIMEOUT_CHANGELEVELS[i].GetEntity() ) )
+               if( !H_TIMEOUT_CHANGELEVELS[i] || !pActivator.Intersects( H_TIMEOUT_CHANGELEVELS[i].GetEntity() ) )
                     continue;
 
                blTimeoutSet = true;
@@ -145,8 +145,8 @@ void LevelChangeCountdown(uint seconds)
 {
      if( seconds > 0 )
      {
-          g_PlayerFuncs.CenterPrintAll( "" + seconds + " seconds until level change." );
           g_Scheduler.SetTimeout( "LevelChangeCountdown", 1.0f, seconds-1 );
+          g_PlayerFuncs.CenterPrintAll( "" + seconds + " seconds until level change." );
      }
 }
 
