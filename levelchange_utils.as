@@ -8,7 +8,7 @@ namespace LEVELCHANGE_UTILS
 string         strSprite;
 uint           iPercentage;
 float          flScale;
-float          flChangeLevelTimeout = 30.0f;
+float          flChangeLevelTimeout = 300.0f;
 bool           blTimeoutSet;
 array<EHandle> H_TIMEOUT_CHANGELEVELS;
 
@@ -27,10 +27,13 @@ void Enable(uint iPercentageSetting = 0, int iKeepInventory = -1) // Trigger in 
      CBaseEntity@ pChangeLevel;
      while( ( @pChangeLevel = g_EntityFuncs.FindEntityByClassname( pChangeLevel, "trigger_changelevel" ) ) !is null )
      {
+          if( pChangeLevel is null )
+               continue;
+
           if( iKeepInventory > -1 )
                g_EntityFuncs.DispatchKeyValue( pChangeLevel.edict(), "keep_inventory", "" + iKeepInventory );
 
-          if( pChangeLevel is null || pChangeLevel.pev.SpawnFlagBitSet( 2 ) || pChangeLevel.GetTargetname() != "" || pChangeLevel.pev.solid != SOLID_TRIGGER )
+          if( pChangeLevel.pev.SpawnFlagBitSet( 2 ) || pChangeLevel.pev.solid != SOLID_TRIGGER )
                continue;
 
           if( strSprite != "" )
@@ -62,7 +65,7 @@ void SetPercentageRequired(EHandle hChangeLevel)
      string strMaster = string( cast<CBaseToggle@>( hChangeLevel.GetEntity() ).m_sMaster ); // When will we ever get m_sMaster in CBaseEntity?
 
      if( flChangeLevelTimeout > 0.0f )
-          H_TIMEOUT_CHANGELEVELS.insertLast( hChangeLevel );
+          H_TIMEOUT_CHANGELEVELS.insertLast( hChangeLevel ); // the level may have several changelevel triggers
 
      dictionary trgr =
      {
@@ -145,8 +148,8 @@ void LevelChangeCountdown(uint seconds)
 {
      if( seconds > 0 )
      {
-          g_Scheduler.SetTimeout( "LevelChangeCountdown", 1.0f, seconds-1 );
           g_PlayerFuncs.CenterPrintAll( "" + seconds + " seconds until level change." );
+          g_Scheduler.SetTimeout( "LevelChangeCountdown", 1.0f, seconds-1 );
      }
 }
 
