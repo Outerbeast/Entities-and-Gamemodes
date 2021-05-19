@@ -1,25 +1,18 @@
 /* Just a fun script that changes at what fall speed makes players die from falldamage- players also emit screaming sound
 Usage:-
-Put the code "DOOMFALL::Enable( flMortalVelocitySetting, blStartOnSetting );" in MapInit
+Put the code "DOOMFALL::Enable();" in MapInit
 Replace or assign "flMortalVelocitySetting" to your falling speed
 Replace or assign "blStartOnSetting" to true if you want it active on map start, or false if you want to have inactive
 - Outerbeast */
-
 namespace DOOMFALL
 {
 
 float flMortalVelocity;
 bool blStartOn = true;
 
-class FallingPlayer
-{
-    float flPlayerFallSpeed;
-    bool blHasPlayerFell;
-}
+array<Vector2D> FALLING_PLAYER_DATA( g_Engine.maxClients + 1, Vector2D() );
 
-array<FallingPlayer@> FALLING_PLAYER_DATA;
-
-void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
+void Enable(float flMortalVelocitySetting = 700.0f, bool blStartOnSetting = true)
 {
     g_SoundSystem.PrecacheSound( "sc_persia/scream.wav" );
 
@@ -35,14 +28,6 @@ void Enable(const float flMortalVelocitySetting, const bool blStartOnSetting)
     }
     else
         blStartOn = false;
-
-    for( int i = 0; i < g_Engine.maxClients; i++ )
-    {
-        FallingPlayer plrdata;
-        plrdata.flPlayerFallSpeed = 0.0f;
-        plrdata.blHasPlayerFell = false;
-        FALLING_PLAYER_DATA.insertLast( plrdata );
-    }
 }
 
 void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -71,8 +56,7 @@ HookReturnCode OnGround(CBasePlayer@ pPlayer)
     if( pPlayer is null )
         return HOOK_CONTINUE;
 
-    FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
-    FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
+    FALLING_PLAYER_DATA[pPlayer.entindex()] = g_vecZero.Make2D();
 
     return HOOK_CONTINUE;
 }
@@ -84,20 +68,17 @@ HookReturnCode Fall(CBasePlayer@ pPlayer, uint& out uiFlags)
     
     if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) && !pPlayer.pev.FlagBitSet( FL_INWATER ) && !pPlayer.IsOnLadder() )
     {
-        FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = pPlayer.m_flFallVelocity;
+        FALLING_PLAYER_DATA[pPlayer.entindex()].x = pPlayer.m_flFallVelocity;
 
-        if( FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed >= flMortalVelocity && !FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
+        if( FALLING_PLAYER_DATA[pPlayer.entindex()].x >= flMortalVelocity && FALLING_PLAYER_DATA[pPlayer.entindex()].y < 1 )
         {
             g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_VOICE, "sc_persia/scream.wav", 1.0f, ATTN_NORM );
-            FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = true;
+            FALLING_PLAYER_DATA[pPlayer.entindex()].y = 1;
             //g_PlayerFuncs.SayText( pPlayer, "You are falling to your doom." );
         }
     }
     else
-    {
-        FALLING_PLAYER_DATA[pPlayer.entindex()-1].flPlayerFallSpeed = 0.0f;
-        FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell   = false;
-    }
+        FALLING_PLAYER_DATA[pPlayer.entindex()] = g_vecZero.Make2D();
     
     return HOOK_CONTINUE;
 }
@@ -107,11 +88,10 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
     if( pPlayer is null )
         return HOOK_CONTINUE;
     
-    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell )
+    if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()].y > 0 )
     {
-        CBaseEntity@ pWorld = g_EntityFuncs.Instance( 0 );
-        pPlayer.TakeDamage( pWorld.pev, pWorld.pev, 10000.0f, DMG_FALL );
-        FALLING_PLAYER_DATA[pPlayer.entindex()-1].blHasPlayerFell = false;
+        pPlayer.TakeDamage( g_EntityFuncs.Instance( 0 ).pev, g_EntityFuncs.Instance( 0 ).pev, 10000.0f, DMG_FALL );
+        FALLING_PLAYER_DATA[pPlayer.entindex()].y = 0.0f;
         //g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
     }
     return HOOK_CONTINUE;
