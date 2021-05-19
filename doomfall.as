@@ -16,11 +16,8 @@ void Enable(float flMortalVelocitySetting = 700.0f, bool blStartOnSetting = true
 {
     g_SoundSystem.PrecacheSound( "sc_persia/scream.wav" );
 
-    if( flMortalVelocitySetting <= 0.0f )
-        flMortalVelocity = 700.0f;
-    else
-        flMortalVelocity = flMortalVelocitySetting;
-    
+    flMortalVelocity = flMortalVelocitySetting <= 0.0f ? 700.0f : flMortalVelocitySetting;
+
     if( blStartOnSetting )
     {
         blStartOn = true;
@@ -32,12 +29,12 @@ void Enable(float flMortalVelocitySetting = 700.0f, bool blStartOnSetting = true
 
 void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
-    if( !blStartOn )
+    if( !blStartOn || useType == USE_ON )
     { 
         StartThink();
         blStartOn = true;
     }
-    else if( blStartOn )
+    else if( blStartOn || useType == USE_OFF )
     { 
         StopThink(); 
         blStartOn = false;
@@ -91,7 +88,7 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
     if( pPlayer.pev.FlagBitSet( FL_ONGROUND ) && FALLING_PLAYER_DATA[pPlayer.entindex()].y > 0 )
     {
         pPlayer.TakeDamage( g_EntityFuncs.Instance( 0 ).pev, g_EntityFuncs.Instance( 0 ).pev, 10000.0f, DMG_FALL );
-        FALLING_PLAYER_DATA[pPlayer.entindex()].y = 0.0f;
+        FALLING_PLAYER_DATA[pPlayer.entindex()].y = 0;
         //g_PlayerFuncs.SayText( pPlayer, "You went SPLAT." );
     }
     return HOOK_CONTINUE;
