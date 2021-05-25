@@ -3,7 +3,7 @@ trigger_script for stripping specified weapons, or keeping specified weapons and
 
 Template keys:-
 "classname" "trigger_script"
-"m_iszScriptFile" "beast/weaponstrip_specific"
+"m_iszScriptFile" "weaponstrip_specific"
 "m_iszScriptFunctionName" "WEAPONSTRIP_SPECIFIC::Trigger"
 "m_iMode" "1"
 // Don't change any of the above
@@ -24,22 +24,22 @@ enum weaponstrip_flags
     KEEP_WEAPONS        = 4     // Inverts selection - strips everything else but the specified weapons
 };
 
-void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+EHandle TriggerScriptInstance(EHandle hCaller, const string strIdentifier)
 {
-    if( pActivator is null || pCaller is null || useType == USE_OFF )
-        return;
-
+    if( !hCaller || strIdentifier == "" )
+        return EHandle( null );
+    
     CBaseEntity@ pTemp, pTriggerScript;
     CustomKeyvalues@ kvTriggerScript;
 
-    while( ( @pTemp = g_EntityFuncs.FindEntityByTargetname( pTemp, "" + pCaller.pev.target ) ) !is null )
+    while( ( @pTemp = g_EntityFuncs.FindEntityByTargetname( pTemp, "" + hCaller.GetEntity().pev.target ) ) !is null )
     {
         if( pTemp is null || pTemp.GetClassname() != "trigger_script" )
             continue;
         
         @kvTriggerScript = pTemp.GetCustomKeyvalues();
 
-        if( kvTriggerScript is null || !kvTriggerScript.HasKeyvalue( "$s_strip" ) )
+        if( kvTriggerScript is null || !kvTriggerScript.HasKeyvalue( "" + strIdentifier ) )
         {
             @kvTriggerScript = null;
             continue;
@@ -48,8 +48,18 @@ void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
         @pTriggerScript = pTemp;
         break;
     }
+    return EHandle( pTriggerScript );
+}
 
-    if( pTriggerScript is null || kvTriggerScript is null || !kvTriggerScript.HasKeyvalue( "$s_strip" ) )
+void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+{
+    if( pActivator is null || pCaller is null || useType == USE_OFF )
+        return;
+
+    CBaseEntity@ pTriggerScript = TriggerScriptInstance( EHandle( pCaller ), "$s_strip" ).GetEntity();
+    CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
+
+    if( pTriggerScript is null || kvTriggerScript is null )
         return;
 
     array<string> STR_STRIPWEAPONS = kvTriggerScript.GetKeyvalue( "$s_strip" ).GetString().Split( ";" );
@@ -85,7 +95,9 @@ void Strippery(EHandle hPlayer, array<string>@ STR_STRIPWEAPONS, const bool blIn
     {
         for( uint i = 0; i < STR_STRIPWEAPONS.length(); i++ )
         {
-            if( pPlayer.HasNamedPlayerItem( STR_STRIPWEAPONS[i] ) is null || STR_STRIPWEAPONS[i] == "" || STR_STRIPWEAPONS[i].Find( " ", 0, String::CaseInsensitive ) != String::INVALID_INDEX )
+            if( pPlayer.HasNamedPlayerItem( STR_STRIPWEAPONS[i] ) is null ||
+                STR_STRIPWEAPONS[i] == "" ||
+                STR_STRIPWEAPONS[i].Find( " ", 0, String::CaseInsensitive ) != String::INVALID_INDEX )
                 continue;
 
             pPlayer.RemovePlayerItem( pPlayer.HasNamedPlayerItem( STR_STRIPWEAPONS[i] ) );
