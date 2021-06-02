@@ -31,8 +31,30 @@ EHandle TriggerScriptInstance(EHandle hCaller, const string strIdentifier)
     
     CBaseEntity@ pTemp, pTriggerScript;
     CustomKeyvalues@ kvTriggerScript;
+    string strSelfTarget;
 
-    while( ( @pTemp = g_EntityFuncs.FindEntityByTargetname( pTemp, "" + hCaller.GetEntity().pev.target ) ) !is null )
+    array<string> STR_CALLTYPES = { "target", "message", "netname" };
+
+    for( uint i = 0; i < STR_CALLTYPES.length(); i++ )
+    {
+        if( hCaller.GetEntity().pev.target != "" )
+        {
+            strSelfTarget = hCaller.GetEntity().pev.target;
+            break;
+        }
+        else if( hCaller.GetEntity().pev.message != "" )
+        {
+            strSelfTarget = hCaller.GetEntity().pev.message;
+            break;
+        }
+        else if( hCaller.GetEntity().pev.netname != "" )
+        {
+            strSelfTarget = hCaller.GetEntity().pev.netname;
+            break;
+        }
+    }
+
+    while( ( @pTemp = g_EntityFuncs.FindEntityByTargetname( pTemp, "" + strSelfTarget ) ) !is null )
     {
         if( pTemp is null || pTemp.GetClassname() != "trigger_script" )
             continue;
