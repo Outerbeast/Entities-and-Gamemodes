@@ -26,31 +26,60 @@ void PatchAmbientGeneric()
         g_EntityFuncs.Remove( pSound );
     }
 }
-// Sound must already be precached before triggering
-void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
-{
-    if( pActivator is null || pCaller is null || useType == USE_OFF )
-        return;
 
+EHandle TriggerScriptInstance(EHandle hCaller, const string strIdentifier)
+{
+    if( !hCaller || strIdentifier == "" )
+        return EHandle( null );
+    
     CBaseEntity@ pTemp, pTriggerScript;
     CustomKeyvalues@ kvTriggerScript;
+    string strSelfTarget;
 
-    while( ( @pTemp = g_EntityFuncs.FindEntityByTargetname( pTemp, "" + pCaller.pev.target ) ) !is null )
+    array<string> STR_CALLTYPES = { "target", "message", "netname" };
+
+    for( uint i = 0; i < STR_CALLTYPES.length(); i++ )
+    {
+        if( hCaller.GetEntity().pev.target != "" )
+        {
+            strSelfTarget = hCaller.GetEntity().pev.target;
+            break;
+        }
+        else if( hCaller.GetEntity().pev.message != "" )
+        {
+            strSelfTarget = hCaller.GetEntity().pev.message;
+            break;
+        }
+        else if( hCaller.GetEntity().pev.netname != "" )
+        {
+            strSelfTarget = hCaller.GetEntity().pev.netname;
+            break;
+        }
+    }
+
+    while( ( @pTemp = g_EntityFuncs.FindEntityByTargetname( pTemp, "" + strSelfTarget ) ) !is null )
     {
         if( pTemp is null || pTemp.GetClassname() != "trigger_script" )
             continue;
-
+        
         @kvTriggerScript = pTemp.GetCustomKeyvalues();
 
-        if( kvTriggerScript is null || !kvTriggerScript.HasKeyvalue( "$s_sound" ) )
+        if( kvTriggerScript is null || !kvTriggerScript.HasKeyvalue( "" + strIdentifier ) )
         {
             @kvTriggerScript = null;
             continue;
         }
-
+        
         @pTriggerScript = pTemp;
         break;
     }
+    return EHandle( pTriggerScript );
+}
+// Sound must already be precached before triggering
+void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+{
+	CBaseEntity@ pTriggerScript = TriggerScriptInstance( EHandle( pCaller ), "$s_sound" ).GetEntity();
+    CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
 
     if( pTriggerScript is null || kvTriggerScript is null || !kvTriggerScript.HasKeyvalue( "$s_sound" ) )
         return;
