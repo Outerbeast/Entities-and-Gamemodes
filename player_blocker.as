@@ -3,7 +3,7 @@
 
 Template entity:-
 "classname" "trigger_script"
-"m_iszScriptFile" "block_player_oob"
+"m_iszScriptFile" "player_blocker"
 "m_iszScriptFunctionName" "PLAYER_BLOCKER::PlayerBlocker"
 "m_iMode" "2"
 // Don't change any of the above
@@ -27,7 +27,7 @@ EHandle Enable(Vector vecAbsMinIn, Vector vecAbsMaxIn)
 
     dictionary blocker =
     {
-        { "m_iszScriptFunctionName", "BLOCK_PLAYER_OOB::Trigger" },
+        { "m_iszScriptFunctionName", "PLAYER_BLOCKER::PlayerBlocker" },
         { "m_iMode", "2" },
         { "spawnflags", "1" },
         { "$v_mins", "" + vecAbsMinIn.ToString() },
