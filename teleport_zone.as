@@ -51,16 +51,16 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
 {
     array<CBaseEntity@> P_ENTITIES( iMaxEntLimit );
     int iNumEntities, flagMask;
-    Vector vStartPos, vEndPos, vMins, vMaxs;
+    Vector vecStartPos, vecEndPos, vecAbsMin, vecAbsMax;
 
     CustomKeyvalues@ kvTriggerScript    = pTriggerScript.GetCustomKeyvalues();
     float flRange                       = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat() : 128.0f;
     flagMask                            = pTriggerScript.pev.spawnflags & ~( START_ACTIVE | TP_DIRECT | TP_KEEP_VELOCITY | TP_MISC | TP_PUSHABLES );
-    vStartPos                           = pTriggerScript.GetOrigin();
-    bool blBoundsChecked                = TeleportBounds( EHandle( pTriggerScript ), vMins, vMaxs );
+    vecStartPos                         = pTriggerScript.GetOrigin();
+    bool blBoundsChecked                = TeleportBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
     
     if( kvTriggerScript.HasKeyvalue( "$v_destination" ) )
-        vEndPos = kvTriggerScript.GetKeyvalue( "$v_destination" ).GetVector();
+        vecEndPos = kvTriggerScript.GetKeyvalue( "$v_destination" ).GetVector();
     else
         return;
 
@@ -69,16 +69,16 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
 
     if( blBoundsChecked )
     {
-        iNumEntities = g_EntityFuncs.EntitiesInBox( @P_ENTITIES, vMins, vMaxs, flagMask );
+        iNumEntities = g_EntityFuncs.EntitiesInBox( @P_ENTITIES, vecAbsMin, vecAbsMax, flagMask );
 
         if( pTriggerScript.pev.SpawnFlagBitSet( TP_MISC ) )
-            TeleportMisc( vStartPos, vEndPos, vMins, vMaxs, pTriggerScript.pev.spawnflags );
+            TeleportMisc( vecStartPos, vecEndPos, vecAbsMin, vecAbsMax, pTriggerScript.pev.spawnflags );
         
         if( pTriggerScript.pev.SpawnFlagBitSet( TP_PUSHABLES ) )
-            TeleportPushables( vStartPos, vEndPos, vMins, vMaxs );
+            TeleportPushables( vecStartPos, vecEndPos, vecAbsMin, vecAbsMax );
     }
     else
-        iNumEntities = g_EntityFuncs.MonstersInSphere( @P_ENTITIES, vStartPos, flRange );
+        iNumEntities = g_EntityFuncs.MonstersInSphere( @P_ENTITIES, vecStartPos, flRange );
 
     for( int i = 0; i < iNumEntities; i++ )
     {
@@ -95,9 +95,9 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
             continue;
 
         if( !pTriggerScript.pev.SpawnFlagBitSet( TP_DIRECT ) )
-            g_EntityFuncs.SetOrigin( P_ENTITIES[i], P_ENTITIES[i].GetOrigin() + vEndPos - vStartPos );
+            g_EntityFuncs.SetOrigin( P_ENTITIES[i], P_ENTITIES[i].GetOrigin() + vecEndPos - vecStartPos );
         else
-            g_EntityFuncs.SetOrigin( P_ENTITIES[i], vEndPos );
+            g_EntityFuncs.SetOrigin( P_ENTITIES[i], vecEndPos );
 
         P_ENTITIES[i].pev.angles = P_ENTITIES[i].pev.angles + pTriggerScript.pev.angles;
 
@@ -110,10 +110,10 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
         pTriggerScript.Use( pTriggerScript, pTriggerScript, USE_OFF, 0.0f );
 }
 // Teleport miscellaneous stuff like items, ammo and weapons
-void TeleportMisc(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs, uint iSpawnflags)
+void TeleportMisc(Vector vecStartPos, Vector vecEndPos, Vector vecAbsMin, Vector vecAbsMax, uint iSpawnflags)
 {
     array<CBaseEntity@> P_MISC( iMaxEntLimit );
-    int iNumEntities = g_EntityFuncs.EntitiesInBox( @P_MISC, vMins, vMaxs, 0 );
+    int iNumEntities = g_EntityFuncs.EntitiesInBox( @P_MISC, vecAbsMin, vecAbsMax, 0 );
 
     if( iNumEntities < 1 || P_MISC.length() < 1 )
         return;
@@ -126,18 +126,18 @@ void TeleportMisc(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs, 
         if( cast<CItem@>( P_MISC[i] ) !is null || cast<CBasePlayerItem@>( P_MISC[i] ) !is null )
         {
             if( ( iSpawnflags & TP_DIRECT ) == 0 )
-                g_EntityFuncs.SetOrigin( P_MISC[i], P_MISC[i].GetOrigin() + vEndPos - vStartPos );
+                g_EntityFuncs.SetOrigin( P_MISC[i], P_MISC[i].GetOrigin() + vecEndPos - vecStartPos );
             else
-                g_EntityFuncs.SetOrigin( P_MISC[i], vEndPos );
+                g_EntityFuncs.SetOrigin( P_MISC[i], vecEndPos );
         }
     }
     P_MISC.resize( 0 );
 }
 // Teleporting pushables is kind of buggy
-void TeleportPushables(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vMaxs)
+void TeleportPushables(Vector vecStartPos, Vector vecEndPos, Vector vecAbsMin, Vector vecAbsMax)
 {
     array<CBaseEntity@> P_BRUSHES( iMaxEntLimit );
-    int iNumBrushes = g_EntityFuncs.BrushEntsInBox( @P_BRUSHES, vMins, vMaxs );
+    int iNumBrushes = g_EntityFuncs.BrushEntsInBox( @P_BRUSHES, vecAbsMin, vecAbsMax );
 
     if( iNumBrushes < 1 || P_BRUSHES.length() < 1 )
         return;
@@ -147,7 +147,7 @@ void TeleportPushables(Vector vStartPos, Vector vEndPos, Vector vMins, Vector vM
         if( P_BRUSHES[i] is null || !P_BRUSHES[i].IsBSPModel() || P_BRUSHES[i].GetClassname() != "func_pushable" )
             continue;
 
-        g_EntityFuncs.SetOrigin( P_BRUSHES[i], P_BRUSHES[i].GetOrigin() + vEndPos - vStartPos );
+        g_EntityFuncs.SetOrigin( P_BRUSHES[i], P_BRUSHES[i].GetOrigin() + vecEndPos - vecStartPos );
     }
     P_BRUSHES.resize( 0 );
 }
@@ -178,7 +178,7 @@ bool TeleportBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecM
         if( kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector() != kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector() )
         {
             vecMin = kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector();
-            vecMin = kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector();
+            vecMax = kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector();
 
             return true;
         }
