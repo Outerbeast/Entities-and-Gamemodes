@@ -30,15 +30,15 @@ TEAM classification which apply these colors.
 PvpMode@ g_pvpmode = @PvpMode();
 
 CCVar cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
-CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View Mode Setting", ConCommandFlag::AdminOnly );
+CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View mode setting", ConCommandFlag::AdminOnly );
 CCVar cvarKillInfoSetting( "pvp_killinfo", 1.0f, "Kill hud info", ConCommandFlag::AdminOnly );
 
-const bool blPlayerSpawnHookRegister    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, @PlayerSpawnHook( @g_pvpmode.OnPlayerSpawn ) );
-const bool blPlayerPreThinkRegister     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, @PlayerPreThinkHook( @g_pvpmode.PlayerPreThink ) );
-const bool blPlayerTakeDamageRegister   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, @PlayerTakeDamageHook( @g_pvpmode.PlayerTakeDamage ) );
-const bool blPlayerKilledRegister       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, @PlayerKilledHook( @g_pvpmode.PlayerKilled ) );
-const bool blClientSayRegister          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, @ClientSayHook( @g_pvpmode.PlayerChatCommand ) );
-const bool blClientDisconnectRegister   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, @ClientDisconnectHook( @g_pvpmode.OnPlayerLeave ) );
+const bool blPlayerSpawnHookRegister    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( g_pvpmode.OnPlayerSpawn ) );
+const bool blPlayerPreThinkRegister     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, PlayerPreThinkHook( g_pvpmode.PlayerPreThink ) );
+const bool blPlayerTakeDamageRegister   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( g_pvpmode.PlayerTakeDamage ) );
+const bool blPlayerKilledRegister       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( g_pvpmode.PlayerKilled ) );
+const bool blClientSayRegister          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, ClientSayHook( g_pvpmode.PlayerChatCommand ) );
+const bool blClientDisconnectRegister   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClientDisconnectHook( g_pvpmode.OnPlayerLeave ) );
 
 final class PvpMode
 {
@@ -57,10 +57,10 @@ final class PvpMode
             g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
     }
 
-    void AssignTeam(EHandle hPlayer, const bool blSetTeam)
+    int AssignTeam(EHandle hPlayer, const bool blSetTeam)
     {
         if( !hPlayer )
-            return;
+            return CLASS_NONE;
         
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
@@ -69,11 +69,13 @@ final class PvpMode
             pPlayer.SetClassification( I_PLAYER_TEAM[BL_PLAYER_SLOT.find( false )] );
             BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = true;
         }
-        else if( !blSetTeam )
+        else if( !blSetTeam ) // For when we want to remove classification from player
         {
             BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = false;
             pPlayer.SetClassification( CLASS_FORCE_NONE );
         }
+
+        return pPlayer.m_iClassSelection;
     }
 
     void SpawnProtection(EHandle hPlayer, const int iTakeDamageIn)
@@ -115,7 +117,7 @@ final class PvpMode
         if( pPlayer is null || !pPlayer.IsConnected() || pPlayer.GetObserver().IsObserver() )
             return;
 
-        if( !blSpectatorOverride && pPlayer.m_iClassSelection < CLASS_MACHINE )
+        if( !blSpectatorOverride )
         {
             pPlayer.SetMaxSpeedOverride( -1 );
             pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
@@ -123,9 +125,9 @@ final class PvpMode
             pPlayer.RemoveAllItems( true );
 
             g_PlayerFuncs.ShowMessage( pPlayer, "SPECTATING\nNo player slots available. Please wait..." );
-        }
-        else if( blSpectatorOverride )
-        {   // !-BUG-! - Index out of bounds in 2 player slot server - why????
+        }   // !-BUG-! - Index out of bounds in 2 player slot server - why???? Hence this check.
+        else if( blSpectatorOverride && g_Engine.maxClients > 2 )
+        {
             H_SPECTATORS[I_PLAYER_TEAM.find( pPlayer.m_iClassSelection )] = pPlayer;
             AssignTeam( EHandle( pPlayer ), false );
 
@@ -141,10 +143,7 @@ final class PvpMode
     // Why is there no API method for this??
     bool FlagSet(uint iTargetBits, uint iFlags)
     {
-        if( ( iTargetBits & iFlags ) != 0 )
-            return true;
-        else
-            return false;
+        return ( ( iTargetBits & iFlags ) != 0 );
     }
     // ========================= Hook Funcs - Runs the entire bloody thing ========================= //
     HookReturnCode OnPlayerSpawn(CBasePlayer@ pPlayer)
@@ -152,8 +151,14 @@ final class PvpMode
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
            return HOOK_CONTINUE;
 
-        AssignTeam( EHandle( pPlayer ), true );
-        EnterSpectator( EHandle( pPlayer ), false );
+        int iAssignedClassification = AssignTeam( EHandle( pPlayer ), true );
+
+        if( iAssignedClassification < CLASS_MACHINE )
+        {
+            EnterSpectator( EHandle( pPlayer ), false );
+            return HOOK_CONTINUE;
+        }
+        
         g_Scheduler.SetTimeout( this, "SpawnProtection", 0.01f, EHandle( pPlayer ), int( DAMAGE_NO ) ); // Why delay? Because rendering won't apply on spawn - but WHY.
 
         return HOOK_CONTINUE;
@@ -170,7 +175,19 @@ final class PvpMode
 
             if( pPlayer.GetMaxSpeedOverride() == 0 )
             {
-                if( FlagSet( pPlayer.pev.button, IN_DUCK | IN_JUMP | IN_USE | IN_ATTACK | IN_ATTACK2 | IN_ALT1 | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN )  )
+                if( FlagSet( pPlayer.pev.button, 
+                    IN_DUCK | 
+                    IN_JUMP | 
+                    IN_USE | 
+                    IN_ATTACK | 
+                    IN_ATTACK2 | 
+                    IN_ALT1 | 
+                    IN_FORWARD | 
+                    IN_BACK | 
+                    IN_MOVELEFT | 
+                    IN_MOVERIGHT | 
+                    IN_RUN )  
+                )
                     SpawnProtection( EHandle( pPlayer ), int( DAMAGE_YES ) );
             }
         }
@@ -237,8 +254,8 @@ final class PvpMode
 
         if( ( cmdArgs[0] == "!pvp_stats" || cmdArgs[0] == "!pvp_info" ) && !pPlayer.GetObserver().IsObserver() )
         {
-            string strMyWeapon = pPlayer.m_hActiveItem ? pPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) : "No weapon selected";
-            string strStats =  " -Team: " + pPlayer.m_iClassSelection + /* " - " + pPlayer.GetClassificationName() + */ "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
+            string strMyWeapon = pPlayer.m_hActiveItem ? pPlayer.m_hActiveItem.GetEntity().GetClassname().Replace( "weapon_", "" ) : "No weapon selected";
+            string strStats =  " -Team: " + pPlayer.m_iClassSelection + " - " + pPlayer.GetClassificationName() + "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
 
             HUDTextParams txtStats;
                 txtStats.x = 0.7;
@@ -281,7 +298,7 @@ final class PvpMode
         AssignTeam( EHandle( pPlayer ), false );
 
         CBasePlayer@ pAttackingPlayer = cast<CBasePlayer@>( pAttacker );
-        string strAttackerWeapon = pAttackingPlayer.m_hActiveItem ? " with: " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().SubString( 7, String::INVALID_INDEX ) : "";
+        string strAttackerWeapon = pAttackingPlayer.m_hActiveItem ? " with: " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().Replace( "weapon_", "" ) : "";
         int iDamageDone = pPlayer.m_lastPlayerDamageAmount >= int( pPlayer.pev.dmg_take ) ? pPlayer.m_lastPlayerDamageAmount : int( pPlayer.pev.dmg_take );
 
         HUDTextParams txtWinner, txtLoser;
@@ -309,10 +326,8 @@ final class PvpMode
             g_PlayerFuncs.HudMessage( pPlayer, txtLoser, "" + string( pAttackingPlayer.pev.netname ).ToUppercase() + "\nyou" + strAttackerWeapon + "\n Damage taken: " + iDamageDone + "\n" );
         }
         else if( pAttackingPlayer is pPlayer ) // Case player suicided
-        {
-            iGib = GIB_ALWAYS;
             g_Scheduler.SetTimeout( this, "EnterSpectator", 0.1f, EHandle( pPlayer ), true );
-        }
+
         return HOOK_CONTINUE;
     }
 
@@ -321,7 +336,7 @@ final class PvpMode
         if( pDisconnectedPlayer is null )
             return HOOK_CONTINUE;
 
-        BL_PLAYER_SLOT[I_PLAYER_TEAM.find( pDisconnectedPlayer.m_iClassSelection )] = false;
+        AssignTeam( EHandle( pDisconnectedPlayer ), false );
         pDisconnectedPlayer.ClearClassification();
         pDisconnectedPlayer.pev.frags = 0;
 
@@ -354,7 +369,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    ~PvpMode(){ }
+    ~PvpMode() { }
 }
 /* Special thanks to 
 - AnggaraNothing, Zode, Neo and H2 for scripting help
