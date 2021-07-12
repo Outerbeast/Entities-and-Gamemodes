@@ -25,12 +25,7 @@ EHandle Activate(string strTargetname = "game_players_alive")
         { "targetname", "" + strTargetname },
         { "spawnflags", "1" }
     };
-    CBaseEntity@ pGamePlayersAlive = g_EntityFuncs.CreateEntity( "trigger_script", gpa, true );
-
-    if( pGamePlayersAlive !is null )
-        return EHandle( pGamePlayersAlive );
-    else
-        return EHandle( null );
+    return EHandle( g_EntityFuncs.CreateEntity( "trigger_script", gpa, true ) );
 }
 
 void GamePlayersAlive(CBaseEntity@ pTriggerScript)
@@ -41,7 +36,7 @@ void GamePlayersAlive(CBaseEntity@ pTriggerScript)
     uint iAlivePlayers = 0, iDeadPlayers = 0;
     float flPercentAlive, flPercentDead;
 
-    for( int playerID = 1; playerID <= g_PlayerFuncs.GetNumPlayers(); ++playerID )
+    for( int playerID = 1; playerID <= g_PlayerFuncs.GetNumPlayers(); playerID++ )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
                 
@@ -49,9 +44,9 @@ void GamePlayersAlive(CBaseEntity@ pTriggerScript)
             continue;
         
         if( pPlayer.IsAlive() )
-            iAlivePlayers++;
+            ++iAlivePlayers;
         else if( !pPlayer.IsAlive() )  
-            iAlivePlayers = iAlivePlayers < 1 ? 0 : iAlivePlayers--;
+            iAlivePlayers = iAlivePlayers < 1 ? 0 : --iAlivePlayers;
 
         iDeadPlayers = g_PlayerFuncs.GetNumPlayers() - iAlivePlayers;
     }
