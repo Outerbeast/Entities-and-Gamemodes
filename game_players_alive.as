@@ -35,7 +35,7 @@ void GamePlayersAlive(CBaseEntity@ pTriggerScript)
     
     uint iAlivePlayers = 0, iDeadPlayers = 0;
     float flPercentAlive, flPercentDead;
-
+    // Yeah. No method CPlayerFuncs method "int GetNumPlayersAlive". WHY.
     for( int playerID = 1; playerID <= g_PlayerFuncs.GetNumPlayers(); playerID++ )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
