@@ -127,18 +127,13 @@ void Strippery(EHandle hPlayer, array<string>@ STR_STRIPWEAPONS, const bool blIn
     }
     else
     {
-        CBasePlayerItem@ pItem;
-        CBasePlayerWeapon@ pWeapon;
-
         for( uint j = 0; j < MAX_ITEM_TYPES; j++ )
         {
-            @pItem = pPlayer.m_rgpPlayerItems( j );
+            CBasePlayerItem@ pItem = pPlayer.m_rgpPlayerItems( j );
 
             while( pItem !is null )
             {
-                @pWeapon = pItem.GetWeaponPtr();
-                
-                if( STR_STRIPWEAPONS.find( pWeapon.GetClassname() ) < 0 )
+                if( STR_STRIPWEAPONS.find( pItem.GetClassname() ) < 0 )
                     pPlayer.RemovePlayerItem( pItem );
 
                 @pItem = cast<CBasePlayerItem@>( pItem.m_hNextItem.GetEntity() );
