@@ -55,17 +55,12 @@ void ChangeWpnHudSpr(EHandle hPlayer, EHandle hWeapon)
 
     CBasePlayerWeapon@ pWeapon = cast<CBasePlayerWeapon@>( hWeapon.GetEntity() );
 
-    if( pWeapon is null )
+    if( pWeapon is null || 
+        STR_WEAPONS.find( pWeapon.GetClassname() ) < 0 || 
+        cvarIgnoreWeaponSprReplacement.GetString().Find( pWeapon.GetClassname() ) != String::INVALID_INDEX )
         return;
 
-    if( STR_WEAPONS.find( pWeapon.GetClassname() ) >= 0 )
-    {
-        if( cvarIgnoreWeaponSprReplacement.GetString() != "" && 
-            cvarIgnoreWeaponSprReplacement.GetString().Split( ";" ).find( pWeapon.GetClassname() ) >= 0 )
-                return;
-
-        pWeapon.LoadSprites( cast<CBasePlayer@>( hPlayer.GetEntity() ), strDirPath + pWeapon.GetClassname() );
-    }
+    pWeapon.LoadSprites( cast<CBasePlayer@>( hPlayer.GetEntity() ), strDirPath + pWeapon.GetClassname() );
 }
 
 HookReturnCode PlayerJoined(CBasePlayer@ pPlayer)
