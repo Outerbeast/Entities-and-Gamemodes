@@ -53,8 +53,14 @@ class checkpoint_spawner : ScriptBaseEntity
 		g_Game.PrecacheModel( string( self.pev.model ) );
 		g_Game.PrecacheModel( strFunnelSprite );
 
+		g_Game.PrecacheGeneric( string( self.pev.model ) );
+		g_Game.PrecacheGeneric( strFunnelSprite );
+
 		g_SoundSystem.PrecacheSound( strStartSound );
 		g_SoundSystem.PrecacheSound( strEndSound );
+
+		g_Game.PrecacheGeneric( strStartSound );
+		g_Game.PrecacheGeneric( strEndSound );
 
 		BaseClass.Precache();
 	}
