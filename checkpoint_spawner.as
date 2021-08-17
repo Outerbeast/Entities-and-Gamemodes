@@ -1,6 +1,11 @@
 /* checkpoint_spawner- Custom entity for spawning a new point_checkpoint with spawn fx
 This entity only triggers when survival mode is active.
 Entity supports all the keyvalues that point_checkpoint does
+Additional keys:-
+"sprite" "sprites/path/to/sprite.spr"	- customise the sprite for the spawn fx
+"model" "models/path/to/model.mdl"		- customise the checkpoint model
+"startsound" "path/to/sound.wav"		- customise spawning start sound fx
+"endsound" "path/to/sound.wav"			- customise spawning end sound fx
 - Outerbeast 
 */
 #include "../point_checkpoint"
@@ -42,6 +47,10 @@ class checkpoint_spawner : ScriptBaseEntity
 			m_fSpawnEffect = atoi( szValue ) != 0;
 		else if( szKey == "sprite" )
 			strFunnelSprite = szValue;
+		else if( szKey == "startsound" )
+			strStartSound = szValue;
+		else if( szKey == "endsound" )
+			strEndSound = szValue;
 		else
 			return BaseClass.KeyValue( szKey, szValue );
 
@@ -105,7 +114,6 @@ class checkpoint_spawner : ScriptBaseEntity
 		dictionary cp;
 		cp ["origin"]						= "" + self.GetOrigin().ToString();
 		cp ["angles"]						= "" + self.pev.angles.ToString();
-		cp ["model"]						= "" + self.pev.model;
 		cp ["target"]						= "" + self.pev.target;
 		cp ["minhullsize"]					= "" + self.pev.vuser1.ToString();
 		cp ["maxhullsize"]					= "" + self.pev.vuser2.ToString();
