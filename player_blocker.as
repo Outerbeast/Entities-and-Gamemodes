@@ -18,7 +18,7 @@ Flags:-
 namespace PLAYER_BLOCKER
 {
 
-dictionary dictVecTriggerPlrOldOrigin;
+dictionary dictPlayerLastPostData;
 
 EHandle Enable(Vector vecAbsMinIn, Vector vecAbsMaxIn)
 {
@@ -33,12 +33,8 @@ EHandle Enable(Vector vecAbsMinIn, Vector vecAbsMaxIn)
         { "$v_mins", "" + vecAbsMinIn.ToString() },
         { "$v_maxs", "" + vecAbsMaxIn.ToString() }
     };
-    CBaseEntity@ pBlockerInstance = g_EntityFuncs.CreateEntity( "trigger_script", blocker, true );
 
-    if( pBlockerInstance !is null )
-        return EHandle( pBlockerInstance );
-    else
-        return EHandle( null );
+    return EHandle( g_EntityFuncs.CreateEntity( "trigger_script", blocker, true ) );
 }
 
 void PlayerBlocker(CBaseEntity@ pTriggerScript)
@@ -46,6 +42,7 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
     Vector vecAbsMin, vecAbsMax;
 
     CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
+
     if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
     {
         vecAbsMin = kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector();
@@ -57,13 +54,15 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
     if( vecAbsMin == vecAbsMax )
         return;
 
-    if( !dictVecTriggerPlrOldOrigin.exists( pTriggerScript.entindex() ) )
-        dictVecTriggerPlrOldOrigin.set( pTriggerScript.entindex(), array<Vector>( g_Engine.maxClients + 1, g_vecZero ) );
+    if( !dictPlayerLastPostData.exists( pTriggerScript.entindex() ) )
+        dictPlayerLastPostData.set( pTriggerScript.entindex(), array<Vector>( g_Engine.maxClients + 1, g_vecZero ) );
 
-    array<Vector>@ VEC_PLR_OLD_POS = cast<array<Vector>>( dictVecTriggerPlrOldOrigin[pTriggerScript.entindex()] );
+    array<Vector>@ VEC_PLAYER_LAST_POS = cast<array<Vector>>( dictPlayerLastPostData[pTriggerScript.entindex()] );
+    
     for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
             continue;
 
@@ -71,10 +70,10 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
         bool blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 2 ) ? !blInBounds : blInBounds;
 
         if( blIsFree )
-            VEC_PLR_OLD_POS[playerID] = pPlayer.GetOrigin();
+            VEC_PLAYER_LAST_POS[playerID] = pPlayer.GetOrigin();
         else
         {
-            g_EntityFuncs.SetOrigin( pPlayer, VEC_PLR_OLD_POS[playerID] );
+            g_EntityFuncs.SetOrigin( pPlayer, VEC_PLAYER_LAST_POS[playerID] );
             pPlayer.pev.velocity.x = -1 * g_Engine.v_forward.x;
             pPlayer.pev.velocity.y = -1 * g_Engine.v_forward.y;
             //g_PlayerFuncs.SayText( pPlayer, "lol no skip 4 u xd" );
