@@ -20,6 +20,7 @@ void ChangeSolid(CBaseEntity@ pTriggerScript)
     Vector vecAbsMin, vecAbsMax;
 
     CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
+    int iSolidSetting = Math.clamp( SOLID_NOT_EXPLICIT, SOLID_BSP, pTriggerScript.pev.solid );
 
     if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
     {
@@ -41,9 +42,9 @@ void ChangeSolid(CBaseEntity@ pTriggerScript)
         
         bool blInBounds = CheckInBounds( EHandle( pPlayer ), vecAbsMin, vecAbsMax );
 
-        if( blInBounds && pPlayer.pev.solid != SOLID_NOT )
-            pPlayer.pev.solid = Math.clamp( SOLID_NOT_EXPLICIT, SOLID_BSP, pTriggerScript.pev.solid );
-        else if( !blInBounds && pPlayer.pev.solid == SOLID_NOT )
+        if( blInBounds && pPlayer.pev.solid != iSolidSetting )
+            pPlayer.pev.solid = iSolidSetting;
+        else if( !blInBounds && pPlayer.pev.solid == iSolidSetting )
             pPlayer.pev.solid = SOLID_SLIDEBOX;
     }
 }
