@@ -24,9 +24,10 @@ void RegisterCheckPointSpawnerEntity(const bool blPrecache = false)
 
 class checkpoint_spawner : ScriptBaseEntity
 {
-	private string strFunnelSprite = "sprites/glow01.spr";
-	private string strStartSound = "ambience/particle_suck2.wav";
-	private string strEndSound = "debris/beamstart7.wav";
+	private string strFunnelSprite 	= "sprites/glow01.spr";
+	private string strStartSound 	= "ambience/particle_suck2.wav";
+	private string strEndSound 		= "debris/beamstart7.wav";
+	private string strModel 		= "models/common/lambda.mdl";
 
 	private float m_flDelayBeforeStart = 3, m_flDelayBetweenRevive = 1, m_flDelayBeforeReactivation = 60; 					
 	private bool m_fSpawnEffect = false; 
@@ -45,6 +46,8 @@ class checkpoint_spawner : ScriptBaseEntity
 			g_Utility.StringToVector( self.pev.vuser2, szValue );
 		else if( szKey == "m_fSpawnEffect" )
 			m_fSpawnEffect = atoi( szValue ) != 0;
+		else if( szKey == "checkpoint_model" )
+			strModel = szValue;
 		else if( szKey == "sprite" )
 			strFunnelSprite = szValue;
 		else if( szKey == "startsound" )
@@ -59,10 +62,10 @@ class checkpoint_spawner : ScriptBaseEntity
 
 	void Precache()
 	{
-		g_Game.PrecacheModel( string( self.pev.model ) );
-		g_Game.PrecacheModel( strFunnelSprite );
+		g_Game.PrecacheModel( strModel );
+		g_Game.PrecacheGeneric( strModel );
 
-		g_Game.PrecacheGeneric( string( self.pev.model ) );
+		g_Game.PrecacheModel( strFunnelSprite );
 		g_Game.PrecacheGeneric( strFunnelSprite );
 
 		g_SoundSystem.PrecacheSound( strStartSound );
@@ -76,7 +79,6 @@ class checkpoint_spawner : ScriptBaseEntity
 
 	void Spawn()
 	{
-		self.pev.model = string( self.pev.model ).IsEmpty() ? "models/common/lambda.mdl" : string( self.pev.model );
 		self.Precache();
 		self.pev.movetype 	= MOVETYPE_NONE;
 		self.pev.solid 		= SOLID_NOT;
@@ -112,11 +114,12 @@ class checkpoint_spawner : ScriptBaseEntity
 	void CreateCheckpoint()
 	{
 		dictionary cp;
-		cp ["origin"]						= "" + self.GetOrigin().ToString();
-		cp ["angles"]						= "" + self.pev.angles.ToString();
-		cp ["target"]						= "" + self.pev.target;
-		cp ["minhullsize"]					= "" + self.pev.vuser1.ToString();
-		cp ["maxhullsize"]					= "" + self.pev.vuser2.ToString();
+		cp ["origin"]						= self.GetOrigin().ToString();
+		cp ["angles"]						= self.pev.angles.ToString();
+		cp ["target"]						= string( self.pev.target );
+		cp ["minhullsize"]					= self.pev.vuser1.ToString();
+		cp ["maxhullsize"]					= self.pev.vuser2.ToString();
+		cp ["model"]						= strModel;
 		cp ["m_fSpawnEffect"]				= "" + m_fSpawnEffect;
 		cp ["m_flDelayBeforeReactivation"]	= "" + m_flDelayBeforeReactivation;
 		cp ["m_flDelayBetweenRevive"]		= "" + m_flDelayBetweenRevive;
