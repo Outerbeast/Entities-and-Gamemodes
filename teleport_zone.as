@@ -57,7 +57,7 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
     float flRange                       = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat() : 128.0f;
     flagMask                            = pTriggerScript.pev.spawnflags & ~( START_ACTIVE | TP_DIRECT | TP_KEEP_VELOCITY | TP_MISC | TP_PUSHABLES );
     vecStartPos                         = pTriggerScript.GetOrigin();
-    bool blBoundsChecked                = TeleportBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
+    bool blBoundsChecked                = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
     
     if( kvTriggerScript.HasKeyvalue( "$v_destination" ) )
         vecEndPos = kvTriggerScript.GetKeyvalue( "$v_destination" ).GetVector();
@@ -152,7 +152,7 @@ void TeleportPushables(Vector vecStartPos, Vector vecEndPos, Vector vecAbsMin, V
     P_BRUSHES.resize( 0 );
 }
 
-bool TeleportBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)
+bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)
 {
     if( !hTriggerScript )
         return false;
