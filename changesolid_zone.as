@@ -106,7 +106,7 @@ Vector vecAbsMax = Vector( WORLD_BOUNDARY, WORLD_BOUNDARY, WORLD_BOUNDARY ) )
 
     for( uint i = 0; i < P_BRUSHES.length(); i++ )
     {
-        if( P_BRUSHES[i] is null || P_BRUSHES[i].GetClassname().StartsWith( "func_" ) )
+        if( P_BRUSHES[i] is null || P_BRUSHES[i].pev.solid != SOLID_TRIGGER )
             continue;
 
         if( pPlayer.Intersects( P_BRUSHES[i] ) )
