@@ -51,7 +51,7 @@ class trigger_entity_volume : ScriptBaseEntity
 		if( szKey == "intarget" )
 			strInTarget = szValue;
 		else if( szKey == "outtarget" )
-		s	trOutTarget = szValue;
+			strOutTarget = szValue;
 		else if( szKey == "incount" )
 			iInCount = atoui( szValue );
 		else if( szKey ==  "outcount" )
