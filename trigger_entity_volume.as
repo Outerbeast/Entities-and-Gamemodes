@@ -84,8 +84,8 @@ class trigger_entity_volume : ScriptBaseEntity
 			blActivated = true;
 			return;
 		}
-		
-    	if( self.pev.SpawnFlagBitSet( FL_MONSTER ) )
+
+		if( self.pev.SpawnFlagBitSet( FL_MONSTER ) )
 			iFlagMask |= FL_MONSTER;
 
 		if( self.pev.SpawnFlagBitSet( FL_CLIENT ) )
@@ -112,27 +112,27 @@ class trigger_entity_volume : ScriptBaseEntity
 
 		self.pev.health = H_ENTITIES_INZONE.length();
 		self.pev.frags = H_ENTITIES_OUTZONE.length();
-		
+
 		EHandle hOther = pActivator !is null ? pActivator : ( pCaller !is null ? pCaller : self );
 
-    	if( strInTarget != "" && strInTarget != self.GetTargetname() && uint( self.pev.health ) >= iInCount )
-        	TargetIterate( strInTarget, @H_ENTITIES_INZONE, hOther, useType );
-			
+		if( strInTarget != "" && strInTarget != self.GetTargetname() && uint( self.pev.health ) >= iInCount )
+			TargetIterate( strInTarget, @H_ENTITIES_INZONE, hOther, useType );
+
 		if( strOutTarget != "" && strOutTarget != self.GetTargetname() && uint( self.pev.frags ) >= iOutCount )
 			TargetIterate( strOutTarget, @H_ENTITIES_OUTZONE, hOther, useType );
 	}
 		
 	void TargetIterate(string strTarget, array<EHandle>@ H_ENTITIES, EHandle hOther = EHandle( null ), USE_TYPE useType = USE_TOGGLE)
 	{
-        for( uint i = 0; i < H_ENTITIES.length(); i++ )
+		for( uint i = 0; i < H_ENTITIES.length(); i++ )
 		{
-            if( !H_ENTITIES[i] )
-            	continue;
-            
-            if( !hOther )
-            	hOther = H_ENTITIES[i];
-               
-            g_EntityFuncs.FireTargets( strTarget, H_ENTITIES[i].GetEntity(), hOther.GetEntity(), useType, 0.0f );
+			if( !H_ENTITIES[i] )
+				continue;
+
+			if( !hOther )
+				hOther = H_ENTITIES[i];
+
+			g_EntityFuncs.FireTargets( strTarget, H_ENTITIES[i].GetEntity(), hOther.GetEntity(), useType, 0.0f );
 		}
 	}
 
