@@ -122,9 +122,11 @@ class trigger_entity_volume : ScriptBaseEntity
 			TargetIterate( strOutTarget, @H_ENTITIES_OUTZONE, hOther, useType );
 	}
 		
-	void TargetIterate(string strTarget, array<EHandle>@ H_ENTITIES, EHandle hOther = EHandle( null ), USE_TYPE useType = USE_TOGGLE)
+	uint TargetIterate(string strTarget, array<EHandle>@ H_ENTITIES, EHandle hOther = EHandle( null ), USE_TYPE useType = USE_TOGGLE)
 	{
-		for( uint i = 0; i < H_ENTITIES.length(); i++ )
+		uint i;
+
+                for( i = 0; i < H_ENTITIES.length(); i++ )
 		{
 			if( !H_ENTITIES[i] )
 				continue;
@@ -134,6 +136,8 @@ class trigger_entity_volume : ScriptBaseEntity
 
 			g_EntityFuncs.FireTargets( strTarget, H_ENTITIES[i].GetEntity(), hOther.GetEntity(), useType, 0.0f );
 		}
+                
+                return i;
 	}
 
 	bool FIsInZone(EHandle hEntity)
