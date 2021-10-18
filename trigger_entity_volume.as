@@ -1,41 +1,47 @@
 /* trigger_entity_volume
 Custom game_zone_player entity with resiazble bbox and extended functionality to monsters
+
 Keys:-
 "classname" "trigger_entity_volume"
-"incount" "i" 				- min number of entities required to be in the zone to trigger "intarget"
-"intarget" "target_entity"	- target to trigger for entities inside the zone
-"outcount" "o"				- min number of entities reqyired to be outside the zone to trigger "outcount"
-"outtarget" "target_entity" - target to trigger for entities outside the zone
-"zoneradius" "256"			- Radius to define the zone
-"zonecornermin" "x1 y1 z1   - Entity bbox min position
-"zonecornermax" "x2 y2 z2"	- Entity bbox max position
-"spawnflags" "f"			- See Flags section below
+"incount" "i" 								- min number of entities required to be in the zone to trigger "intarget"
+"intarget" "target_entity"					- target to trigger for entities inside the zone
+"outcount" "o"								- min number of entities reqyired to be outside the zone to trigger "outcount"
+"outtarget" "target_entity" 				- target to trigger for entities outside the zone
+"target_incount_fail" "target_entity"		- target to trigger when incount condition fails
+"target_outcount_fail" "target_entity"		- target to trigger when outcount condition fails
+"zoneradius" "256"							- Radius to define the zone
+"zonecornermin" "x1 y1 z1   				- Entity bbox min position
+"zonecornermax" "x2 y2 z2"					- Entity bbox max position
+"spawnflags" "f"							- See Flags section below
+
 By default the entity will use its position and radius for its zone boundary, if a bounding box is not set via zonecornermin/max keys.
 "incount"/"outcount" keys are at default 0 and are optional.
 When triggered, the current number of entities inside the zone stored in the entity's "health" key and "frags" for entities outside.
 For more information on how to set up the targets and counters, visit the game_zone_player page in Sven Manor
 https://sites.google.com/site/svenmanor/entguide/game_zone_player
+
 Flags:-
-"1" : Ignore Dead 		- dead players are not counted when triggered
+"1" : Ignore Dead 		- Dead players are not counted when triggered
 "2" : Start Inactive 	- Entity has to be triggered first then it will become activated and perform its actions
-"8" : Mo players 		- Players will be excluded from the entity
+"8" : No players 		- Players will be excluded from the entity
 "32": Monsters 			- Include monsters
+
 - Outerbeast
 */
-void RegisterTriggerEntityVolume()
-{
-	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_entity_volume", "trigger_entity_volume" );
-}
-
 enum entity_zone_flags
 {
 	IGNORE_DEAD 	= 1 << 0,
 	START_INACTIVE 	= 1 << 1
 }
 
+void RegisterTriggerEntityVolume()
+{
+	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_entity_volume", "trigger_entity_volume" );
+}
+
 class trigger_entity_volume : ScriptBaseEntity
 {
-	private string strInTarget, strOutTarget;
+	private string strInTarget, strOutTarget, strFailInTarget, strFailOutTarget;
 	private uint iInCount, iOutCount, iMaxCount = 128, iFlagMask = FL_CLIENT;
 	private Vector vecZoneCornerMin, vecZoneCornerMax;
 	private float flZoneRadius = 256;
@@ -47,6 +53,10 @@ class trigger_entity_volume : ScriptBaseEntity
 			strInTarget = szValue;
 		else if( szKey == "outtarget" )
 			strOutTarget = szValue;
+		else if( szKey == "target_incount_fail" )
+			strFailInTarget = szValue;
+		else if( szKey == "target_outcount_fail" )
+			strFailOutTarget = szValue;
 		else if( szKey == "incount" )
 			iInCount = atoui( szValue );
 		else if( szKey ==  "outcount" )
@@ -117,16 +127,22 @@ class trigger_entity_volume : ScriptBaseEntity
 
 		if( strInTarget != "" && strInTarget != self.GetTargetname() && uint( self.pev.health ) >= iInCount )
 			TargetIterate( strInTarget, @H_ENTITIES_INZONE, hOther, useType );
+		else
+		    g_EntityFuncs.FireTargets( strFailInTarget, pActivator, pCaller, useType );
 
 		if( strOutTarget != "" && strOutTarget != self.GetTargetname() && uint( self.pev.frags ) >= iOutCount )
 			TargetIterate( strOutTarget, @H_ENTITIES_OUTZONE, hOther, useType );
+		else
+		    g_EntityFuncs.FireTargets( strFailOutTarget, pActivator, pCaller, useType );
+		    
+		self.SUB_UseTargets( pActivator, useType, 0.0f );
 	}
 		
 	uint TargetIterate(string strTarget, array<EHandle>@ H_ENTITIES, EHandle hOther = EHandle( null ), USE_TYPE useType = USE_TOGGLE)
 	{
-		uint i;
+		uint iTargetsTriggered = 0;
 
-                for( i = 0; i < H_ENTITIES.length(); i++ )
+		for( uint i = 0; i < H_ENTITIES.length(); i++ )
 		{
 			if( !H_ENTITIES[i] )
 				continue;
@@ -134,10 +150,11 @@ class trigger_entity_volume : ScriptBaseEntity
 			if( !hOther )
 				hOther = H_ENTITIES[i];
 
-			g_EntityFuncs.FireTargets( strTarget, H_ENTITIES[i].GetEntity(), hOther.GetEntity(), useType, 0.0f );
+			g_EntityFuncs.FireTargets( strTarget, H_ENTITIES[i].GetEntity(), hOther.GetEntity(), useType );
+			iTargetsTriggered++;
 		}
-                
-                return i;
+
+		return iTargetsTriggered;
 	}
 
 	bool FIsInZone(EHandle hEntity)
