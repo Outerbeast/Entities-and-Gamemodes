@@ -11,10 +11,10 @@ Usage:-
 - Add your optional cvars
 
 Map cfg settings:-
-"map_script pvp_mode" - install the script to the map
-"as_command pvp_spawnprotecttime" - set the time duration in seconds for how long spawn invulnerbility lasts, by default this is 5 if not set
-"as_command pvp_viewmode" - set the force viewmode, 0 for first person or 1 for third person, by default this is first person if not set
-"as_command pvp_killinfo" - enable or disable hud kill info, enabled by default
+"map_script pvp_mode"               - install the script to the map
+"as_command pvp_spawnprotecttime"   - set the time duration in seconds for how long spawn invulnerbility lasts, by default this is 5 if not set
+"as_command pvp_viewmode"           - set the force viewmode, 0 for first person or 1 for third person, by default this is first person if not set
+"as_command pvp_killinfo"           - enable or disable hud kill info, enabled by default
 
 Chat commands:-
 !pvp_stats - show your stats
@@ -27,18 +27,19 @@ be moved to Spectator mode until a slot becomes free.
 - Some players will have colored usernames in the scoreboard, this is due to the classification system assigning them to
 TEAM classification which apply these colors.
 */
-PvpMode@ g_pvpmode = @PvpMode();
+PvpMode g_pvpmode;
 
 CCVar cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
 CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View mode setting", ConCommandFlag::AdminOnly );
 CCVar cvarKillInfoSetting( "pvp_killinfo", 1.0f, "Kill hud info", ConCommandFlag::AdminOnly );
 
-const bool blPlayerSpawnHookRegister    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( g_pvpmode.OnPlayerSpawn ) );
-const bool blPlayerPreThinkRegister     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, PlayerPreThinkHook( g_pvpmode.PlayerPreThink ) );
-const bool blPlayerTakeDamageRegister   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( g_pvpmode.PlayerTakeDamage ) );
-const bool blPlayerKilledRegister       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( g_pvpmode.PlayerKilled ) );
-const bool blClientSayRegister          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, ClientSayHook( g_pvpmode.PlayerChatCommand ) );
-const bool blClientDisconnectRegister   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClientDisconnectHook( g_pvpmode.OnPlayerLeave ) );
+const bool blPlayerSpawnHook    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( g_pvpmode.PlayerSpawn ) );
+const bool blPlayerPreThink     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, PlayerPreThinkHook( g_pvpmode.PlayerPreThink ) );
+const bool blPlayerUse          = g_Hooks.RegisterHook( Hooks::Player::PlayerUse, PlayerUseHook( g_pvpmode.PlayerUse ) );
+const bool blPlayerTakeDamage   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( g_pvpmode.PlayerTakeDamage ) );
+const bool blPlayerKilled       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( g_pvpmode.PlayerKilled ) );
+const bool blClientSay          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, ClientSayHook( g_pvpmode.PlayerChatCommand ) );
+const bool blClientDisconnect   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClientDisconnectHook( g_pvpmode.PlayerLeave ) );
 
 final class PvpMode
 {
@@ -93,17 +94,23 @@ final class PvpMode
         switch( int( pPlayer.pev.takedamage ) )
         {
             case DAMAGE_NO:
+            {
                 pPlayer.SetMaxSpeedOverride( 0 );
                 pPlayer.pev.rendermode  = kRenderTransTexture;
                 pPlayer.pev.renderamt   = 100.0f;
                 g_Scheduler.SetTimeout( this, "SpawnProtection", cvarProtectDuration.GetFloat(), EHandle( pPlayer ), int( DAMAGE_YES ) );
+
                 break;
+            }
 
             case DAMAGE_YES:
+            {
                 pPlayer.SetMaxSpeedOverride( -1 );
                 pPlayer.pev.rendermode  = pPlayer.m_iOriginalRenderMode;
                 pPlayer.pev.renderamt   = pPlayer.m_flOriginalRenderAmount;
+
                 break;
+            }
         }
     }
 
@@ -140,13 +147,8 @@ final class PvpMode
             g_PlayerFuncs.ShowMessage( pPlayer, "You are in Spectator mode.\n\nType '!pvp_play' to exit." );
         }
     }
-    // Why is there no API method for this??
-    bool FlagSet(uint iTargetBits, uint iFlags)
-    {
-        return ( ( iTargetBits & iFlags ) != 0 );
-    }
     // ========================= Hook Funcs - Runs the entire bloody thing ========================= //
-    HookReturnCode OnPlayerSpawn(CBasePlayer@ pPlayer)
+    HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
     {   
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
            return HOOK_CONTINUE;
@@ -170,33 +172,34 @@ final class PvpMode
             return HOOK_CONTINUE;
 
         if( pPlayer.IsAlive() )
-        {   // Utterly retarded. Forced to cast to enum and not the actual value.
-            pPlayer.SetViewMode( PlayerViewMode( cvarViewModeSetting.GetInt() ) );
-
-            if( pPlayer.GetMaxSpeedOverride() == 0 )
-            {
-                if( FlagSet( pPlayer.pev.button, 
-                    IN_DUCK | 
-                    IN_JUMP | 
-                    IN_USE | 
-                    IN_ATTACK | 
-                    IN_ATTACK2 | 
-                    IN_ALT1 | 
-                    IN_FORWARD | 
-                    IN_BACK | 
-                    IN_MOVELEFT | 
-                    IN_MOVERIGHT | 
-                    IN_RUN )  
-                )
-                    SpawnProtection( EHandle( pPlayer ), int( DAMAGE_YES ) );
-            }
-        }
-
-        if( pPlayer.GetObserver().IsObserver() )
+            pPlayer.SetViewMode( PlayerViewMode( cvarViewModeSetting.GetInt() ) );// Utterly retarded. Forced to cast to enum and not the actual value.
+        else if( pPlayer.GetObserver().IsObserver() )
             pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX;
         
         return HOOK_CONTINUE;
     }
+
+    HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
+	{
+        if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+            return HOOK_CONTINUE;
+
+        if( pPlayer.GetMaxSpeedOverride() == 0 && 
+            pPlayer.m_afButtonPressed & (
+            IN_DUCK | 
+            IN_JUMP | 
+            IN_USE | 
+            IN_ATTACK | 
+            IN_ATTACK2 | 
+            IN_ALT1 | 
+            IN_FORWARD | 
+            IN_BACK | 
+            IN_MOVELEFT | 
+            IN_MOVERIGHT ) != 0 )
+            SpawnProtection( EHandle( pPlayer ), int( DAMAGE_YES ) );
+
+		return HOOK_CONTINUE;
+	}
 
     HookReturnCode PlayerChatCommand(SayParameters@ pParams)
     {
@@ -220,7 +223,7 @@ final class PvpMode
 
         pParams.set_ShouldHide( true );
         
-        if( cmdArgs[0] == "!pvp_leave" || cmdArgs[0] == "!pvp_spectate" )
+        if( cmdArgs[0] == "!pvp_leave" || cmdArgs[0] == "!pvp_spectate" || cmdArgs[0] == "!pvp_afk" )
         {
             if( !pPlayer.GetObserver().IsObserver() )
             {
@@ -284,7 +287,7 @@ final class PvpMode
         if( pDamageInfo is null || pDamageInfo.pVictim is null || pDamageInfo.pAttacker is null || pDamageInfo.pInflictor is null )
             return HOOK_CONTINUE;
         // Prevents goomba-stomp killage
-        if( FlagSet( pDamageInfo.bitsDamageType, DMG_CRUSH ) && ( pDamageInfo.pAttacker.IsPlayer() || pDamageInfo.pInflictor.IsPlayer() ) )
+        if( pDamageInfo.bitsDamageType & DMG_CRUSH != 0 && ( pDamageInfo.pAttacker.IsPlayer() || pDamageInfo.pInflictor.IsPlayer() ) )
             pDamageInfo.flDamage = 0.0f;
 
         return HOOK_CONTINUE;
@@ -331,7 +334,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode OnPlayerLeave(CBasePlayer@ pDisconnectedPlayer)
+    HookReturnCode PlayerLeave(CBasePlayer@ pDisconnectedPlayer)
     {   
         if( pDisconnectedPlayer is null )
             return HOOK_CONTINUE;
@@ -372,6 +375,6 @@ final class PvpMode
     ~PvpMode() { }
 }
 /* Special thanks to 
-- AnggaraNothing, Zode, Neo and H2 for scripting help
+- Zode, H2 and Neo for scripting help
 AlexCorruptor for testing and building a test map
 Gauna, SV BOY, Jumpy for helping test */
