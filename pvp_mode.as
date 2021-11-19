@@ -27,22 +27,25 @@ be moved to Spectator mode until a slot becomes free.
 - Some players will have colored usernames in the scoreboard, this is due to the classification system assigning them to
 TEAM classification which apply these colors.
 */
-PvpMode g_pvpmode;
+PvpMode g_PvpMode;
 
 CCVar cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
 CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View mode setting", ConCommandFlag::AdminOnly );
 CCVar cvarKillInfoSetting( "pvp_killinfo", 1.0f, "Kill hud info", ConCommandFlag::AdminOnly );
 
-const bool blPlayerSpawnHook    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( g_pvpmode.PlayerSpawn ) );
-const bool blPlayerPreThink     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, PlayerPreThinkHook( g_pvpmode.PlayerPreThink ) );
-const bool blPlayerUse          = g_Hooks.RegisterHook( Hooks::Player::PlayerUse, PlayerUseHook( g_pvpmode.PlayerUse ) );
-const bool blPlayerTakeDamage   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( g_pvpmode.PlayerTakeDamage ) );
-const bool blPlayerKilled       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( g_pvpmode.PlayerKilled ) );
-const bool blClientSay          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, ClientSayHook( g_pvpmode.PlayerChatCommand ) );
-const bool blClientDisconnect   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClientDisconnectHook( g_pvpmode.PlayerLeave ) );
+const CScheduledFunction@ fnPvpThink = g_Scheduler.SetInterval( g_PvpMode, "Think", 0.01f, g_Scheduler.REPEAT_INFINITE_TIMES );
+
+const bool blPlayerSpawnHook    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( g_PvpMode.PlayerSpawn ) );
+const bool blPlayerUse          = g_Hooks.RegisterHook( Hooks::Player::PlayerUse, PlayerUseHook( g_PvpMode.PlayerUse ) );
+const bool blPlayerTakeDamage   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( g_PvpMode.PlayerTakeDamage ) );
+const bool blPlayerKilled       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( g_PvpMode.PlayerKilled ) );
+const bool blClientSay          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, ClientSayHook( g_PvpMode.PlayerChatCommand ) );
+const bool blClientDisconnect   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClientDisconnectHook( g_PvpMode.PlayerLeave ) );
 
 final class PvpMode
 {
+    CScheduledFunction@ fnPvpThink;
+
     protected array<uint8> I_PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 19, 99 };
     protected array<bool> BL_PLAYER_SLOT( g_Engine.maxClients + 1 );
     protected array<EHandle> H_SPECTATORS( g_Engine.maxClients + 1 );
@@ -147,6 +150,22 @@ final class PvpMode
             g_PlayerFuncs.ShowMessage( pPlayer, "You are in Spectator mode.\n\nType '!pvp_play' to exit." );
         }
     }
+
+    void Think()
+    {
+        for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+        {
+            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+
+            if( pPlayer is null )
+                continue;
+
+            if( pPlayer.IsAlive() )
+                pPlayer.SetViewMode( PlayerViewMode( cvarViewModeSetting.GetInt() ) );// Utterly retarded. Forced to cast to enum and not the actual value.
+            else if( pPlayer.GetObserver().IsObserver() )
+                pPlayer.pev.nextthink = g_Engine.time + 1.0f;
+        }
+    }
     // ========================= Hook Funcs - Runs the entire bloody thing ========================= //
     HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
     {   
@@ -166,40 +185,27 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode PlayerPreThink(CBasePlayer@ pPlayer, uint& out uiFlags)
+    HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
     {
-        if( pPlayer is null || !pPlayer.IsConnected() )
+        if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
             return HOOK_CONTINUE;
 
-        if( pPlayer.IsAlive() )
-            pPlayer.SetViewMode( PlayerViewMode( cvarViewModeSetting.GetInt() ) );// Utterly retarded. Forced to cast to enum and not the actual value.
-        else if( pPlayer.GetObserver().IsObserver() )
-            pPlayer.m_flRespawnDelayTime = Math.FLOAT_MAX;
-        
+        if( pPlayer.GetMaxSpeedOverride() == 0 && 
+            pPlayer.m_afButtonPressed & (
+            IN_DUCK | 
+            IN_JUMP | 
+            IN_USE | 
+            IN_ATTACK | 
+            IN_ATTACK2 | 
+            IN_ALT1 | 
+            IN_FORWARD | 
+            IN_BACK | 
+            IN_MOVELEFT | 
+            IN_MOVERIGHT ) != 0 )
+        SpawnProtection( EHandle( pPlayer ), int( DAMAGE_YES ) );
+
         return HOOK_CONTINUE;
     }
-
-        HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
-        {
-            if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
-                return HOOK_CONTINUE;
-
-            if( pPlayer.GetMaxSpeedOverride() == 0 && 
-                pPlayer.m_afButtonPressed & (
-                IN_DUCK | 
-                IN_JUMP | 
-                IN_USE | 
-                IN_ATTACK | 
-                IN_ATTACK2 | 
-                IN_ALT1 | 
-                IN_FORWARD | 
-                IN_BACK | 
-                IN_MOVELEFT | 
-                IN_MOVERIGHT ) != 0 )
-            SpawnProtection( EHandle( pPlayer ), int( DAMAGE_YES ) );
-
-            return HOOK_CONTINUE;
-        }
 
     HookReturnCode PlayerChatCommand(SayParameters@ pParams)
     {
@@ -372,7 +378,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    ~PvpMode() { }
+    ~PvpMode(){ }
 }
 /* Special thanks to 
 - Zode, H2 and Neo for scripting help
