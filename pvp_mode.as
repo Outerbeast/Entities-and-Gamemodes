@@ -179,27 +179,27 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
-	{
-        if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
-            return HOOK_CONTINUE;
+        HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
+        {
+            if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+                return HOOK_CONTINUE;
 
-        if( pPlayer.GetMaxSpeedOverride() == 0 && 
-            pPlayer.m_afButtonPressed & (
-            IN_DUCK | 
-            IN_JUMP | 
-            IN_USE | 
-            IN_ATTACK | 
-            IN_ATTACK2 | 
-            IN_ALT1 | 
-            IN_FORWARD | 
-            IN_BACK | 
-            IN_MOVELEFT | 
-            IN_MOVERIGHT ) != 0 )
+            if( pPlayer.GetMaxSpeedOverride() == 0 && 
+                pPlayer.m_afButtonPressed & (
+                IN_DUCK | 
+                IN_JUMP | 
+                IN_USE | 
+                IN_ATTACK | 
+                IN_ATTACK2 | 
+                IN_ALT1 | 
+                IN_FORWARD | 
+                IN_BACK | 
+                IN_MOVELEFT | 
+                IN_MOVERIGHT ) != 0 )
             SpawnProtection( EHandle( pPlayer ), int( DAMAGE_YES ) );
 
-		return HOOK_CONTINUE;
-	}
+            return HOOK_CONTINUE;
+        }
 
     HookReturnCode PlayerChatCommand(SayParameters@ pParams)
     {
