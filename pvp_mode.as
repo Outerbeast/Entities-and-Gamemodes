@@ -44,8 +44,6 @@ const bool blClientDisconnect   = g_Hooks.RegisterHook( Hooks::Player::ClientDis
 
 final class PvpMode
 {
-    CScheduledFunction@ fnPvpThink;
-
     protected array<uint8> I_PLAYER_TEAM = { 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 19, 99 };
     protected array<bool> BL_PLAYER_SLOT( g_Engine.maxClients + 1 );
     protected array<EHandle> H_SPECTATORS( g_Engine.maxClients + 1 );
