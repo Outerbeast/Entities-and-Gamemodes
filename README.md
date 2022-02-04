@@ -3,13 +3,13 @@ Useful scripts for Sven Co-op maps
 
 A bunch of trigger_scripts and custom entities for maps that may be useful for map building and conversions
 
-##Instructions:
+## Instructions:
 
 ### trigger_scripts
 Follow the included instructions in the top of the script.
 For more information on how to use trigger_scripts in your maps, visit https://sites.google.com/site/svenmanor/entguide/trigger_script
 
-###Custom Entities
+### Custom Entities
 - Put the script in `scripts/maps`. If you wish to use subfolders, you can but take note of the path
 - Create a main script for your map and in your map cfg, add `map_script` followed by the name of the script
 - Edit your main script then add this to the top of your main script
