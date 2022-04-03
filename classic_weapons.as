@@ -31,7 +31,7 @@ void Enable()
     g_ClassicMode.SetItemMappings( @CLASSIC_WEAPONS_LIST );
     g_ClassicMode.ForceItemRemap( true );
     
-    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, @ItemSpawned );
+    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, ItemSpawned );
 }    
 // World weapon swapper routine (credit to KernCore)
 HookReturnCode ItemSpawned(CBaseEntity@ pOldItem) 
@@ -51,18 +51,13 @@ HookReturnCode ItemSpawned(CBaseEntity@ pOldItem)
 
         pNewItem.pev.movetype = pOldItem.pev.movetype;
 
-        if( pOldItem.GetTargetname() != "" )
-            g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "targetname", pOldItem.GetTargetname() );
-
-        if( pOldItem.pev.target != "" )
-            g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "target", pOldItem.pev.target );
-
         if( pOldItem.pev.netname != "" )
-            g_EntityFuncs.DispatchKeyValue( pNewItem.edict(), "netname", pOldItem.pev.netname );
+            pNewItem.pev.netname = pOldItem.pev.netname;
 
         g_EntityFuncs.Remove( pOldItem );
         
     }
+    
     return HOOK_CONTINUE;
 }
 
