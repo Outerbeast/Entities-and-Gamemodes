@@ -17,9 +17,9 @@ Map cfg settings:-
 "as_command pvp_killinfo"           - enable or disable hud kill info, enabled by default
 
 Chat commands:-
-!pvp_stats - show your stats
+!pvp_stats/info - show your stats
 !pvp_leave/spectate - enter Spectator mode
-!pvp_join/play - exit Spectator mode
+!pvp_join/play/afk - exit Spectator mode
 
 Issues:-
 - Only supports 17 player slots maximum because of limitations imposed by the game + API. 18th player and following will automatically
@@ -35,12 +35,12 @@ CCVar cvarKillInfoSetting( "pvp_killinfo", 1.0f, "Kill hud info", ConCommandFlag
 
 const CScheduledFunction@ fnPvpThink = g_Scheduler.SetInterval( g_PvpMode, "Think", 0.01f, g_Scheduler.REPEAT_INFINITE_TIMES );
 
-const bool blPlayerSpawnHook    = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( g_PvpMode.PlayerSpawn ) );
-const bool blPlayerUse          = g_Hooks.RegisterHook( Hooks::Player::PlayerUse, PlayerUseHook( g_PvpMode.PlayerUse ) );
-const bool blPlayerTakeDamage   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( g_PvpMode.PlayerTakeDamage ) );
-const bool blPlayerKilled       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( g_PvpMode.PlayerKilled ) );
-const bool blClientSay          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, ClientSayHook( g_PvpMode.PlayerChatCommand ) );
-const bool blClientDisconnect   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClientDisconnectHook( g_PvpMode.PlayerLeave ) );
+const bool blPlayerSpawnHook        = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( g_PvpMode.PlayerSpawn ) );
+const bool blPlayerUseHook          = g_Hooks.RegisterHook( Hooks::Player::PlayerUse, PlayerUseHook( g_PvpMode.PlayerUse ) );
+const bool blPlayerTakeDamageHook   = g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( g_PvpMode.PlayerTakeDamage ) );
+const bool blPlayerKilledHook       = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( g_PvpMode.PlayerKilled ) );
+const bool blClientSayHook          = g_Hooks.RegisterHook( Hooks::Player::ClientSay, ClientSayHook( g_PvpMode.PlayerChatCommand ) );
+const bool blClientDisconnectHook   = g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClientDisconnectHook( g_PvpMode.PlayerLeave ) );
 
 final class PvpMode
 {
@@ -59,7 +59,7 @@ final class PvpMode
             g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
     }
 
-    int AssignTeam(EHandle hPlayer, const bool blSetTeam)
+    protected int AssignTeam(EHandle hPlayer, const bool blSetTeam)
     {
         if( !hPlayer )
             return CLASS_NONE;
@@ -80,7 +80,7 @@ final class PvpMode
         return pPlayer.m_iClassSelection;
     }
 
-    void SpawnProtection(EHandle hPlayer, const int iTakeDamageIn)
+    protected void SpawnProtection(EHandle hPlayer, const int iTakeDamageIn)
     {
         if( !hPlayer )
             return;
@@ -115,7 +115,7 @@ final class PvpMode
         }
     }
 
-    void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
+    protected void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
     {
         if( !hPlayer )
             return;
@@ -149,11 +149,11 @@ final class PvpMode
         }
     }
 
-    void Think()
+    protected void Think()
     {
-        for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+        for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
         {
-            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
             if( pPlayer is null )
                 continue;
@@ -162,10 +162,13 @@ final class PvpMode
                 pPlayer.SetViewMode( PlayerViewMode( cvarViewModeSetting.GetInt() ) );// Utterly retarded. Forced to cast to enum and not the actual value.
             else if( pPlayer.GetObserver().IsObserver() )
                 pPlayer.pev.nextthink = g_Engine.time + 1.0f;
+
+            if( pPlayer.pev.FlagBitSet( FL_GODMODE ) )
+                pPlayer.pev.flags &= ~FL_GODMODE;
         }
     }
     // ========================= Hook Funcs - Runs the entire bloody thing ========================= //
-    HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
+    protected HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
     {   
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
            return HOOK_CONTINUE;
@@ -183,7 +186,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
+    protected HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
     {
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
             return HOOK_CONTINUE;
@@ -205,7 +208,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode PlayerChatCommand(SayParameters@ pParams)
+    protected HookReturnCode PlayerChatCommand(SayParameters@ pParams)
     {
         if( pParams is null )
             return HOOK_CONTINUE;
@@ -286,7 +289,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode PlayerTakeDamage(DamageInfo@ pDamageInfo)
+    protected HookReturnCode PlayerTakeDamage(DamageInfo@ pDamageInfo)
     {
         if( pDamageInfo is null || pDamageInfo.pVictim is null || pDamageInfo.pAttacker is null || pDamageInfo.pInflictor is null )
             return HOOK_CONTINUE;
@@ -297,7 +300,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
+    protected HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
     {
         if( pPlayer is null || pAttacker is null )
             return HOOK_CONTINUE;
@@ -338,7 +341,7 @@ final class PvpMode
         return HOOK_CONTINUE;
     }
 
-    HookReturnCode PlayerLeave(CBasePlayer@ pDisconnectedPlayer)
+    protected HookReturnCode PlayerLeave(CBasePlayer@ pDisconnectedPlayer)
     {   
         if( pDisconnectedPlayer is null )
             return HOOK_CONTINUE;
@@ -349,7 +352,7 @@ final class PvpMode
 
         CBasePlayer@ pObserverPlayer;
         array<CBaseEntity@> P_SPECTATORS( H_SPECTATORS.length() );
-        // No opEquals/opCmp for EHandle <=> CBaseEntity types, hence the following cursed code
+        // No opEquals/opCmp for EHandle types, hence the following cursed code
         for( uint i = 0; i < H_SPECTATORS.length(); i++ )
         {
             if( !H_SPECTATORS[i] )
@@ -358,12 +361,12 @@ final class PvpMode
             @P_SPECTATORS[i] = H_SPECTATORS[i].GetEntity();
         }
 
-        for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+        for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
         {
             if( BL_PLAYER_SLOT.find( false ) < 0 )
                break;
 
-            @pObserverPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+            @pObserverPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
             if( pObserverPlayer is null || !pObserverPlayer.GetObserver().IsObserver() )
                 continue;
@@ -372,7 +375,8 @@ final class PvpMode
                 continue;
 
             pObserverPlayer.GetObserver().StopObserver( true );
-        }  
+        }
+        
         return HOOK_CONTINUE;
     }
 
