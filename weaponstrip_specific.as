@@ -91,9 +91,9 @@ void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
         Strippery( EHandle( pActivator ), @STR_STRIPWEAPONS, pTriggerScript.pev.SpawnFlagBitSet( KEEP_WEAPONS ) );
     else
     {
-        for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+        for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
         {
-            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
             if( pPlayer is null || !pPlayer.IsConnected() )
                 continue;

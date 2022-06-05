@@ -30,9 +30,9 @@ Flags:-
 */
 enum entity_zone_flags
 {
-	IGNORE_DEAD 	= 1 << 0,
-	START_INACTIVE 	= 1 << 1
-}
+	SF_IGNORE_DEAD 		= 1 << 0,
+	SF_START_INACTIVE 	= 1 << 1
+};
 
 void RegisterTriggerEntityVolume()
 {
@@ -82,7 +82,14 @@ class trigger_entity_volume : ScriptBaseEntity
 		self.pev.effects    |= EF_NODRAW;
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
-		blActivated = !self.pev.SpawnFlagBitSet( START_INACTIVE );
+		if( vecZoneCornerMin != g_vecZero && vecZoneCornerMax != g_vecZero && vecZoneCornerMin != vecZoneCornerMax )
+		{
+			self.pev.mins = vecZoneCornerMin - self.GetOrigin();
+			self.pev.maxs = vecZoneCornerMax - self.GetOrigin();
+			g_EntityFuncs.SetSize( self.pev, self.pev.mins, self.pev.maxs );
+		}
+
+		blActivated = !self.pev.SpawnFlagBitSet( SF_START_INACTIVE );
 
 		BaseClass.Spawn();
 	}
@@ -103,6 +110,7 @@ class trigger_entity_volume : ScriptBaseEntity
 
 		array<CBaseEntity@> P_ENTITIES( iMaxCount );
 		int iNumEntities = g_EntityFuncs.Instance( 0 ).FindMonstersInWorld( @P_ENTITIES, iFlagMask );
+		uint iTotalTargetsTriggered = 0;
 
 		if( iNumEntities < 1 )
 			return;
@@ -111,7 +119,7 @@ class trigger_entity_volume : ScriptBaseEntity
 
 		for( uint i = 0; i < P_ENTITIES.length(); i++ )
 		{
-			if( P_ENTITIES[i] is null || ( self.pev.SpawnFlagBitSet( IGNORE_DEAD ) && !P_ENTITIES[i].IsAlive() ) )
+			if( P_ENTITIES[i] is null || ( self.pev.SpawnFlagBitSet( SF_IGNORE_DEAD ) && !P_ENTITIES[i].IsAlive() ) )
 				continue;
 
 			if( FIsInZone( P_ENTITIES[i] ) )
@@ -126,16 +134,17 @@ class trigger_entity_volume : ScriptBaseEntity
 		EHandle hOther = pActivator !is null ? pActivator : ( pCaller !is null ? pCaller : self );
 
 		if( strInTarget != "" && strInTarget != self.GetTargetname() && uint( self.pev.health ) >= iInCount )
-			TargetIterate( strInTarget, @H_ENTITIES_INZONE, hOther, useType );
+			iTotalTargetsTriggered += TargetIterate( strInTarget, @H_ENTITIES_INZONE, hOther, useType );
 		else
-		    g_EntityFuncs.FireTargets( strFailInTarget, pActivator, pCaller, useType );
+			g_EntityFuncs.FireTargets( strFailInTarget, pActivator, pCaller, useType );
 
 		if( strOutTarget != "" && strOutTarget != self.GetTargetname() && uint( self.pev.frags ) >= iOutCount )
-			TargetIterate( strOutTarget, @H_ENTITIES_OUTZONE, hOther, useType );
+			iTotalTargetsTriggered += TargetIterate( strOutTarget, @H_ENTITIES_OUTZONE, hOther, useType );
 		else
-		    g_EntityFuncs.FireTargets( strFailOutTarget, pActivator, pCaller, useType );
-		    
-		self.SUB_UseTargets( pActivator, useType, 0.0f );
+			g_EntityFuncs.FireTargets( strFailOutTarget, pActivator, pCaller, useType );
+		
+		if( iTotalTargetsTriggered > 0 && self.pev.target != "" && self.pev.target != self.GetTargetname() )
+			self.SUB_UseTargets( pActivator, useType, 0.0f );
 	}
 		
 	uint TargetIterate(string strTarget, array<EHandle>@ H_ENTITIES, EHandle hOther = EHandle( null ), USE_TYPE useType = USE_TOGGLE)
@@ -157,27 +166,17 @@ class trigger_entity_volume : ScriptBaseEntity
 		return iTargetsTriggered;
 	}
 
-	bool FIsInZone(EHandle hEntity)
+ 	bool FIsInZone(EHandle hEntity)
 	{
 		if( !hEntity )
 			return false;
 
-		if( vecZoneCornerMin != g_vecZero && vecZoneCornerMax != g_vecZero && vecZoneCornerMin != vecZoneCornerMax )
-			return EntityInBounds( hEntity, vecZoneCornerMin, vecZoneCornerMax );
+		if( self.pev.absmin != g_vecZero && self.pev.absmax != g_vecZero && self.pev.absmin != self.pev.absmax )
+			return hEntity.GetEntity().Intersects( self );
 		else
 			return EntityInRadius( hEntity, self.GetOrigin(), flZoneRadius );
 	}
-
-	bool EntityInBounds(EHandle hEntity, Vector vecAbsMin, Vector vecAbsMax)
-	{
-		if( !hEntity )
-			return false;
-
-		return ( hEntity.GetEntity().GetOrigin().x >= vecAbsMin.x && hEntity.GetEntity().GetOrigin().x <= vecAbsMax.x )
-			&& ( hEntity.GetEntity().GetOrigin().y >= vecAbsMin.y && hEntity.GetEntity().GetOrigin().y <= vecAbsMax.y )
-			&& ( hEntity.GetEntity().GetOrigin().z >= vecAbsMin.z && hEntity.GetEntity().GetOrigin().z <= vecAbsMax.z );
-	}
-
+	// Note to devs: add this as a CUtility method please!!!
 	bool EntityInRadius(EHandle hEntity, Vector vecOrigin, float flRadius)
 	{
 		if( !hEntity || flRadius <= 0 )

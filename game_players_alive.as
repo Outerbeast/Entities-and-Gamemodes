@@ -1,4 +1,5 @@
 /* trigger_script for counting players that are alive (or dead)
+This is a stop-gap measure for until game_player_counter gets more features
 Template entity:
 "classname" "trigger_script"
 "m_iszScriptFunctionName" "GAME_PLAYERS_ALIVE::GamePlayersAlive"
@@ -36,9 +37,9 @@ void GamePlayersAlive(CBaseEntity@ pTriggerScript)
     uint iAlivePlayers = 0, iDeadPlayers = 0;
     float flPercentAlive, flPercentDead;
     // Yeah. No method CPlayerFuncs method "int GetNumPlayersAlive". WHY.
-    for( int playerID = 1; playerID <= g_PlayerFuncs.GetNumPlayers(); playerID++ )
+    for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
     {
-        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
                 
         if( pPlayer is null || !pPlayer.IsConnected() )
             continue;

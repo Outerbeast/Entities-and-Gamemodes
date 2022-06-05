@@ -43,47 +43,41 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
     Vector vecAbsMin, vecAbsMax;
 
     CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
-    bool blBoundsChecked  = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
+    bool blBoundsSet = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
 
-    if( !blBoundsChecked || vecAbsMin == vecAbsMax )
+    if( !blBoundsSet || vecAbsMin == vecAbsMax )
         return;
+
+    if( blBoundsSet )
+    {
+        pTriggerScript.pev.mins = vecAbsMin - pTriggerScript.GetOrigin();
+        pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.GetOrigin();
+        g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
+    }
 
     if( !dictPlayerLastPosData.exists( pTriggerScript.entindex() ) )
         dictPlayerLastPosData.set( pTriggerScript.entindex(), array<Vector>( g_Engine.maxClients + 1, g_vecZero ) );
 
     array<Vector>@ VEC_PLAYER_LAST_POS = cast<array<Vector>>( dictPlayerLastPosData[pTriggerScript.entindex()] );
     
-    for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+    for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
-        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
             continue;
 
-        bool blInBounds = CheckInBounds( EHandle( pPlayer ), vecAbsMin, vecAbsMax );
-        bool blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 2 ) ? !blInBounds : blInBounds;
+        bool blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 2 ) ? !pPlayer.Intersects( pTriggerScript ) : pPlayer.Intersects( pTriggerScript );
 
         if( blIsFree )
-            VEC_PLAYER_LAST_POS[playerID] = pPlayer.GetOrigin();
+            VEC_PLAYER_LAST_POS[iPlayer] = pPlayer.GetOrigin();
         else
         {
-            g_EntityFuncs.SetOrigin( pPlayer, VEC_PLAYER_LAST_POS[playerID] );
+            g_EntityFuncs.SetOrigin( pPlayer, VEC_PLAYER_LAST_POS[iPlayer] );
             pPlayer.pev.velocity.x = -1 * g_Engine.v_forward.x;
             pPlayer.pev.velocity.y = -1 * g_Engine.v_forward.y;
         }
     }
-}
-
-bool CheckInBounds(EHandle hPlayer, Vector vecAbsMin, Vector vecAbsMax)
-{
-    if( !hPlayer )
-        return false;
-
-    CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
-    return ( pPlayer.GetOrigin().x >= vecAbsMin.x && pPlayer.GetOrigin().x <= vecAbsMax.x )
-        && ( pPlayer.GetOrigin().y >= vecAbsMin.y && pPlayer.GetOrigin().y <= vecAbsMax.y )
-        && ( pPlayer.GetOrigin().z >= vecAbsMin.z && pPlayer.GetOrigin().z <= vecAbsMax.z );
 }
 
 bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)

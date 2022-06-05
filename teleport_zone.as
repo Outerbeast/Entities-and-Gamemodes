@@ -1,4 +1,5 @@
-/* trigger_script for teleporting npcs because trigger_teleport Monsters flag is broken
+/* teleport_zone
+trigger_script for teleporting npcs because trigger_teleport Monsters flag is broken
 Teleports are "relative"
 -Outerbeast
 
@@ -12,7 +13,7 @@ Template entity:-
 "origin" "x1 y1 z1"         // Starting position
 "angles" "p y r"            // Custom angles
 "$v_destination" "x2 y2 z2" // Ending position
-"$f_radius" "72"             // Teleport Radius
+"$f_radius" "72"            // Teleport Radius
 "$s_brush" "*m"             // Brush model to provide bounds. Needs to be placed in the map as if it were the teleport itself
 "$v_mins" "x y z"           // Teleport zone box min origin
 "$v_maxs" "x y z"           // Teleport zone box max origin
@@ -36,8 +37,6 @@ No angles set = entity original angles is preserved
 namespace TELEPORT_ZONE
 {
 
-uint iMaxEntLimit = 128;
-
 enum teleport_zone_flags
 {
     START_ACTIVE        = 1,
@@ -49,15 +48,15 @@ enum teleport_zone_flags
 
 void TeleportEntities(CBaseEntity@ pTriggerScript)
 {
-    array<CBaseEntity@> P_ENTITIES( iMaxEntLimit );
+    array<CBaseEntity@> P_ENTITIES( g_EngineFuncs.NumberOfEntities() );
     int iNumEntities, flagMask;
     Vector vecStartPos, vecEndPos, vecAbsMin, vecAbsMax;
 
     CustomKeyvalues@ kvTriggerScript    = pTriggerScript.GetCustomKeyvalues();
-    float flRange                       = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat() : 128.0f;
+    float flRadius                      = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat() : 128.0f;
     flagMask                            = pTriggerScript.pev.spawnflags & ~( START_ACTIVE | TP_DIRECT | TP_KEEP_VELOCITY | TP_MISC | TP_PUSHABLES );
     vecStartPos                         = pTriggerScript.GetOrigin();
-    bool blBoundsChecked                = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
+    bool blBoundsSet                    = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
     
     if( kvTriggerScript.HasKeyvalue( "$v_destination" ) )
         vecEndPos = kvTriggerScript.GetKeyvalue( "$v_destination" ).GetVector();
@@ -67,7 +66,7 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
     if( flagMask == 0 )
         flagMask = FL_CLIENT | FL_MONSTER;
 
-    if( blBoundsChecked )
+    if( blBoundsSet )
     {
         iNumEntities = g_EntityFuncs.EntitiesInBox( @P_ENTITIES, vecAbsMin, vecAbsMax, flagMask );
 
@@ -78,20 +77,14 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
             TeleportPushables( vecStartPos, vecEndPos, vecAbsMin, vecAbsMax );
     }
     else
-        iNumEntities = g_EntityFuncs.MonstersInSphere( @P_ENTITIES, vecStartPos, flRange );
+        iNumEntities = g_EntityFuncs.MonstersInSphere( @P_ENTITIES, vecStartPos, flRadius );
+
+    if( iNumEntities < 1 )
+        return;
 
     for( int i = 0; i < iNumEntities; i++ )
     {
-        if( iNumEntities < 1 || P_ENTITIES.length() < 1 )
-            break;
-
-        if( P_ENTITIES[i] is null || !P_ENTITIES[i].pev.FlagBitSet( FL_CLIENT | FL_MONSTER ) || P_ENTITIES[i].IsBSPModel() )
-            continue;
-
-        if( P_ENTITIES[i].IsPlayer() && ( flagMask & FL_CLIENT ) == 0 )
-            continue;
-
-        if( P_ENTITIES[i].IsMonster() && ( flagMask & FL_MONSTER ) == 0 )
+        if( P_ENTITIES[i] is null || P_ENTITIES[i].IsBSPModel() )
             continue;
 
         if( !pTriggerScript.pev.SpawnFlagBitSet( TP_DIRECT ) )
@@ -104,6 +97,7 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
         if( !pTriggerScript.pev.SpawnFlagBitSet( TP_KEEP_VELOCITY ) )
             P_ENTITIES[i].pev.velocity = g_vecZero;
     }
+
     P_ENTITIES.resize( 0 );
 
     if( !pTriggerScript.pev.SpawnFlagBitSet( START_ACTIVE ) || pTriggerScript.GetTargetname() != "" )
@@ -112,7 +106,7 @@ void TeleportEntities(CBaseEntity@ pTriggerScript)
 // Teleport miscellaneous stuff like items, ammo and weapons
 void TeleportMisc(Vector vecStartPos, Vector vecEndPos, Vector vecAbsMin, Vector vecAbsMax, uint iSpawnflags)
 {
-    array<CBaseEntity@> P_MISC( iMaxEntLimit );
+    array<CBaseEntity@> P_MISC( g_EngineFuncs.NumberOfEntities() );
     int iNumEntities = g_EntityFuncs.EntitiesInBox( @P_MISC, vecAbsMin, vecAbsMax, 0 );
 
     if( iNumEntities < 1 || P_MISC.length() < 1 )
@@ -131,12 +125,13 @@ void TeleportMisc(Vector vecStartPos, Vector vecEndPos, Vector vecAbsMin, Vector
                 g_EntityFuncs.SetOrigin( P_MISC[i], vecEndPos );
         }
     }
+
     P_MISC.resize( 0 );
 }
 // Teleporting pushables is kind of buggy
 void TeleportPushables(Vector vecStartPos, Vector vecEndPos, Vector vecAbsMin, Vector vecAbsMax)
 {
-    array<CBaseEntity@> P_BRUSHES( iMaxEntLimit );
+    array<CBaseEntity@> P_BRUSHES( g_EngineFuncs.NumberOfEntities() );
     int iNumBrushes = g_EntityFuncs.BrushEntsInBox( @P_BRUSHES, vecAbsMin, vecAbsMax );
 
     if( iNumBrushes < 1 || P_BRUSHES.length() < 1 )

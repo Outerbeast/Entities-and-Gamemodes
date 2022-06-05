@@ -43,14 +43,12 @@ EHandle Enable(float flMortalVelocity, float flGravityModifier)
 
 void FallZone(CBaseEntity@ pTriggerScript)
 {
-    Vector vecAbsMin, vecAbsMax;
-    bool blBoundsChecked = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
+    Vector vecAbsMin = Vector( -WORLD_BOUNDARY, -WORLD_BOUNDARY, -WORLD_BOUNDARY ), vecAbsMax = Vector( WORLD_BOUNDARY, WORLD_BOUNDARY, WORLD_BOUNDARY );
+    bool blBoundsSet = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
 
-    if( !blBoundsChecked )
-    {
-        vecAbsMin = Vector( -WORLD_BOUNDARY, -WORLD_BOUNDARY, -WORLD_BOUNDARY );
-        vecAbsMax = Vector( WORLD_BOUNDARY, WORLD_BOUNDARY, WORLD_BOUNDARY );
-    }
+    pTriggerScript.pev.mins = vecAbsMin - pTriggerScript.GetOrigin();
+    pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.GetOrigin();
+    g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
 
     for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
@@ -62,7 +60,7 @@ void FallZone(CBaseEntity@ pTriggerScript)
             continue;
         }
 
-        VEC_PLAYER_FALL_DATA[iPlayer].z = CheckInBounds( pPlayer, vecAbsMin, vecAbsMax ) ? pTriggerScript.entindex() : 0;
+        VEC_PLAYER_FALL_DATA[iPlayer].z = pPlayer.Intersects( pTriggerScript ) ? pTriggerScript.entindex() : 0;
     }
 }
 
@@ -130,18 +128,6 @@ HookReturnCode Splat(CBasePlayer@ pPlayer)
     }
 
     return HOOK_CONTINUE;
-}
-
-bool CheckInBounds(EHandle hPlayer, Vector vecAbsMin, Vector vecAbsMax)
-{
-    if( !hPlayer )
-        return false;
-
-    CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
-    return ( pPlayer.GetOrigin().x >= vecAbsMin.x && pPlayer.GetOrigin().x <= vecAbsMax.x )
-        && ( pPlayer.GetOrigin().y >= vecAbsMin.y && pPlayer.GetOrigin().y <= vecAbsMax.y )
-        && ( pPlayer.GetOrigin().z >= vecAbsMin.z && pPlayer.GetOrigin().z <= vecAbsMax.z );
 }
 
 bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)

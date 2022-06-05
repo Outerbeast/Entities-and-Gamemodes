@@ -1,117 +1,63 @@
-/* trigger_playerfreeze- Freezing entity from Opposing Force 
+/* trigger_playerfreeze- Freezing entity from Opposing Force
 by Outerbeast
 
 Made this for backwards compatibility reasons- freezing players can already
 be achieved using changevalue + entity_iterator but this is much more convenient.
 
-Install:
-place in scripts/maps/opfor
-Add the lines to your main mapscript:-
-
+Installation:-
+- Place in scripts/maps
+-Add the lines to your main mapscript:-
 #include "trigger_playerfreeze" <-- this goes at the top
-
 RegisterTriggerPlayerFreezeEntity(); <-- this goes inside "void MapInit()"
 
-TO-DO:-
-- Fix "Start On" flag not working
-*/
-enum fridgesetting
-{
-	DEFROST  = -1,
-	NONE	 = 0,
-	FREEZING = 1
-};
+Usage:-
+Simply trigger the entity to start freezing players. The entity will continue to freeze players while its active.
+To unfreeze, trigger it again, or killtarget the entity.
+You can use "target" key followed by the targetname of your player to specifically freeze them and nobody else.
+After the entity triggers it will target entities matching its "message" value.
 
+Flags:
+1: "Start On" - the entity will be active when the level starts. This is automatically the case if the entity has no targetname
+2: "Invisible" - while the players are frozen, they will also be invisible.
+4: "Invert target" - instead of freezing the target, everyone else but the target will be frozen.
+*/
 enum freezespawnflags
 {
-	STARTON	    = 1,
-	RENDERINVIS = 2
+	SF_STARTON 			= 1 << 0,
+	SF_RENDERINVIS		= 1 << 1,
+	SF_INVERT_TARGET	= 1 << 2
 };
+
+void RegisterTriggerPlayerFreezeEntity()
+{
+	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_playerfreeze", "trigger_playerfreeze" );
+}
 
 class trigger_playerfreeze : ScriptBaseEntity
 {
-	private int iFridgeSetting;
+	private bool blShouldFreeze;
 	private float flWaitTime;
-
-	private array<EHandle> H_FRIDGE;
 
 	bool KeyValue(const string& in szKey, const string& in szValue)
 	{
 		if( szKey == "wait" ) 
-		{
 			flWaitTime = atof( szValue );
-			return true;
-		}
 		else
 			return BaseClass.KeyValue( szKey, szValue );
+
+		return true;
 	}
 	
 	void Spawn()
 	{
 		self.pev.movetype 	= MOVETYPE_NONE;
 		self.pev.solid 		= SOLID_NOT;
+		self.pev.effects	|= EF_NODRAW;
 		
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
-		SetThink( ThinkFunction( this.Refrigerator ) );
-		
-		if( self.pev.SpawnFlagBitSet( STARTON ) || self.GetTargetname() == "" )
-		{
-			iFridgeSetting = FREEZING;
-			self.pev.nextthink = g_Engine.time + 0.1f;
-		}
-		else
-			self.pev.nextthink = 0.0f;
-	}
-
-	void Refrigerator()
-	{
-		PutEntsInFridge();
-
-		if( H_FRIDGE.length() < 1 )
-			return;
-		
-		for( uint i = 0; i < H_FRIDGE.length(); i++ )
-		{
-			if( !H_FRIDGE[i] )
-				continue;
-
-			switch( iFridgeSetting )
-			{
-				case FREEZING:
-					Freezer( H_FRIDGE[i] );
-					self.pev.nextthink = g_Engine.time + 0.1f;
-					break;
-
-				case DEFROST:
-					Defroster( H_FRIDGE[i] );
-					self.pev.nextthink = g_Engine.time + 0.1f;
-					break;
-
-				default:
-					self.pev.nextthink = g_Engine.time + 0.5f;
-					break;
-			}
-		}
-	}
-
-	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
-	{
-		PutEntsInFridge();
-
-		if( H_FRIDGE.length() < 1 )
-			return;
-
-		if( iFridgeSetting == NONE )
-		{
-			iFridgeSetting = FREEZING;
-			self.pev.nextthink = g_Engine.time + 0.1f;
-		}
-		else
-			iFridgeSetting *= -1;
-
-		if( flWaitTime > 0 && iFridgeSetting == FREEZING ) 
-			g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
+		if( self.pev.SpawnFlagBitSet( SF_STARTON ) || self.GetTargetname() == "" )
+			self.Use( self, self, USE_ON, 0.0f );
 	}
 
 	void ToggleEntity()
@@ -119,85 +65,103 @@ class trigger_playerfreeze : ScriptBaseEntity
   		self.Use( self, self, USE_TOGGLE, 0.0f );
 	}
 
-	void PutEntsInFridge()
+	bool FCanFreezeTarget(EHandle hFreezeTarget)
 	{
-		CBaseEntity@ pFreezeEntity;
-		array<CBaseEntity@> P_OPENED_FRIDGE;
+		if( self.pev.target == "" )
+			return true;
 
-		for( uint i = 0; i < H_FRIDGE.length(); i++ )
-			P_OPENED_FRIDGE.insertLast( H_FRIDGE[i].GetEntity() );
+		return( self.pev.SpawnFlagBitSet( SF_INVERT_TARGET ) ? 
+				self.pev.target != hFreezeTarget.GetEntity().GetTargetname() : 
+				self.pev.target == hFreezeTarget.GetEntity().GetTargetname() );
+	}
 
-		if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
+	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
+	{
+		switch( useType )
 		{
-		    while( ( @pFreezeEntity = g_EntityFuncs.FindEntityByTargetname( pFreezeEntity, "" + self.pev.target ) ) !is null )
+			case USE_ON:
 			{
-			    if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
-					continue;
+				blShouldFreeze = g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Freezer ) );
+				g_Hooks.RegisterHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.Freezer ) );
+				g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );
 
-			    if( P_OPENED_FRIDGE.find( null ) >= 0 )
-					H_FRIDGE.insertAt( P_OPENED_FRIDGE.find( null ), pFreezeEntity );
-				else
-					H_FRIDGE.insertLast( pFreezeEntity );
+				break;
 			}
-		}
-		else // Default behaviour if "target" is undefined, cycle through players
-		{
-			for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+
+			case USE_OFF:
 			{
-				@pFreezeEntity = g_EntityFuncs.Instance( playerID );
+				blShouldFreeze = false;
+				g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Freezer ) );
+				g_Hooks.RemoveHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.Freezer ) );
+				g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );
 
-				if( pFreezeEntity is null || !pFreezeEntity.IsPlayer() )
-	          		continue;
-
-                if( P_OPENED_FRIDGE.find( pFreezeEntity ) >= 0 )
-					continue;
-				
-				if( P_OPENED_FRIDGE.find( null ) >= 0 )
-					H_FRIDGE.insertAt( P_OPENED_FRIDGE.find( null ), pFreezeEntity );
-				else
-					H_FRIDGE.insertLast( pFreezeEntity );
+				break;
 			}
+			
+			case USE_TOGGLE:
+				self.Use( null, null, blShouldFreeze ? USE_OFF : USE_ON, 0 );
+				break;
 		}
+
+		if( flWaitTime > 0 && blShouldFreeze ) 
+			g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
+
+		if( self.pev.message != "" && self.pev.message != self.GetTargetname() && blShouldFreeze )
+			g_EntityFuncs.FireTargets( self.pev.message, self, self, USE_TOGGLE );
 	}
 
-	void Freezer(EHandle hEntity)
+	private HookReturnCode Freezer(CBasePlayer@ pPlayer)
 	{
-		if( !hEntity )
-			return;
+		if( pPlayer is null || !pPlayer.IsConnected() || !blShouldFreeze )
+			return HOOK_CONTINUE;
 
-		CBaseEntity@ pEntity = hEntity.GetEntity();
+		if( !FCanFreezeTarget( pPlayer ) )
+			return HOOK_CONTINUE;
 
-		if( pEntity is null || pEntity.pev.FlagBitSet( FL_FROZEN ) )
-			return;
+		pPlayer.pev.flags |= FL_FROZEN;
 
-		pEntity.pev.flags |= FL_FROZEN;
+		if( self.pev.SpawnFlagBitSet( SF_RENDERINVIS ) && pPlayer.pev.effects & EF_NODRAW == 0 )
+			pPlayer.pev.effects |= EF_NODRAW;
 
-		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.effects & EF_NODRAW == 0 )
-			pEntity.pev.effects |= EF_NODRAW;
-
-		iFridgeSetting = FREEZING;
+		return HOOK_CONTINUE;
 	}
 
-	void Defroster(EHandle hEntity)
+	private HookReturnCode Defroster(CBasePlayer@ pPlayer)
 	{
-		if( !hEntity )
-			return;
+		if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.pev.FlagBitSet( FL_FROZEN ) || blShouldFreeze )
+			return HOOK_CONTINUE;
 
-		CBaseEntity@ pEntity = hEntity.GetEntity();
+		pPlayer.pev.flags &= ~FL_FROZEN;
 
-		if( pEntity is null || !pEntity.pev.FlagBitSet( FL_FROZEN ) )
-			return;
+		if( self.pev.SpawnFlagBitSet( SF_RENDERINVIS ) && pPlayer.pev.effects & EF_NODRAW != 0 )
+			pPlayer.pev.effects &= ~EF_NODRAW;
 
-		pEntity.pev.flags &= ~FL_FROZEN;
-
-		if( self.pev.SpawnFlagBitSet( RENDERINVIS ) && pEntity.pev.effects & EF_NODRAW != 0 )
-			pEntity.pev.effects &= ~EF_NODRAW;
-
-		iFridgeSetting = DEFROST;
+		return HOOK_CONTINUE;
 	}
-}
 
-void RegisterTriggerPlayerFreezeEntity()
-{
-	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_playerfreeze", "trigger_playerfreeze" );
+	void UpdateOnRemove()
+    {
+		blShouldFreeze = false;
+	
+		g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Freezer ) );
+		g_Hooks.RemoveHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.Freezer ) );
+
+		for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+        {
+            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
+
+			if( pPlayer is null )
+				continue;
+
+			if( pPlayer.pev.FlagBitSet( FL_FROZEN ) )
+				pPlayer.pev.flags &= ~FL_FROZEN;
+
+			if( pPlayer.pev.effects & EF_NODRAW != 0 )
+				pPlayer.pev.effects &= ~EF_NODRAW;
+		}
+
+		g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );
+
+        BaseClass.UpdateOnRemove();
+    }
 }

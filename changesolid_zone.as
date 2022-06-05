@@ -25,13 +25,13 @@ enum changsolidzone_flags
     START_ON                    = 1,
     DONT_FORCE_TRIGGER          = 2, // Disables nonsolid players interacting with trigger brush entities
     INVERT_TARGETNAME_FILTER    = 4 // Changes the netname to affect players NOT having the same targetname as this netname
-}
+};
 // This simply patches nonsolid trigger touch accross the entire map ( "m_iszScriptFunctionName" "changesolid_zone::ChangeSolid" )
 void TriggerTouchNonsolidFix(CBaseEntity@ pTriggerScript)
 {
-    for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+    for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
-        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
             continue;
@@ -46,12 +46,19 @@ void ChangeSolid(CBaseEntity@ pTriggerScript)
 
     CustomKeyvalues@ kvTriggerScript    = pTriggerScript.GetCustomKeyvalues();
     int iSolidSetting                   = Math.clamp( SOLID_NOT_EXPLICIT, SOLID_BSP, pTriggerScript.pev.solid );
-    bool blBoundsChecked                = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
+    bool blBoundsSet                    = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
     float flRadius                      = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat() : 128.0f;
 
-    for( int playerID = 1; playerID <= g_Engine.maxClients; playerID++ )
+    if( blBoundsSet )
     {
-        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( playerID );
+        pTriggerScript.pev.mins = vecAbsMin - pTriggerScript.GetOrigin();
+        pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.GetOrigin();
+        g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
+    }
+
+    for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+    {
+        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
             continue;
@@ -67,28 +74,23 @@ void ChangeSolid(CBaseEntity@ pTriggerScript)
                 continue;
         }
         
-        bool blInBounds;
+        bool blInZone = blBoundsSet ? pPlayer.Intersects( pTriggerScript ) : EntityInRadius( EHandle( pPlayer ), pTriggerScript.GetOrigin(), flRadius );
 
-        if( blBoundsChecked )
-            blInBounds = CheckInBounds( EHandle( pPlayer ), vecAbsMin, vecAbsMax );
-        else
-            blInBounds = CheckInRadius( EHandle( pPlayer ), pTriggerScript.GetOrigin(), flRadius );
-
-        if( blInBounds && pPlayer.pev.solid != iSolidSetting )
+        if( blInZone && pPlayer.pev.solid != iSolidSetting )
             pPlayer.pev.solid = iSolidSetting;
-        else if( !blInBounds && pPlayer.pev.solid == iSolidSetting )
+        else if( !blInZone && pPlayer.pev.solid == iSolidSetting )
             pPlayer.pev.solid = SOLID_SLIDEBOX;
 
         if( pTriggerScript.pev.SpawnFlagBitSet( DONT_FORCE_TRIGGER ) || 
-            !blBoundsChecked || 
+            !blBoundsSet || 
             pPlayer.pev.solid != SOLID_NOT || 
-            !CheckInBounds( EHandle( pPlayer ), vecAbsMin, vecAbsMax ) )
+            !pPlayer.Intersects( pTriggerScript ) )
             continue;
 
         ForceTriggerTouch( pPlayer, vecAbsMin, vecAbsMax );
     }
 }
-// Brush entity "Touch()" doesn't call for non-solid entities. If any exist within the zone, force-trigger when player bbox intersects the brush entity
+// Brush entity "Touch()" doesn't call for non-solid entities. If any exist within the zone, force-trigger when player bbox intersects the brush entity's bounding box
 void ForceTriggerTouch(EHandle hPlayer, 
 Vector vecAbsMin = Vector( -WORLD_BOUNDARY, -WORLD_BOUNDARY, -WORLD_BOUNDARY ), 
 Vector vecAbsMax = Vector( WORLD_BOUNDARY, WORLD_BOUNDARY, WORLD_BOUNDARY ) )
@@ -114,26 +116,13 @@ Vector vecAbsMax = Vector( WORLD_BOUNDARY, WORLD_BOUNDARY, WORLD_BOUNDARY ) )
     }
 }
 
-bool CheckInRadius(EHandle hPlayer, Vector vecOrigin, float flRadius)
+	// Note to devs: add this as a CUtility method please!!!
+bool EntityInRadius(EHandle hEntity, Vector vecOrigin, float flRadius)
 {
-    if( !hPlayer || flRadius <= 0 )
-        return false;
+	if( !hEntity || flRadius <= 0 )
+		return false;
 
-    CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
-    return( ( vecOrigin - pPlayer.pev.origin ).Length() <= flRadius );
-}
-
-bool CheckInBounds(EHandle hPlayer, Vector vecAbsMin, Vector vecAbsMax)
-{
-    if( !hPlayer )
-        return false;
-
-    CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
-    return ( pPlayer.GetOrigin().x >= vecAbsMin.x && pPlayer.GetOrigin().x <= vecAbsMax.x )
-        && ( pPlayer.GetOrigin().y >= vecAbsMin.y && pPlayer.GetOrigin().y <= vecAbsMax.y )
-        && ( pPlayer.GetOrigin().z >= vecAbsMin.z && pPlayer.GetOrigin().z <= vecAbsMax.z );
+	return( ( vecOrigin - hEntity.GetEntity().pev.origin ).Length() <= flRadius );
 }
 
 bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)
