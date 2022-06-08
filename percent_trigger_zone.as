@@ -20,7 +20,7 @@ Template entity:-
 Optional keys:
 "killtarget" "delete_entity"    // Entity to delete when the percentage condition is met
 "$s_master" "multisource_name"  // Name of a multisource entity that can lock this trigger zone (I instead recommend enabling the trigger zone via direct targetname trigger)
-"$f_delay"                      // Time in seconds before the trigger zone triggers "message" when percentage condition is met
+"delay"                         // Time in seconds before the trigger zone triggers "message" when percentage condition is met
 "$f_wait" "t"                   // Time in seconds before the trigger zone can be used again after its triggered its "message".
 "spawnflags" "1"                // Start On. If this flag is not set the entity needs to be triggered first to enable it.
 */
@@ -33,13 +33,11 @@ void TriggerThink(CBaseEntity@ pTriggerScript)
 
     Vector vecAbsMin, vecAbsMax;
     const float flZoneRadius = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat()  : 512.0f;
-    const float flDelay      = kvTriggerScript.HasKeyvalue( "$f_delay" )  ? kvTriggerScript.GetKeyvalue( "$f_delay" ).GetFloat()   : 0.0f;
     const float flWait       = kvTriggerScript.HasKeyvalue( "$f_wait" )   ? kvTriggerScript.GetKeyvalue( "$f_wait" ).GetFloat()    : -1.0f;
     const string strMaster   = kvTriggerScript.HasKeyvalue( "$s_master" ) ? kvTriggerScript.GetKeyvalue( "$s_master" ).GetString() : "";
     
-    float flPercentage = pTriggerScript.pev.frame = kvTriggerScript.HasKeyvalue( "$f_percentage" ) ? 
-                            kvTriggerScript.GetKeyvalue( "$f_percentage" ).GetFloat() : 
-                            ( kvTriggerScript.HasKeyvalue( "$i_percentage" ) ? float( kvTriggerScript.GetKeyvalue( "$i_percentage" ).GetInteger() ) / 100.0f : 0.66 );
+    float flPercentage = kvTriggerScript.HasKeyvalue( "$f_percentage" ) ? kvTriggerScript.GetKeyvalue( "$f_percentage" ).GetFloat() : 
+                        ( kvTriggerScript.HasKeyvalue( "$i_percentage" ) ? float( kvTriggerScript.GetKeyvalue( "$i_percentage" ).GetInteger() ) / 100.0f : 0.66 );
 
     if( !g_EntityFuncs.IsMasterTriggered( strMaster, null ) )
         return;
