@@ -28,18 +28,18 @@ dictPrintDebugMsg =
 
 void Init()
 {
-    CBaseEntity@ pEntity, pTriggerDebugRly;
+    CBaseEntity@ pEntity, pTriggerDebug;
 
     while( ( @pEntity = g_EntityFuncs.FindEntityByTargetname( pEntity, "*" ) ) !is null )
     {
-        if( pEntity is null || pEntity.IsMonster() )
+        if( pEntity is null || pEntity.IsMonster() || pEntity.GetTargetname() == "" )
             continue;
 
         if( STR_TARGETNAMES.find( pEntity.GetTargetname() ) >= 0 )
             continue;
 
-        @pTriggerDebugRly = g_EntityFuncs.CreateEntity( "trigger_script", dictTriggerDebug, true );
-        STR_TARGETNAMES.insertLast( pTriggerDebugRly.pev.targetname = pEntity.GetTargetname() );
+        @pTriggerDebug = g_EntityFuncs.CreateEntity( "trigger_script", dictTriggerDebug, true );
+        STR_TARGETNAMES.insertLast( pTriggerDebug.pev.targetname = pEntity.GetTargetname() );
     }
 
     g_EntityFuncs.CreateEntity( "trigger_script", dictPrintDebugMsg, true );
@@ -47,6 +47,9 @@ void Init()
 
 void TriggerListener(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
+    if( pCaller is null )
+        return;
+    
     const string strTriggererClassname = pCaller.GetClassname();
     const string strTriggererTargetname = pCaller.GetTargetname() != "" ? "''" + pCaller.GetTargetname() + "''" : "";
 
@@ -55,6 +58,9 @@ void TriggerListener(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE use
 
 void PrintDebugMsg(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
+    if( pCaller is null )
+        return;
+
     const string strTargetEntityTargetName = pCaller.GetTargetname() != "" ? "''" + pCaller.GetTargetname() + "''" : "";
 
     strDebugMsg = strDebugMsg + " " + strTargetEntityTargetName + "\n";
