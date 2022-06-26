@@ -27,3 +27,8 @@ If your main script already has stuff inside the MapInit block, simply add the c
 
 ### Misc
 Some scripts simply just require you add them via `map_script` in map cfg. Again refer to included instructions if unsure.
+
+### Terms and Conditions
+You are free to use and distribute these scripts if you agree to:
+- Provide credit
+- Not modify the script. If you want to change variables, they will be exposed so they can be accessed from your map script. Do not distribute forked copies of the script. If you have done so to fix/improve/tweak the script please drop feedback in the Issues section or make a pull request. You are welcome to do so.
