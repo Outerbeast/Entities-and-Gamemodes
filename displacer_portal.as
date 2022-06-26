@@ -275,7 +275,7 @@ void Think(CBaseEntity@ pTriggerScript)
 
         PortalExit( P_TARGET[0] );
         // Can't delete it otherwise the beams remain - just move it outside the world and let it expire itself
-        pPortal.pev.effects != EF_NODRAW;
+        pPortal.pev.effects |= EF_NODRAW;
         g_EntityFuncs.SetOrigin( pPortal, Vector( -WORLD_BOUNDARY, -WORLD_BOUNDARY, -WORLD_BOUNDARY ) );
     }
 }
