@@ -30,20 +30,23 @@ void PatchTriggerRespawn()
 
     while( ( ( @pEntity = g_EntityFuncs.FindEntityByClassname( pEntity, "trigger_respawn" ) ) !is null ) )
     {
-        if( pEntity is null || !pEntity.pev.SpawnFlagBitSet( 2 | 8 ) )
+        if( pEntity is null )
             continue;
 
-        pEntity.pev.spawnflags &= ~2;// disable respawn dead setting, trigger_script will do this now
-
-        dictionary dictDeadRespawner =
+        if( pEntity.pev.SpawnFlagBitSet( 2 ) && pEntity.pev.SpawnFlagBitSet( 8 ) )
         {
-            { "m_iszScriptFile", "respawndead_keepweapons" },
-            { "m_iszScriptFunctionName", "RESPAWNDEAD_KEEPWEAPONS::RespawnDead" },
-            { "m_iMode", "1" },
-            { "targetname", pEntity.GetTargetname() }
-        };
+            pEntity.pev.spawnflags &= ~2;// disable respawn dead setting, trigger_script will do this now
 
-        g_EntityFuncs.CreateEntity( "trigger_script", dictDeadRespawner );
+            dictionary dictDeadRespawner =
+            {
+                { "m_iszScriptFile", "respawndead_keepweapons" },
+                { "m_iszScriptFunctionName", "RESPAWNDEAD_KEEPWEAPONS::RespawnDead" },
+                { "m_iMode", "1" },
+                { "targetname", pEntity.GetTargetname() }
+            };
+
+            g_EntityFuncs.CreateEntity( "trigger_script", dictDeadRespawner );
+        }
     }
 }
 // Replace trigger_respawn's dead respawner with our own
