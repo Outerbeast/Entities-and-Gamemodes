@@ -1,3 +1,21 @@
+/*
+respawndead_keepweapons
+Adds a feature for trigger_respawn to let dead players respawn with the weapons they collected when they died, instead of losing them
+
+Install:
+put "map_script respawndead_keepweapons" to your map cfg
+OR
+Add this as a trigger_script
+"classname" "trigger_script"
+"m_iszScriptFile" "respawndead_keepweapons"
+OR
+Include it in your main map script header
+#include "respawndead_keepweapons"
+
+Usage:
+- make your trigger_respawn, check the flag "Respawn dead" then 
+- check flag box 4 (value 8)- this is the new flag to allow the trigger_respawn to let dead respawning players keep their weapons they had when they died
+*/
 namespace RESPAWNDEAD_KEEPWEAPONS
 {
 
@@ -28,7 +46,7 @@ void PatchTriggerRespawn()
         g_EntityFuncs.CreateEntity( "trigger_script", dictDeadRespawner );
     }
 }
-
+// Replace trigger_respawn's dead respawner with our own
 void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
     for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
@@ -42,14 +60,13 @@ void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType
         ReEquipCollected( pPlayer );
     }
 }
-
+// Players get their old loadout when they died
 void ReEquipCollected(EHandle hPlayer)
 {
     if( !hPlayer )
         return;
 
     CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
     array<string> STR_LOADOUT_WEAPONS = STR_PLAYER_LOADOUT[pPlayer.entindex()].Split( ";" );
 
     for( uint i = 0; i < STR_LOADOUT_WEAPONS.length(); i++ )
@@ -60,7 +77,7 @@ void ReEquipCollected(EHandle hPlayer)
         pPlayer.GiveNamedItem( STR_LOADOUT_WEAPONS[i] );
     }
 }
-
+// Save player loadout upon death
 HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
 {
     if( pPlayer is null )
