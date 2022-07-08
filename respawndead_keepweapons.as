@@ -79,6 +79,8 @@ void ReEquipCollected(EHandle hPlayer)
 
         pPlayer.GiveNamedItem( STR_LOADOUT_WEAPONS[i] );
     }
+
+    STR_PLAYER_LOADOUT[pPlayer.entindex()] = "";
 }
 // Save player loadout upon death
 HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
