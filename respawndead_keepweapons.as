@@ -88,6 +88,8 @@ HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iG
     if( pPlayer is null )
         return HOOK_CONTINUE;
 
+    STR_PLAYER_LOADOUT[pPlayer.entindex()] = "";
+    
     for( uint i = 0; i < MAX_ITEM_TYPES; i++ )
     {
         CBasePlayerItem@ pItem = pPlayer.m_rgpPlayerItems( i );
