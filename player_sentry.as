@@ -218,12 +218,14 @@ void RemoveSentry(EHandle hPlayer)
     I_SENTRIES_DEPLOYED[hPlayer.GetEntity().entindex()] = 0;
 }
 
-void PickUpSentry(CBasePlayer@ pPlayer, CBaseMonster@ pSentry)
+void PickUpSentry(EHandle hPlayer, EHandle hSentry)
 {
-    if( pPlayer is null || pSentry is null )
+    if( !hPlayer || !hSentry )
         return;
 
-    if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) || pPlayer.pev.FlagBitSet( FL_INWATER ) )
+    CBaseEntity@ pPlayer = hPlayer.GetEntity(), pSentry = hSentry.GetEntity();
+
+    if( pPlayer is null || pSentry is null || !pPlayer.pev.FlagBitSet( FL_ONGROUND ) || pPlayer.pev.FlagBitSet( FL_INWATER ) )
         return;
 
     g_EntityFuncs.DispatchKeyValue( pPlayer.edict(), "$i_carryingsentry", "1" );
@@ -233,8 +235,13 @@ void PickUpSentry(CBasePlayer@ pPlayer, CBaseMonster@ pSentry)
     @pSentry.pev.owner = pPlayer.edict();
 }
 
-void PutDownSentry(CBasePlayer@ pPlayer, CBaseMonster@ pSentry)
+void PutDownSentry(EHandle hPlayer, EHandle hSentry)
 {
+    if( !hPlayer || !hSentry )
+        return;
+
+    CBaseEntity@ pPlayer = hPlayer.GetEntity(), pSentry = hSentry.GetEntity();
+
     if( pPlayer is null || pSentry is null || pSentry.Intersects( pPlayer ) )
         return;
 
