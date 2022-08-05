@@ -14,7 +14,7 @@ void RegisterTriggerSequential()
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_sequential", "trigger_sequential" );
 }
 
-class trigger_sequential : ScriptBaseEntity
+final class trigger_sequential : ScriptBaseEntity
 {
     private dictionary dictKeyValues;
     private bool blShouldTrigger = true;
