@@ -33,8 +33,9 @@ void RegisterTriggerPlayerFreezeEntity()
 	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_playerfreeze", "trigger_playerfreeze" );
 }
 
-class trigger_playerfreeze : ScriptBaseEntity
+final class trigger_playerfreeze : ScriptBaseEntity
 {
+	EHandle hActivator;
 	private bool blShouldFreeze;
 	private float flWaitTime;
 
@@ -67,8 +68,18 @@ class trigger_playerfreeze : ScriptBaseEntity
 
 	bool FCanFreezeTarget(EHandle hFreezeTarget)
 	{
+		if( !hFreezeTarget )
+			return false;
+
 		if( self.pev.target == "" )
 			return true;
+
+		if( self.pev.target == "!activator" && hActivator )
+		{
+			return( self.pev.SpawnFlagBitSet( SF_INVERT_TARGET ) ? 
+					hFreezeTarget.GetEntity() !is hFreezeTarget.GetEntity() : 
+					hFreezeTarget.GetEntity() is hFreezeTarget.GetEntity() );
+		}
 
 		return( self.pev.SpawnFlagBitSet( SF_INVERT_TARGET ) ? 
 				self.pev.target != hFreezeTarget.GetEntity().GetTargetname() : 
@@ -84,6 +95,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 				blShouldFreeze = g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Freezer ) );
 				g_Hooks.RegisterHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.Freezer ) );
 				g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );
+				hActivator = pActivator;
 
 				break;
 			}
@@ -94,6 +106,7 @@ class trigger_playerfreeze : ScriptBaseEntity
 				g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Freezer ) );
 				g_Hooks.RemoveHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.Freezer ) );
 				g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );
+				hActivator = EHandle();
 
 				break;
 			}
@@ -107,15 +120,12 @@ class trigger_playerfreeze : ScriptBaseEntity
 			g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
 
 		if( self.pev.message != "" && self.pev.message != self.GetTargetname() && blShouldFreeze )
-			g_EntityFuncs.FireTargets( self.pev.message, self, self, USE_TOGGLE );
+			g_EntityFuncs.FireTargets( self.pev.message, hActivator.GetEntity(), self, USE_TOGGLE );
 	}
 
 	private HookReturnCode Freezer(CBasePlayer@ pPlayer)
 	{
-		if( pPlayer is null || !pPlayer.IsConnected() || !blShouldFreeze )
-			return HOOK_CONTINUE;
-
-		if( !FCanFreezeTarget( pPlayer ) )
+		if( pPlayer is null || !pPlayer.IsConnected() || !blShouldFreeze || !FCanFreezeTarget( pPlayer ) )
 			return HOOK_CONTINUE;
 
 		pPlayer.pev.flags |= FL_FROZEN;
@@ -140,28 +150,17 @@ class trigger_playerfreeze : ScriptBaseEntity
 	}
 
 	void UpdateOnRemove()
-    {
+	{
 		blShouldFreeze = false;
-	
+
 		g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Freezer ) );
 		g_Hooks.RemoveHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.Freezer ) );
 
 		for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
-        {
-            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
-
-			if( pPlayer is null )
-				continue;
-
-			if( pPlayer.pev.FlagBitSet( FL_FROZEN ) )
-				pPlayer.pev.flags &= ~FL_FROZEN;
-
-			if( pPlayer.pev.effects & EF_NODRAW != 0 )
-				pPlayer.pev.effects &= ~EF_NODRAW;
-		}
+			Defroster( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) );
 
 		g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );
 
-        BaseClass.UpdateOnRemove();
-    }
+		BaseClass.UpdateOnRemove();
+	}
 }
