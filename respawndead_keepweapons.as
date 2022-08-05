@@ -21,8 +21,7 @@ namespace RESPAWNDEAD_KEEPWEAPONS
 
 CScheduledFunction@ fnPatchTriggerRespawn = g_Scheduler.SetTimeout( "PatchTriggerRespawn", 0.0f );
 bool blPlayerKilled = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilled );
-
-array<string> STR_PLAYER_LOADOUT( g_Engine.maxClients + 1 );
+array<dictionary> DICT_PLAYER_LOADOUT( g_Engine.maxClients + 1 );
 
 void PatchTriggerRespawn()
 {
@@ -70,17 +69,23 @@ void ReEquipCollected(EHandle hPlayer)
         return;
 
     CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-    array<string> STR_LOADOUT_WEAPONS = STR_PLAYER_LOADOUT[pPlayer.entindex()].Split( ";" );
+    array<string> STR_LOADOUT_WEAPONS = DICT_PLAYER_LOADOUT[pPlayer.entindex()].getKeys();
 
     for( uint i = 0; i < STR_LOADOUT_WEAPONS.length(); i++ )
     {
         if( STR_LOADOUT_WEAPONS[i] == "" || pPlayer.HasNamedPlayerItem( STR_LOADOUT_WEAPONS[i] ) !is null )
             continue;
 
-        pPlayer.GiveNamedItem( STR_LOADOUT_WEAPONS[i] );
+        pPlayer.GiveNamedItem( STR_LOADOUT_WEAPONS[i] ); // Would be nice if this returned the actual item ptr....
+        CBasePlayerWeapon@ pEquippedWeapon = cast<CBasePlayerWeapon@>( pPlayer.HasNamedPlayerItem( STR_LOADOUT_WEAPONS[i] ) );
+
+        if( pEquippedWeapon is null )
+            continue;
+
+        pPlayer.m_rgAmmo( pEquippedWeapon.m_iPrimaryAmmoType, int( DICT_PLAYER_LOADOUT[pPlayer.entindex()][STR_LOADOUT_WEAPONS[i]] ) );
     }
 
-    STR_PLAYER_LOADOUT[pPlayer.entindex()] = "";
+    DICT_PLAYER_LOADOUT[pPlayer.entindex()] = dictionary();
 }
 // Save player loadout upon death
 HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
@@ -88,16 +93,16 @@ HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iG
     if( pPlayer is null )
         return HOOK_CONTINUE;
 
-    STR_PLAYER_LOADOUT[pPlayer.entindex()] = "";
-    
+    DICT_PLAYER_LOADOUT[pPlayer.entindex()] = dictionary();
+
     for( uint i = 0; i < MAX_ITEM_TYPES; i++ )
     {
-        CBasePlayerItem@ pItem = pPlayer.m_rgpPlayerItems( i );
+        CBasePlayerWeapon@ pWeapon = cast<CBasePlayerWeapon@>( pPlayer.m_rgpPlayerItems( i ) );
 
-        while( pItem !is null )
+        while( pWeapon !is null )
         {
-            STR_PLAYER_LOADOUT[pPlayer.entindex()] = STR_PLAYER_LOADOUT[pPlayer.entindex()] + pItem.GetClassname() + ";";
-            @pItem = cast<CBasePlayerItem@>( pItem.m_hNextItem.GetEntity() );
+            DICT_PLAYER_LOADOUT[pPlayer.entindex()][pWeapon.GetClassname()] = pPlayer.m_rgAmmo( pWeapon.m_iPrimaryAmmoType );
+            @pWeapon = cast<CBasePlayerWeapon@>( pWeapon.m_hNextItem.GetEntity() );
         }
     }
 

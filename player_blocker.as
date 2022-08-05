@@ -7,9 +7,10 @@ Template entity:-
 "m_iszScriptFunctionName" "PLAYER_BLOCKER::PlayerBlocker"
 "m_iMode" "2"
 // Don't change any of the above
-"$s_brush" "*m"      - Brush model to provide bounds
-"$v_mins" "x1 y1 z1" - absmin bound coord
-"$v_maxs" "x2 y2 z2" - absmax bound coord
+"$s_brush" "*m"                 - Brush model to provide bounds
+"$v_mins" "x1 y1 z1"            - absmin bound coord
+"$v_maxs" "x2 y2 z2"            - absmax bound coord
+"netname" "player_targetname"   - Optional key to exclude named players from being blocked
 "spawnflags" "f" - see  "Flags" below
 
 Flags:-
@@ -65,6 +66,9 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+            continue;
+
+        if( pTriggerScript.pev.netname != "" && pPlayer.GetTargetname() == pTriggerScript.pev.netname )
             continue;
 
         bool blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 2 ) ? !pPlayer.Intersects( pTriggerScript ) : pPlayer.Intersects( pTriggerScript );
