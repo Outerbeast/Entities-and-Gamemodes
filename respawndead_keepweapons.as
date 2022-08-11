@@ -1,23 +1,32 @@
 /*
 respawndead_keepweapons
 Adds a feature for trigger_respawn to let dead players respawn with the weapons they collected when they died, instead of losing them
+Option to keep ammo as well
 
-Install:
-put "map_script respawndead_keepweapons" to your map cfg
+Install:-
+Put the script file into "scripts/maps/beast" then either
+- put "map_script respawndead_keepweapons" to your map cfg
 OR
-Add this as a trigger_script
+-Add this as a trigger_script
 "classname" "trigger_script"
 "m_iszScriptFile" "respawndead_keepweapons"
 OR
-Include it in your main map script header
-#include "respawndead_keepweapons"
+-Include it in your main map script header
+#include "beast/respawndead_keepweapons"
 
-Usage:
+Usage:-
 - make your trigger_respawn, check the flag "Respawn dead" then 
 - check flag box 4 (value 8)- this is the new flag to allow the trigger_respawn to let dead respawning players keep their weapons they had when they died
+- To keep ammo, check box 5 (value 16)
 */
 namespace RESPAWNDEAD_KEEPWEAPONS
 {
+
+enum respawndead_flags
+{
+    KEEP_WEAPONS    = 8,
+    KEEP_AMMO       = 16
+};
 
 CScheduledFunction@ fnPatchTriggerRespawn = g_Scheduler.SetTimeout( "PatchTriggerRespawn", 0.0f );
 bool blPlayerKilled = g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilled );
@@ -25,6 +34,13 @@ array<dictionary> DICT_PLAYER_LOADOUT( g_Engine.maxClients + 1 );
 
 void PatchTriggerRespawn()
 {
+    dictionary dictDeadRespawner =
+    {
+        { "m_iszScriptFunctionName", "RESPAWNDEAD_KEEPWEAPONS::RespawnDead" },
+        { "m_iMode", "1" },
+        { "targetname", "ts_dead_respawner" }
+    };
+    
     CBaseEntity@ pEntity;
 
     while( ( ( @pEntity = g_EntityFuncs.FindEntityByClassname( pEntity, "trigger_respawn" ) ) !is null ) )
@@ -32,21 +48,14 @@ void PatchTriggerRespawn()
         if( pEntity is null )
             continue;
 
-        if( pEntity.pev.SpawnFlagBitSet( 2 ) && pEntity.pev.SpawnFlagBitSet( 8 ) )
+        if( pEntity.pev.SpawnFlagBitSet( 1 << 1 ) && pEntity.pev.SpawnFlagBitSet( KEEP_WEAPONS ) )
         {
-            pEntity.pev.spawnflags &= ~2;// disable respawn dead setting, trigger_script will do this now
-
-            dictionary dictDeadRespawner =
-            {
-                { "m_iszScriptFile", "respawndead_keepweapons" },
-                { "m_iszScriptFunctionName", "RESPAWNDEAD_KEEPWEAPONS::RespawnDead" },
-                { "m_iMode", "1" },
-                { "targetname", pEntity.GetTargetname() }
-            };
-
-            g_EntityFuncs.CreateEntity( "trigger_script", dictDeadRespawner );
+            pEntity.pev.spawnflags &= ~( 1 << 0 | 1 << 1 );// disable respawn dead setting, trigger_script will do this now
+            pEntity.pev.target = string( dictDeadRespawner["targetname"] );
         }
     }
+
+    g_EntityFuncs.CreateEntity( "trigger_script", dictDeadRespawner );
 }
 // Replace trigger_respawn's dead respawner with our own
 void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -59,11 +68,11 @@ void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType
             continue;
 
         g_PlayerFuncs.RespawnPlayer( pPlayer, false, true );
-        ReEquipCollected( pPlayer );
+        ReEquipCollected( pPlayer, pCaller !is null ? pCaller.pev.SpawnFlagBitSet( KEEP_AMMO ) : false );
     }
 }
 // Players get their old loadout when they died
-void ReEquipCollected(EHandle hPlayer)
+void ReEquipCollected(EHandle hPlayer, bool blKeepAmmo = false)
 {
     if( !hPlayer )
         return;
@@ -82,7 +91,8 @@ void ReEquipCollected(EHandle hPlayer)
         if( pEquippedWeapon is null )
             continue;
 
-        pPlayer.m_rgAmmo( pEquippedWeapon.m_iPrimaryAmmoType, int( DICT_PLAYER_LOADOUT[pPlayer.entindex()][STR_LOADOUT_WEAPONS[i]] ) );
+        if( blKeepAmmo )
+            pPlayer.m_rgAmmo( pEquippedWeapon.m_iPrimaryAmmoType, int( DICT_PLAYER_LOADOUT[pPlayer.entindex()][STR_LOADOUT_WEAPONS[i]] ) );
     }
 
     DICT_PLAYER_LOADOUT[pPlayer.entindex()] = dictionary();
