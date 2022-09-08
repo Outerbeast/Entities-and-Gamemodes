@@ -39,7 +39,7 @@ void RegisterTriggerEntityVolume()
 	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_entity_volume", "trigger_entity_volume" );
 }
 
-class trigger_entity_volume : ScriptBaseEntity
+final class trigger_entity_volume : ScriptBaseEntity
 {
 	private string strInTarget, strOutTarget, strFailInTarget, strFailOutTarget;
 	private uint iInCount, iOutCount, iMaxCount = 128, iFlagMask = FL_CLIENT;
@@ -109,10 +109,9 @@ class trigger_entity_volume : ScriptBaseEntity
 			iFlagMask &= ~FL_CLIENT;
 
 		array<CBaseEntity@> P_ENTITIES( iMaxCount );
-		int iNumEntities = g_EntityFuncs.Instance( 0 ).FindMonstersInWorld( @P_ENTITIES, iFlagMask );
 		uint iTotalTargetsTriggered = 0;
 
-		if( iNumEntities < 1 )
+		if( g_EntityFuncs.Instance( 0 ).FindMonstersInWorld( @P_ENTITIES, iFlagMask ) < 1 )
 			return;
 
 		array<EHandle> H_ENTITIES_INZONE, H_ENTITIES_OUTZONE;

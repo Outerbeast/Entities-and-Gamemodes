@@ -119,26 +119,41 @@ void ReEquipCollected(EHandle hPlayer, bool blKeepAmmo = false)
 
     DICT_PLAYER_LOADOUT[pPlayer.entindex()] = dictionary();
 }
-// Save player loadout upon death
-HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
+
+dictionary GetPlayerLoadout(EHandle hPlayer)
 {
-    if( pPlayer is null )
-        return HOOK_CONTINUE;
-
-    DICT_PLAYER_LOADOUT[pPlayer.entindex()] = dictionary();
-    DICT_PLAYER_LOADOUT[pPlayer.entindex()]["item_longjump"] = pPlayer.m_fLongJump;
-    DICT_PLAYER_LOADOUT[pPlayer.entindex()]["item_suit"] = pPlayer.HasSuit();
-
+    if( !hPlayer )
+        return dictionary();
+        
+    CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
+    
+    dictionary dictLoadout =
+    {
+        { "item_suit", pPlayer.HasSuit() },
+        { "item_longjump", pPlayer.m_fLongJump }
+    };
+    
     for( uint i = 0; i < MAX_ITEM_TYPES; i++ )
     {
         CBasePlayerWeapon@ pWeapon = cast<CBasePlayerWeapon@>( pPlayer.m_rgpPlayerItems( i ) );
 
         while( pWeapon !is null )
         {
-            DICT_PLAYER_LOADOUT[pPlayer.entindex()][pWeapon.GetClassname()] = FIsNoAmmoWpn( pWeapon ) ? 0 : pPlayer.m_rgAmmo( pWeapon.m_iPrimaryAmmoType );
+            const string strWeapon = pWeapon.GetClassname() == "weapon_uzi" && pWeapon.m_fIsAkimbo ? "weapon_uziakimbo" : pWeapon.GetClassname();
+            dictLoadout[strWeapon] = FIsNoAmmoWpn( pWeapon ) ? 0 : pPlayer.m_rgAmmo( pWeapon.m_iPrimaryAmmoType );
             @pWeapon = cast<CBasePlayerWeapon@>( pWeapon.m_hNextItem.GetEntity() );
         }
     }
+    
+    return dictLoadout;
+}
+// Save player loadout upon death
+HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iGib)
+{
+    if( pPlayer is null )
+        return HOOK_CONTINUE;
+
+    DICT_PLAYER_LOADOUT[pPlayer.entindex()] = GetPlayerLoadout( pPlayer );
 
     return HOOK_CONTINUE;
 }
