@@ -69,7 +69,7 @@ HookReturnCode PlayerJoined(CBasePlayer@ pPlayer)
         return HOOK_CONTINUE;
     // !-BUG-!: HasNamedPlayerItem handle is not valid when the player spawns (assuming), must get it a millisecond later
     for( uint i = 0; i < STR_WEAPONS.length(); i++ )
-        g_Scheduler.SetTimeout( "ChangeWpnHudSpr", 0.01f, EHandle( pPlayer ), EHandle( pPlayer.HasNamedPlayerItem( STR_WEAPONS[i] ) ) );
+        g_Scheduler.SetTimeout( "ChangeWpnHudSpr", 0.5f, EHandle( pPlayer ), EHandle( pPlayer.HasNamedPlayerItem( STR_WEAPONS[i] ) ) );
 
     return HOOK_CONTINUE;
 }
