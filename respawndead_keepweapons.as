@@ -104,10 +104,9 @@ void ReEquipCollected(EHandle hPlayer, bool blKeepAmmo = false)
             continue;
         }
 
-        if( pPlayer.HasNamedPlayerItem( STR_LOADOUT_WEAPONS[i] ) !is null )
-            continue;
-             
-        pPlayer.GiveNamedItem( STR_LOADOUT_WEAPONS[i] ); // Would be nice if this returned the actual item ptr....
+        if( pPlayer.HasNamedPlayerItem( STR_LOADOUT_WEAPONS[i] ) is null )
+            pPlayer.GiveNamedItem( STR_LOADOUT_WEAPONS[i] ); // Would be nice if this returned the actual item ptr...
+
         CBasePlayerWeapon@ pEquippedWeapon = cast<CBasePlayerWeapon@>( pPlayer.HasNamedPlayerItem( STR_LOADOUT_WEAPONS[i] ) );
 
         if( pEquippedWeapon is null )
