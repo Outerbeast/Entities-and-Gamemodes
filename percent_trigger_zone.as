@@ -96,6 +96,9 @@ void TriggerThink(CBaseEntity@ pTriggerScript)
 
 void KillTarget(string strTargetname, float flDelay)
 {
+    if( strTargetname == "" )
+        return;
+
     if( flDelay > 0.0f )
     {
         g_Scheduler.SetTimeout( "KillTarget", flDelay, strTargetname, 0.0f );

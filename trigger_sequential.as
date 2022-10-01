@@ -57,6 +57,9 @@ final class trigger_sequential : ScriptBaseEntity
 
     void KillTarget(string strTargetname, float flDelay)
     {
+        if( strTargetname == "" )
+            return;
+
         if( flDelay > 0.0f )
         {
             g_Scheduler.SetTimeout( this, "KillTarget", flDelay, strTargetname, 0.0f );
