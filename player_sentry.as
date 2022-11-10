@@ -41,7 +41,8 @@
     Optional callbacks are also supported for certain events such as sentry building and everytime a player sentry thinks
     - PLAYER_SENTRY::SetSentryBuiltCallback(SentryBuiltCallback@ fn): registers a callback for when a player builds a sentry. Uses signature void FunctionName(CBaseMonster@, CBasePlayer@).
     - PLAYER_SENTRY::SetSentryThinkCallback(SentryThinkCallback@ fn): registers a callback for when a player built sentry thinks. Uses signature void FunctionName(CBaseMonster@).
-    = PLAYER_SENTRY::SetSentryDestroyedCallback(SentryDestroyedCallback@ fn): registers a callback for when a sentry gets deleted. Uses signature void FunctionName(CBaseMonster@).
+    - PLAYER_SENTRY::SetSentryDestroyedCallback(SentryDestroyedCallback@ fn): registers a callback for when a sentry gets deleted. Uses signature void FunctionName(CBaseMonster@).
+    Delegates for class methods are allowed.
     To remove a callback, its literally the same functions above but "Remove" instead of "Set" eg PLAYER_SENTRY::RemoveSentryBuiltCallback(SentryBuiltCallback@ fn).
 */
 funcdef void SentryBuiltCallback(CBaseMonster@, CBasePlayer@);
@@ -254,7 +255,7 @@ void RemoveSentry(EHandle hPlayer)
     if( !hPlayer )
         return;
         
-    g_EntityFuncs.DispatchKeyValue( hPlayer.GetEntity().edict(), "$i_carryingsentry", "0" );
+    hPlayer.GetEntity().GetUserData( "is_carrying_sentry" ) = false;
     g_EntityFuncs.Remove( PlayerSentry( hPlayer ) );
     I_SENTRIES_DEPLOYED[hPlayer.GetEntity().entindex()] = 0;
 }
@@ -269,7 +270,7 @@ void PickUpSentry(EHandle hPlayer, EHandle hSentry)
     if( pPlayer is null || pSentry is null || !pPlayer.pev.FlagBitSet( FL_ONGROUND ) || pPlayer.pev.FlagBitSet( FL_INWATER ) )
         return;
 
-    g_EntityFuncs.DispatchKeyValue( pPlayer.edict(), "$i_carryingsentry", "1" );
+    pPlayer.GetUserData( "is_carrying_sentry" ) = true;
     g_EntityFuncs.DispatchKeyValue( pSentry.edict(), "attackrange", "1" );
     pSentry.pev.takedamage = DAMAGE_NO;
     pSentry.pev.effects |= EF_NODRAW;
@@ -289,28 +290,20 @@ void PutDownSentry(EHandle hPlayer, EHandle hSentry)
     if( !pPlayer.pev.FlagBitSet( FL_ONGROUND ) || pPlayer.pev.FlagBitSet( FL_INWATER ) || !FInAllowedZone( pSentry ) )
         return;
 
-    g_EntityFuncs.DispatchKeyValue( pPlayer.edict(), "$i_carryingsentry", "0" );
+    pPlayer.GetUserData( "is_carrying_sentry" ) = false;
     g_EntityFuncs.DispatchKeyValue( pSentry.edict(), "attackrange", "" + iSentryAttackRange );
     pSentry.pev.angles.y = pPlayer.pev.angles.y;
     pSentry.pev.takedamage = DAMAGE_YES;
     pSentry.pev.effects &= ~EF_NODRAW;
     @pSentry.pev.owner = null;
     // Sentry is placed in a position thats daft
-    if( g_EngineFuncs.DropToFloor( pSentry.edict() ) == -1 )
+    if( g_EngineFuncs.DropToFloor( pSentry.edict() ) < 0 )
         RemoveSentry( pPlayer );
 }
 
 bool FPlayerCarryingSentry(EHandle hPlayer)
 {
-    if( !hPlayer )
-        return false;
-
-    CustomKeyvalues@ kvPlayer = hPlayer.GetEntity().GetCustomKeyvalues();
-
-    if( kvPlayer is null || !kvPlayer.HasKeyvalue( "$i_carryingsentry" ) )
-        return false;
-
-    return kvPlayer.GetKeyvalue( "$i_carryingsentry" ).GetInteger() > 0;
+    return( hPlayer ? bool( hPlayer.GetEntity().GetUserData( "is_carrying_sentry" ) ) : false );
 }
 
 bool FInAllowedZone(EHandle hSentry)
@@ -383,7 +376,7 @@ uint BuildSentry(EHandle hPlayer)
     // !-BUG-!: For a split second after moving a sentry, hudinfo shows the sentry as enemy before correcting itself
     pSentry.SetClassification( CLASS_PLAYER_ALLY );
     pSentry.SetPlayerAllyDirect( true );
-    pSentry.pev.spawnflags |= 32; //Autostart
+    pSentry.pev.spawnflags |= 1 << 5; //Autostart
     g_EntityFuncs.DispatchKeyValue( pSentry.edict(), "ondestroyfn", "PLAYER_SENTRY::SentryDestroyed" );
 
     if( iSentryAttackRange != 1200 )
@@ -395,12 +388,12 @@ uint BuildSentry(EHandle hPlayer)
         g_EntityFuncs.SetModel( pSentry, pSentry.pev.model );
     }
     
-    if( g_EntityFuncs.DispatchSpawn( pSentry.edict() ) == -1 )
+    if( g_EntityFuncs.DispatchSpawn( pSentry.edict() ) < 0 )
         return 0;
 
     DeployFX( pPlayer, pSentry );
     // Sentry has to exist in a sensible area
-    if( g_EngineFuncs.DropToFloor( pSentry.edict() ) == -1 || pSentry.Intersects( pPlayer ) || !FInAllowedZone( pSentry ) )
+    if( g_EngineFuncs.DropToFloor( pSentry.edict() ) < 0 || pSentry.Intersects( pPlayer ) || !FInAllowedZone( pSentry ) )
     {
         g_EntityFuncs.Remove( pSentry );
         return 0;
@@ -412,10 +405,11 @@ uint BuildSentry(EHandle hPlayer)
         pPlayer.pev.armorvalue = 0.0f;
     }
     else
-        pSentry.pev.max_health = pSentry.pev.health * ( flSentryHealthMultiplier >= 1.0 ? flSentryHealthMultiplier : 1.0f )
+        pSentry.pev.max_health = pSentry.pev.health * ( flSentryHealthMultiplier >= 1.0 ? flSentryHealthMultiplier : 1.0f );
 
     pSentry.m_FormattedName = "" + pPlayer.pev.netname + "'s " + strDisplayName;
     pSentry.pev.targetname = "player_sentry_PID" + pPlayer.entindex() + "_EID" + pSentry.entindex();
+    pPlayer.GetUserData()["is_carrying_sentry"] = false;
 
     g_SoundSystem.EmitSound( pSentry.edict(), CHAN_VOICE, "weapons/mine_deploy.wav", 1.0f, ATTN_NORM );
     g_EntityFuncs.FireTargets( pSentry.pev.targetname, pPlayer, pSentry, USE_ON, 0.0f, 1.0f );

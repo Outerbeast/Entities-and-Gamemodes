@@ -20,12 +20,10 @@ Flags:-
 namespace PLAYER_BLOCKER
 {
 
-dictionary dictPlayerLastPosData;
-
 EHandle Enable(Vector vecAbsMinIn, Vector vecAbsMaxIn)
 {
     if( vecAbsMinIn == vecAbsMaxIn )
-        return EHandle( null );
+        return EHandle();
 
     dictionary blocker =
     {
@@ -55,29 +53,30 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
         pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.GetOrigin();
         g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
     }
-
-    if( !dictPlayerLastPosData.exists( pTriggerScript.entindex() ) )
-        dictPlayerLastPosData.set( pTriggerScript.entindex(), array<Vector>( g_Engine.maxClients + 1, g_vecZero ) );
-
-    array<Vector>@ VEC_PLAYER_LAST_POS = cast<array<Vector>>( dictPlayerLastPosData[pTriggerScript.entindex()] );
     
     for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
+        if( !pTriggerScript.GetUserData().exists( string( iPlayer ) ) )
+            pTriggerScript.GetUserData()[string( iPlayer )] = g_vecZero;
+
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
         if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+        {
+            pTriggerScript.GetUserData( string( iPlayer ) ) = g_vecZero;
             continue;
+        }
 
         if( pTriggerScript.pev.netname != "" && pPlayer.GetTargetname() == pTriggerScript.pev.netname )
             continue;
 
-        bool blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 2 ) ? !pPlayer.Intersects( pTriggerScript ) : pPlayer.Intersects( pTriggerScript );
+        bool blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 1 << 1 ) ? !pPlayer.Intersects( pTriggerScript ) : pPlayer.Intersects( pTriggerScript );
 
         if( blIsFree )
-            VEC_PLAYER_LAST_POS[iPlayer] = pPlayer.GetOrigin();
+            pTriggerScript.GetUserData( string( iPlayer ) ) = pPlayer.pev.origin;
         else
         {
-            g_EntityFuncs.SetOrigin( pPlayer, VEC_PLAYER_LAST_POS[iPlayer] );
+            g_EntityFuncs.SetOrigin( pPlayer, Vector( pTriggerScript.GetUserData( string( iPlayer ) ) ) );
             pPlayer.pev.velocity.x = -1 * g_Engine.v_forward.x;
             pPlayer.pev.velocity.y = -1 * g_Engine.v_forward.y;
         }

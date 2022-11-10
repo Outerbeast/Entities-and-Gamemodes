@@ -61,10 +61,15 @@ enum displacerportalflags
 string strDisplacerPortalDestName = "displacer_global_target"; // Same as 2ndary fire default teleport destination
 string strTeleportNameFilter;
 int iDisplacerPortalAmmoCost = 60; // Same as displacer 2ndary fire cost
-bool blTpPlayers = true, blTpMonsters = true, blTpEnemies = false, blTeleportOnce = false;
+bool 
+    blTpPlayers = true, 
+    blTpMonsters = true,
+    blTpEnemies = false, 
+    blTeleportOnce = false;
 // We shouldn't be teleporting these guys
 const array<string> STR_NPC_BLACKLIST = 
 {
+    "monster_furniture",            // not a monster
     "monster_tentacle",
     "monster_gman",
     "monster_turret",               // treated as fixed to the world
@@ -87,14 +92,9 @@ bool FCantFire(EHandle hDisplacer, int iSetState = -1)
         return false;
 
     if( iSetState > -1 )
-        g_EntityFuncs.DispatchKeyValue( hDisplacer.GetEntity().edict(), "$i_displacer_cant_fire", "" + iSetState );
-    
-    CustomKeyvalues@ kvDisplacer = hDisplacer.GetEntity().GetCustomKeyvalues();
+        hDisplacer.GetEntity().GetUserData( "cant_fire" ) = iSetState;
 
-    if( kvDisplacer is null || !kvDisplacer.HasKeyvalue( "$i_displacer_cant_fire" ) )
-        return false;
-
-    return( kvDisplacer.GetKeyvalue( "$i_displacer_cant_fire" ).GetInteger() > 0 );
+    return int( hDisplacer.GetEntity().GetUserData( "cant_fire" ) ) > 0;
 }
 
 int TeleportCount(EHandle hTarget, int iSetState = -1)
@@ -103,14 +103,9 @@ int TeleportCount(EHandle hTarget, int iSetState = -1)
         return 0;
 
     if( iSetState > -1 )
-        g_EntityFuncs.DispatchKeyValue( hTarget.GetEntity().edict(), "$i_displacer_tp_count", "" + iSetState );
+        hTarget.GetEntity().GetUserData( "displacer_tp_count" ) = iSetState;
     
-    CustomKeyvalues@ kvTarget = hTarget.GetEntity().GetCustomKeyvalues();
-
-    if( kvTarget is null || !kvTarget.HasKeyvalue( "$i_displacer_tp_count" ) )
-        return 0;
-
-    return( kvTarget.GetKeyvalue( "$i_displacer_tp_count" ).GetInteger() );
+    return int( hTarget.GetEntity().GetUserData( "displacer_tp_count" ) );
 }
 
 void SetNextShoot(EHandle hDisplacer, float flDelay)
@@ -284,6 +279,12 @@ HookReturnCode DisplacerTertiaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ 
 {
     if( pWeapon is null || pPlayer is null || pWeapon.GetClassname() != "weapon_displacer" )
         return HOOK_CONTINUE;
+
+    if( !pWeapon.GetUserData().exists( "cant_fire" ) )
+        pWeapon.GetUserData()["cant_fire"] = -1;
+
+    if( !pWeapon.GetUserData().exists( "teleport_count" ) )
+        pWeapon.GetUserData()["teleport_count"] = -1;
 
     CBaseEntity@ pPortal;
     

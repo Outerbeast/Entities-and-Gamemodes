@@ -8,7 +8,7 @@ Template keys:-
 "m_iMode" "1"
 // Don't change any of the above
 "targetname" "target_me"
-"$s_strip" "weapon_9mmhandgun;weapon_egon;weapon_hornetgun;weapon_eagle" - semicolon seperated list of weapons to strip (or keep)
+"$s_strip" "item_suit;item_longjump;weapon_9mmhandgun;weapon_egon;weapon_hornetgun;weapon_eagle;weapon_crossbow" - semicolon seperated list of weapons to strip (or keep)
 "$s_targetname_filter"  - Filters only for players with the set targetname
 "spawnflags" "f"        - see "weaponstrip_flags" enum for settings
 
@@ -79,7 +79,7 @@ void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
         return;
 
     CBaseEntity@ pTriggerScript = TriggerScriptInstance( EHandle( pCaller ), "$s_strip" ).GetEntity();
-    CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
+    CustomKeyvalues@ kvTriggerScript = pTriggerScript !is null ? pTriggerScript.GetCustomKeyvalues() : null;
 
     if( pTriggerScript is null || kvTriggerScript is null )
         return;
@@ -106,7 +106,7 @@ void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
     }
 }
 
-void Strippery(EHandle hPlayer, array<string>@ STR_STRIPWEAPONS, const bool blInvertSelection)
+void Strippery(EHandle hPlayer, const array<string>@ in STR_STRIPWEAPONS, const bool blInvertSelection)
 {
     if( !hPlayer || STR_STRIPWEAPONS.length() < 1 )
         return;
@@ -117,9 +117,25 @@ void Strippery(EHandle hPlayer, array<string>@ STR_STRIPWEAPONS, const bool blIn
     {
         for( uint i = 0; i < STR_STRIPWEAPONS.length(); i++ )
         {
-            if( pPlayer.HasNamedPlayerItem( STR_STRIPWEAPONS[i] ) is null ||
-                STR_STRIPWEAPONS[i] == "" ||
+            if( STR_STRIPWEAPONS[i] == "" ||
                 STR_STRIPWEAPONS[i].Find( " ", 0, String::CaseInsensitive ) != String::INVALID_INDEX )
+                continue;
+
+            if( STR_STRIPWEAPONS[i] == "item_suit" && pPlayer.HasSuit() )
+            {
+                pPlayer.SetHasSuit( false );
+                continue;
+            }
+
+            if( STR_STRIPWEAPONS[i] == "item_longjump" && pPlayer.m_fLongJump )
+            {
+                pPlayer.m_fLongJump = false;
+                g_EngineFuncs.GetPhysicsKeyBuffer( pPlayer.edict() ).SetValue( "slj", "0" );
+
+                continue;
+            }
+
+            if( pPlayer.HasNamedPlayerItem( STR_STRIPWEAPONS[i] ) is null )
                 continue;
 
             pPlayer.RemovePlayerItem( pPlayer.HasNamedPlayerItem( STR_STRIPWEAPONS[i] ) );
@@ -127,6 +143,15 @@ void Strippery(EHandle hPlayer, array<string>@ STR_STRIPWEAPONS, const bool blIn
     }
     else
     {
+        if( pPlayer.HasSuit() && STR_STRIPWEAPONS.find( "item_suit" ) < 0 )
+            pPlayer.SetHasSuit( false );
+
+        if( pPlayer.m_fLongJump && STR_STRIPWEAPONS.find( "item_longjump" ) < 0 )
+        {
+            pPlayer.m_fLongJump = false;
+            g_EngineFuncs.GetPhysicsKeyBuffer( pPlayer.edict() ).SetValue( "slj", "0" );
+        }
+
         for( uint j = 0; j < MAX_ITEM_TYPES; j++ )
         {
             CBasePlayerItem@ pItem = pPlayer.m_rgpPlayerItems( j );

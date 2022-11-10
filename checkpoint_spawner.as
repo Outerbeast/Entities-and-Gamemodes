@@ -22,12 +22,13 @@ void RegisterCheckPointSpawnerEntity(const bool blPrecache = false)
 	}
 }
 
-class checkpoint_spawner : ScriptBaseEntity
+final class checkpoint_spawner : ScriptBaseEntity
 {
-	private string strFunnelSprite 	= "sprites/glow01.spr";
-	private string strStartSound 	= "ambience/particle_suck2.wav";
-	private string strEndSound 		= "debris/beamstart7.wav";
-	private string strModel 		= "models/common/lambda.mdl";
+	private string 
+		strFunnelSprite = "sprites/glow01.spr",
+		strStartSound 	= "ambience/particle_suck2.wav",
+		strEndSound 	= "debris/beamstart7.wav",
+		strModel 		= "models/common/lambda.mdl";
 
 	private float m_flDelayBeforeStart = 3, m_flDelayBetweenRevive = 1, m_flDelayBeforeReactivation = 60; 					
 	private bool m_fSpawnEffect = false; 
@@ -114,22 +115,22 @@ class checkpoint_spawner : ScriptBaseEntity
 	void CreateCheckpoint()
 	{
 		dictionary cp;
-		cp ["origin"]						= self.GetOrigin().ToString();
-		cp ["angles"]						= self.pev.angles.ToString();
-		cp ["target"]						= string( self.pev.target );
-		cp ["minhullsize"]					= self.pev.vuser1.ToString();
-		cp ["maxhullsize"]					= self.pev.vuser2.ToString();
-		cp ["model"]						= strModel;
-		cp ["m_fSpawnEffect"]				= "" + m_fSpawnEffect;
-		cp ["m_flDelayBeforeReactivation"]	= "" + m_flDelayBeforeReactivation;
-		cp ["m_flDelayBetweenRevive"]		= "" + m_flDelayBetweenRevive;
-		cp ["m_flDelayBeforeStart"]			= "" + m_flDelayBeforeStart;
-		cp ["spawnflags"]					= "" + ( self.pev.spawnflags & SF_CHECKPOINT_REUSABLE );
+		cp["origin"]						= self.GetOrigin().ToString();
+		cp["angles"]						= self.pev.angles.ToString();
+		cp["target"]						= string( self.pev.target );
+		cp["minhullsize"]					= self.pev.vuser1.ToString();
+		cp["maxhullsize"]					= self.pev.vuser2.ToString();
+		cp["model"]							= strModel;
+		cp["m_fSpawnEffect"]				= "" + m_fSpawnEffect;
+		cp["m_flDelayBeforeReactivation"]	= "" + m_flDelayBeforeReactivation;
+		cp["m_flDelayBetweenRevive"]		= "" + m_flDelayBetweenRevive;
+		cp["m_flDelayBeforeStart"]			= "" + m_flDelayBeforeStart;
+		cp["spawnflags"]					= "" + ( self.pev.spawnflags & SF_CHECKPOINT_REUSABLE );
 
 		g_EntityFuncs.CreateEntity( "point_checkpoint", cp, true );
 		g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, strEndSound, 1.0f, ATTN_NORM );
 
-		if( !self.pev.SpawnFlagBitSet( 2 ) )
+		if( !self.pev.SpawnFlagBitSet( 1 << 1 ) )
 			g_EntityFuncs.Remove( self );
 	}
 }

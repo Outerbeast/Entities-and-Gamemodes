@@ -25,7 +25,7 @@ Issues:-
 - Only supports 17 player slots maximum because of limitations imposed by the game + API. 18th player and following will automatically
 be moved to Spectator mode until a slot becomes free.
 - Some players will have colored usernames in the scoreboard, this is due to the classification system assigning them to
-TEAM classification which apply these colors.
+TEAM classifications which apply these colors.
 */
 namespace PVP_MODE
 {
@@ -59,6 +59,8 @@ array<uint8> I_PLAYER_TEAMS =
     CLASS_BARNACLE
 };
 
+HUDTextParams txtWinner, txtLoser, txtStats;
+
 int8 iTotalTeams = I_PLAYER_TEAMS.length();
 int iForceRespawnDefault = int( g_EngineFuncs.CVarGetFloat( "mp_forcerespawn" ) );
 
@@ -75,6 +77,31 @@ void Initialise()
 
     if( iForceRespawnDefault < 1 )
         g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
+
+    txtWinner.y = txtLoser.y = 0.6;
+    txtLoser.r1 = txtLoser.r2 = 128;
+    txtWinner.r1 = 0;
+    txtLoser.g1 = 0;
+    txtWinner.g1 = txtWinner.g2 = 128;
+    txtWinner.b1 = txtLoser.b1 = 0;
+    txtWinner.effect = txtLoser.effect = 0;
+    txtWinner.fadeinTime = txtLoser.fadeinTime = 0;
+    txtWinner.fadeoutTime = txtLoser.fadeoutTime = 0;
+    txtWinner.holdTime = txtLoser.holdTime = 3;
+    txtWinner.channel = 5;
+    txtLoser.channel = 7;
+
+    txtStats.x = 0.7;
+    txtStats.y = 0.7;
+    txtStats.a1 = 0;
+    txtStats.r2 = 250;
+    txtStats.g2 = 250;
+    txtStats.b2 = 250;
+    txtStats.a2 = 1;
+    txtStats.fadeinTime = 0.0;
+    txtStats.fadeoutTime = 0.0;
+    txtStats.holdTime = 10.0;
+    txtStats.fxTime = 0.0;
 
     g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerSpawn );
     g_Hooks.RegisterHook( Hooks::Player::PlayerUse, PlayerUse );
@@ -156,7 +183,7 @@ void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
 
     if( !blSpectatorOverride )
     {
-        g_EntityFuncs.DispatchKeyValue( pPlayer.edict(), "$i_spectating", "" + SPECTYPE_WAITING );
+        pPlayer.GetUserData( "i_spectating" ) = SPECTYPE_WAITING;
         pPlayer.SetMaxSpeedOverride( -1 );
         pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
         pPlayer.GetObserver().SetObserverModeControlEnabled( true );
@@ -166,7 +193,7 @@ void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
     }   // !-BUG-! - Index out of bounds in 2 player slot server - why???? Hence this check.
     else if( blSpectatorOverride && g_Engine.maxClients > 2 )
     {
-        g_EntityFuncs.DispatchKeyValue( pPlayer.edict(), "$i_spectating", "" + SPECTYPE_VOLUNTARY );
+        pPlayer.GetUserData( "i_spectating" ) = SPECTYPE_VOLUNTARY;
         AssignTeam( EHandle( pPlayer ), false );
 
         pPlayer.SetMaxSpeedOverride( -1 );
@@ -181,7 +208,7 @@ void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
 
 void Think()
 {
-    for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+    for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
@@ -203,7 +230,7 @@ HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
     if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
         return HOOK_CONTINUE;
 
-    g_EntityFuncs.DispatchKeyValue( pPlayer.edict(), "$i_spectating", "" + SPECTYPE_NONE );
+    pPlayer.GetUserData()["i_spectating"] = SPECTYPE_NONE;
     int iAssignedClassification = AssignTeam( EHandle( pPlayer ), true );
 
     if( iAssignedClassification < CLASS_MACHINE )
@@ -212,7 +239,7 @@ HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
         return HOOK_CONTINUE;
     }
     
-    g_Scheduler.SetTimeout(  "SpawnProtection", 0.01f, EHandle( pPlayer ), int( DAMAGE_NO ) ); // Why delay? Because rendering won't apply on spawn - but WHY.
+    g_Scheduler.SetTimeout( "SpawnProtection", 0.01f, EHandle( pPlayer ), int( DAMAGE_NO ) ); // Why delay? Because rendering won't apply on spawn - but WHY.
 
     return HOOK_CONTINUE;
 }
@@ -297,22 +324,6 @@ HookReturnCode PlayerChatCommand(SayParameters@ pParams)
     {
         string strMyWeapon = pPlayer.m_hActiveItem ? pPlayer.m_hActiveItem.GetEntity().GetClassname().Replace( "weapon_", "" ) : "No weapon selected";
         string strStats =  " -Team: " + pPlayer.m_iClassSelection + " - " + pPlayer.GetClassificationName() + "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
-
-        HUDTextParams txtStats;
-            txtStats.x = 0.7;
-            txtStats.y = 0.7;
-
-            txtStats.a1 = 0;
-
-            txtStats.r2 = 250;
-            txtStats.g2 = 250;
-            txtStats.b2 = 250;
-            txtStats.a2 = 1;
-
-            txtStats.fadeinTime = 0.0;
-            txtStats.fadeoutTime = 0.0;
-            txtStats.holdTime = 10.0;
-            txtStats.fxTime = 0.0;
         g_PlayerFuncs.HudMessage( pPlayer, txtStats, "" + pPlayer.pev.netname + "'s Stats:-\n" + strStats );
 
         return HOOK_HANDLED;            
@@ -341,25 +352,6 @@ HookReturnCode PlayerKilled(CBasePlayer@ pPlayer, CBaseEntity@ pAttacker, int iG
     CBasePlayer@ pAttackingPlayer = cast<CBasePlayer@>( pAttacker );
     string strAttackerWeapon = pAttackingPlayer.m_hActiveItem ? " with: " + pAttackingPlayer.m_hActiveItem.GetEntity().GetClassname().Replace( "weapon_", "" ) : "";
     int iDamageDone = pPlayer.m_lastPlayerDamageAmount >= int( pPlayer.pev.dmg_take ) ? pPlayer.m_lastPlayerDamageAmount : int( pPlayer.pev.dmg_take );
-
-    HUDTextParams txtWinner, txtLoser;
-        txtWinner.y = txtLoser.y = 0.6;
-
-        txtLoser.r1 = txtLoser.r2 = 128;
-        txtWinner.r1 = 0;
-
-        txtLoser.g1 = 0;
-        txtWinner.g1 = txtWinner.g2 = 128;
-
-        txtWinner.b1 = txtLoser.b1 = 0;
-
-        txtWinner.effect = txtLoser.effect = 0;
-        txtWinner.fadeinTime = txtLoser.fadeinTime = 0;
-        txtWinner.fadeoutTime = txtLoser.fadeoutTime = 0;
-        txtWinner.holdTime = txtLoser.holdTime = 3;
-
-        txtWinner.channel = 5;
-        txtLoser.channel = 7;
     
     if( pAttackingPlayer !is pPlayer && cvarKillInfoSetting.GetInt() > 0 )
     {
@@ -393,14 +385,12 @@ HookReturnCode PlayerLeave(CBasePlayer@ pDisconnectedPlayer)
 
         if( pObserverPlayer is null || !pObserverPlayer.GetObserver().IsObserver() )
             continue;
-        // Skip players in the voluntary spectator mode list
-        CustomKeyvalues@ kvPlayer = pObserverPlayer.GetCustomKeyvalues();
-
-        if( kvPlayer.GetKeyvalue( "$i_spectating" ).GetInteger() == SPECTYPE_VOLUNTARY )
+        // Skip players who are spectating voluntarily
+        if( int( pObserverPlayer.GetUserData( "i_spectating" ) ) == SPECTYPE_VOLUNTARY )
             continue;
 
         pObserverPlayer.GetObserver().StopObserver( true );
-        kvPlayer.SetKeyvalue( "$i_spectating", SPECTYPE_NONE );
+        pObserverPlayer.GetUserData( "i_spectating" ) = SPECTYPE_NONE;
     }
     
     return HOOK_CONTINUE;
@@ -425,13 +415,13 @@ void Disable(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
 
     BL_PLAYER_SLOT = array<bool>( g_Engine.maxClients + 1, false );
 
-    for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+    for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
         if( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) !is null )
         {
             g_PlayerFuncs.FindPlayerByIndex( iPlayer ).pev.frags = 0.0f;
             g_PlayerFuncs.FindPlayerByIndex( iPlayer ).SetClassification( CLASS_PLAYER );
-            g_EntityFuncs.DispatchKeyValue( g_PlayerFuncs.FindPlayerByIndex( iPlayer ).edict(), "$i_spectating", "" + SPECTYPE_NONE );
+            g_PlayerFuncs.FindPlayerByIndex( iPlayer ).GetUserData( "i_spectating" ) = SPECTYPE_NONE;
         }
     }
 }

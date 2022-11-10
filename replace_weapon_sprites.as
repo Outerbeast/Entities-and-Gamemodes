@@ -55,12 +55,17 @@ void ChangeWpnHudSpr(EHandle hPlayer, EHandle hWeapon)
 
     CBasePlayerWeapon@ pWeapon = cast<CBasePlayerWeapon@>( hWeapon.GetEntity() );
 
-    if( pWeapon is null || 
-        STR_WEAPONS.find( pWeapon.GetClassname() ) < 0 || 
-        cvarIgnoreWeaponSprReplacement.GetString().Find( pWeapon.GetClassname() ) != String::INVALID_INDEX )
+    if( pWeapon is null )
         return;
 
-    pWeapon.LoadSprites( cast<CBasePlayer@>( hPlayer.GetEntity() ), strDirPath + pWeapon.GetClassname() );
+    if( STR_WEAPONS.find( pWeapon.GetClassname() ) >= 0 )
+    {
+        if( cvarIgnoreWeaponSprReplacement.GetString() != "" && 
+            cvarIgnoreWeaponSprReplacement.GetString().Split( ";" ).find( pWeapon.GetClassname() ) >= 0 )
+                return;
+
+        pWeapon.LoadSprites( cast<CBasePlayer@>( hPlayer.GetEntity() ), strDirPath + pWeapon.GetClassname() );
+    }
 }
 
 HookReturnCode PlayerJoined(CBasePlayer@ pPlayer)
@@ -69,7 +74,7 @@ HookReturnCode PlayerJoined(CBasePlayer@ pPlayer)
         return HOOK_CONTINUE;
     // !-BUG-!: HasNamedPlayerItem handle is not valid when the player spawns (assuming), must get it a millisecond later
     for( uint i = 0; i < STR_WEAPONS.length(); i++ )
-        g_Scheduler.SetTimeout( "ChangeWpnHudSpr", 0.5f, EHandle( pPlayer ), EHandle( pPlayer.HasNamedPlayerItem( STR_WEAPONS[i] ) ) );
+        g_Scheduler.SetTimeout( "ChangeWpnHudSpr", 0.1f, EHandle( pPlayer ), EHandle( pPlayer.HasNamedPlayerItem( STR_WEAPONS[i] ) ) );
 
     return HOOK_CONTINUE;
 }
