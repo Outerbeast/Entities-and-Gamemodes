@@ -20,32 +20,32 @@ Simply check the 1st flag box (value is 1) in your item_/ammo_/weaponbox entity 
 namespace PLAYERPICKUP_INDIVIDUAL
 {
 
-array<EHandle> H_PICKUPS;
+bool blEntityCreated = g_Hooks.RegisterHook( Hooks::Game::EntityCreated, MarkPickup );
+bool blPickupSpawned = g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, MarkPickup );
+bool blCanCollect = g_Hooks.RegisterHook( Hooks::PickupObject::CanCollect, CanCollect );
+bool blCollected = g_Hooks.RegisterHook( Hooks::PickupObject::Collected, Collected );
 
-bool blEntityCreated = g_Hooks.RegisterHook( Hooks::Game::EntityCreated, DisablePickup );
-CScheduledFunction@ fnPatchPickups = g_Scheduler.SetTimeout( "PatchPickups", 0.1f ), 
-                    fnPickupThink = g_Scheduler.SetInterval( "PickupThink", 0.1f, g_Scheduler.REPEAT_INFINITE_TIMES );
+CScheduledFunction@ fnPatchPickups = g_Scheduler.SetTimeout( "PatchPickups", 0.1f );
 
 void PatchPickups()
 {
     CBaseEntity@ pItem, pAmmo, pWeaponBox;
 
     while( ( @pItem = g_EntityFuncs.FindEntityByClassname( pItem, "item_*" ) ) !is null )
-        DisablePickup( pItem );
+        MarkPickup( pItem );
 
     while( ( @pAmmo = g_EntityFuncs.FindEntityByClassname( pAmmo, "ammo_*" ) ) !is null )
-        DisablePickup( pAmmo );
+        MarkPickup( pAmmo );
 
     while( ( @pWeaponBox = g_EntityFuncs.FindEntityByClassname( pWeaponBox, "weaponbox" ) ) !is null )
-        DisablePickup( pWeaponBox );
+        MarkPickup( pWeaponBox );
 }
 
-HookReturnCode DisablePickup(CBaseEntity@ pPickup)
+HookReturnCode MarkPickup(CBaseEntity@ pPickup)
 {
-    if( pPickup is null || pPickup.GetClassname() == "item_generic" || pPickup.GetClassname() == "item_inventory" )
-        return HOOK_CONTINUE;
-
-    if( H_PICKUPS.length() > 0 && H_PICKUPS.findByRef( EHandle( pPickup ) ) >= 0 )
+    if( pPickup is null || pPickup.GetClassname() == "item_generic" || 
+        pPickup.GetClassname() == "item_inventory" || 
+        pPickup.GetUserData().exists( "player_ids" ) )
         return HOOK_CONTINUE;
 
     if( pPickup.GetClassname().Find( "item_" ) != String::INVALID_INDEX || 
@@ -55,46 +55,44 @@ HookReturnCode DisablePickup(CBaseEntity@ pPickup)
         if( !pPickup.pev.SpawnFlagBitSet( 1 << 0 ) )
             return HOOK_CONTINUE;
 
-        pPickup.pev.spawnflags |= ( 1 << 7 | 1 << 8 );
         pPickup.GetUserData()["player_ids"] = array<string>( 1 );
-        H_PICKUPS.insertLast( pPickup );
     }
     
     return HOOK_CONTINUE;
 }
 
-void PickupThink()
+HookReturnCode CanCollect(CBaseEntity@ pPickup, CBaseEntity@ pOther, bool& out bResult)
 {
-    if( H_PICKUPS.length() < 1 )
-        return;
+    if( pPickup is null || pOther is null || !pOther.IsPlayer() || !pPickup.GetUserData().exists( "player_ids" ) )
+        return HOOK_CONTINUE;
 
-    for( uint i = 0; i < H_PICKUPS.length(); i++ )
+    CBasePlayer@ pPlayer = cast<CBasePlayer@>( pOther );
+    array<string> STR_PLAYER_IDS = cast<array<string>>( pPickup.GetUserData( "player_ids" ) );
+
+    if( pPlayer is null || STR_PLAYER_IDS.find( g_EngineFuncs.GetPlayerAuthId( pPlayer.edict() ) ) >= 0 )
     {
-        if( !H_PICKUPS[i] )
-            continue;
-
-        CBaseEntity@ pPickup = H_PICKUPS[i].GetEntity();
-        array<CBaseEntity@> P_COLLECTOR( 1 );
-
-        if( pPickup is null || pPickup.pev.effects & EF_NODRAW != 0 )
-            continue;
-
-        if( g_EntityFuncs.EntitiesInBox( @P_COLLECTOR, pPickup.pev.absmin, pPickup.pev.absmax, FL_CLIENT ) < 1 )
-            continue;
-           
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( P_COLLECTOR[0] );
-        array<string> STR_PLAYER_IDS = cast<array<string>>( pPickup.GetUserData( "player_ids" ) );
-
-        if( pPlayer is null || !pPlayer.Intersects( pPickup ) )
-            continue;
-
-        if( STR_PLAYER_IDS.find( g_EngineFuncs.GetPlayerAuthId( pPlayer.edict() ) ) >= 0 )
-            continue;
-
-        STR_PLAYER_IDS.insertLast( g_EngineFuncs.GetPlayerAuthId( pPlayer.edict() ) );
-        pPickup.GetUserData( "player_ids" ) = STR_PLAYER_IDS;
-        pPickup.Use( pPlayer, pPlayer, USE_TOGGLE, 0.0f );
+        bResult = false;
+        return HOOK_CONTINUE;
     }
+
+    return HOOK_CONTINUE;
+}
+
+HookReturnCode Collected(CBaseEntity@ pPickup, CBaseEntity@ pOther)
+{
+    if( pPickup is null || pOther is null || !pPickup.GetUserData().exists( "player_ids" ) )
+        return HOOK_CONTINUE;
+
+    CBasePlayer@ pPlayer = cast<CBasePlayer@>( pOther );
+    array<string> STR_PLAYER_IDS = cast<array<string>>( pPickup.GetUserData( "player_ids" ) );
+
+    if( STR_PLAYER_IDS.find( g_EngineFuncs.GetPlayerAuthId( pPlayer.edict() ) ) >= 0 )
+        return HOOK_CONTINUE;
+
+    STR_PLAYER_IDS.insertLast( g_EngineFuncs.GetPlayerAuthId( pPlayer.edict() ) );
+    pPickup.GetUserData( "player_ids" ) = STR_PLAYER_IDS;
+
+    return HOOK_CONTINUE;
 }
 
 }
