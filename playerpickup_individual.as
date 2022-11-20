@@ -43,7 +43,8 @@ void PatchPickups()
 
 HookReturnCode MarkPickup(CBaseEntity@ pPickup)
 {
-    if( pPickup is null || pPickup.GetClassname() == "item_generic" || 
+    if( pPickup is null || 
+        pPickup.GetClassname() == "item_generic" || 
         pPickup.GetClassname() == "item_inventory" || 
         pPickup.GetUserData().exists( "player_ids" ) )
         return HOOK_CONTINUE;
@@ -63,7 +64,10 @@ HookReturnCode MarkPickup(CBaseEntity@ pPickup)
 
 HookReturnCode CanCollect(CBaseEntity@ pPickup, CBaseEntity@ pOther, bool& out bResult)
 {
-    if( pPickup is null || pOther is null || !pOther.IsPlayer() || !pPickup.GetUserData().exists( "player_ids" ) )
+    if( pPickup is null || 
+        pOther is null ||
+        !pOther.IsPlayer() ||
+        !pPickup.GetUserData().exists( "player_ids" ) )
         return HOOK_CONTINUE;
 
     CBasePlayer@ pPlayer = cast<CBasePlayer@>( pOther );
