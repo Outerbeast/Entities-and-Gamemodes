@@ -144,7 +144,7 @@ dictionary GetPlayerLoadout(EHandle hPlayer)
 
         while( pWeapon !is null )
         {
-            const string strWeapon = pWeapon.GetClassname() == "weapon_uzi" && pWeapon.m_fIsAkimbo ? " weapon_uziakimbo" : pWeapon.GetClassname();
+            const string strWeapon = pWeapon.GetClassname() == "weapon_uzi" && pWeapon.m_fIsAkimbo ? "weapon_uziakimbo" : pWeapon.GetClassname();
             dictLoadout[strWeapon] = pWeapon.m_iClip == -1 ? 
                                     Vector2D() : 
                                     Vector2D( pPlayer.m_rgAmmo( pWeapon.m_iPrimaryAmmoType ), pWeapon.m_iSecondaryAmmoType > 0 ? 
