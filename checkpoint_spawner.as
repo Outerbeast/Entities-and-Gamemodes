@@ -30,7 +30,11 @@ final class checkpoint_spawner : ScriptBaseEntity
 		strEndSound 	= "debris/beamstart7.wav",
 		strModel 		= "models/common/lambda.mdl";
 
-	private float m_flDelayBeforeStart = 3, m_flDelayBetweenRevive = 1, m_flDelayBeforeReactivation = 60; 					
+	private float 
+		m_flDelayBeforeStart = 3,
+		m_flDelayBetweenRevive = 1,
+		m_flDelayBeforeReactivation = 60;
+		
 	private bool m_fSpawnEffect = false; 
 
 	bool KeyValue( const string& in szKey, const string& in szValue )
@@ -63,6 +67,8 @@ final class checkpoint_spawner : ScriptBaseEntity
 
 	void Precache()
 	{
+		g_Game.PrecacheOther( "point_checkpoint" );
+		
 		g_Game.PrecacheModel( strModel );
 		g_Game.PrecacheGeneric( strModel );
 

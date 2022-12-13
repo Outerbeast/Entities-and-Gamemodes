@@ -16,16 +16,18 @@ OR
 
 Usage:-
 Simply check the 1st flag box (value is 1) in your item_/ammo_/weaponbox entity to enable this feature for that entity.
+Optional settings (set in MapInit):
+- PLAYERPICKUP_INDIVIDUAL::blHideAfterCollect = true; - this will hide the pickup after respawning from the player who collected the pickup
+- PLAYERPICKUP_INDIVIDUAL::blApplyGlobal = true; - Sets all pickups to individual collection
 */
 namespace PLAYERPICKUP_INDIVIDUAL
 {
 
-bool blEntityCreated = g_Hooks.RegisterHook( Hooks::Game::EntityCreated, MarkPickup );
-bool blPickupSpawned = g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, MarkPickup );
-bool blCanCollect = g_Hooks.RegisterHook( Hooks::PickupObject::CanCollect, CanCollect );
-bool blCollected = g_Hooks.RegisterHook( Hooks::PickupObject::Collected, Collected );
+bool
+    blHideAfterCollect = false,
+    blApplyGlobal = false;
 
-CScheduledFunction@ fnPatchPickups = g_Scheduler.SetTimeout( "PatchPickups", 0.1f );
+CScheduledFunction@ fnPatchPickups = g_Scheduler.SetTimeout( "PatchPickups", 0.01f );
 
 void PatchPickups()
 {
@@ -39,24 +41,79 @@ void PatchPickups()
 
     while( ( @pWeaponBox = g_EntityFuncs.FindEntityByClassname( pWeaponBox, "weaponbox" ) ) !is null )
         MarkPickup( pWeaponBox );
+
+    g_Hooks.RegisterHook( Hooks::Game::EntityCreated, MarkPickup );
+    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, MarkPickup );
+    g_Hooks.RegisterHook( Hooks::PickupObject::CanCollect, CanCollect );
+    g_Hooks.RegisterHook( Hooks::PickupObject::Collected, Collected );
+}
+// Code from: https://github.com/Outerbeast/Utility-Scripts/blob/main/render_settings.as
+void HidePickup(EHandle hPickup, EHandle hPlayer)
+{
+    if( !hPickup || !hPlayer )
+        return;
+    
+    dictionary dictRenderIndividual =
+    {
+        { "rendermode", "2" },
+        { "renderamt", "0" },
+        { "spawnflags", "" + ( 1 | 8 | 64 ) }
+    };
+
+    dictRenderIndividual["target"] = hPickup.GetEntity().GetTargetname() == "" ? 
+                            string( hPickup.GetEntity().pev.targetname = string_t( "render_individual_entity_" + hPickup.GetEntity().entindex() ) ) :
+                            hPickup.GetEntity().GetTargetname();
+
+    CBaseEntity@ pRenderIndividual = g_EntityFuncs.CreateEntity( "env_render_individual", dictRenderIndividual );
+
+    if( pRenderIndividual is null )
+        return;
+
+    pRenderIndividual.Use( hPlayer.GetEntity(), pRenderIndividual, USE_ON, 0.0f );
+
+    if( hPickup.GetEntity().GetTargetname().StartsWith( "render_individual_" ) )
+        hPickup.GetEntity().pev.targetname = "";
 }
 
 HookReturnCode MarkPickup(CBaseEntity@ pPickup)
 {
     if( pPickup is null || 
         pPickup.GetClassname() == "item_generic" || 
-        pPickup.GetClassname() == "item_inventory" || 
-        pPickup.GetUserData().exists( "player_ids" ) )
+        pPickup.GetClassname() == "item_inventory" )
         return HOOK_CONTINUE;
+
+    if( pPickup.GetUserData().exists( "player_ids" ) )
+    {
+        if( blHideAfterCollect )
+        {
+            array<string> STR_PLAYER_IDS = cast<array<string>>( pPickup.GetUserData( "player_ids" ) );
+
+            for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
+            {
+                CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
+
+                if( pPlayer is null || !pPlayer.IsConnected() )
+                    continue;
+
+                if( STR_PLAYER_IDS.find( g_EngineFuncs.GetPlayerAuthId( pPlayer.edict() ) ) < 0 )
+                    continue;
+
+                if( pPickup.pev.rendermode == kRenderNormal )
+                    HidePickup( pPickup, pPlayer );
+            }
+        }
+
+        return HOOK_CONTINUE;
+    }
 
     if( pPickup.GetClassname().Find( "item_" ) != String::INVALID_INDEX || 
         pPickup.GetClassname().Find( "ammo_" ) != String::INVALID_INDEX ||
         pPickup.GetClassname() == "weaponbox" )
     {
-        if( !pPickup.pev.SpawnFlagBitSet( 1 << 0 ) )
-            return HOOK_CONTINUE;
-
-        pPickup.GetUserData()["player_ids"] = array<string>( 1 );
+        if( blApplyGlobal )
+            pPickup.GetUserData()["player_ids"] = array<string>( 1 );
+        else if( pPickup.pev.SpawnFlagBitSet( 1 << 0 ) )
+            pPickup.GetUserData()["player_ids"] = array<string>( 1 );
     }
     
     return HOOK_CONTINUE;
