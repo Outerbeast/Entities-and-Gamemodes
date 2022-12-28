@@ -24,35 +24,34 @@ void RegisterCheckPointSpawnerEntity(const bool blPrecache = false)
 
 final class checkpoint_spawner : ScriptBaseEntity
 {
+	CScheduledFunction@ fnSpawnSnd, fnCreateCheckoint;
+
 	private string 
 		strFunnelSprite = "sprites/glow01.spr",
 		strStartSound 	= "ambience/particle_suck2.wav",
-		strEndSound 	= "debris/beamstart7.wav",
-		strModel 		= "models/common/lambda.mdl";
+		strEndSound 	= "debris/beamstart7.wav";
 
-	private float 
-		m_flDelayBeforeStart = 3,
-		m_flDelayBetweenRevive = 1,
-		m_flDelayBeforeReactivation = 60;
-		
-	private bool m_fSpawnEffect = false; 
-
-	bool KeyValue( const string& in szKey, const string& in szValue )
+	private dictionary dictCheckpointValues =
 	{
-		if( szKey == "m_flDelayBeforeStart" )
-			m_flDelayBeforeStart = atof( szValue );
-		else if( szKey == "m_flDelayBetweenRevive" )
-			m_flDelayBetweenRevive = atof( szValue );
-		else if( szKey == "m_flDelayBeforeReactivation" )
-			m_flDelayBeforeReactivation = atof( szValue );
-		else if( szKey == "minhullsize" )
-			g_Utility.StringToVector( self.pev.vuser1, szValue );
-		else if( szKey == "maxhullsize" )
-			g_Utility.StringToVector( self.pev.vuser2, szValue );
+		{ "model", "models/common/lambda.mdl" },
+		{ "m_flDelayBeforeStart", "3" },
+		{ "m_flDelayBetweenRevive", "1" },
+		{ "m_flDelayBeforeReactivation", "60" },
+		{ "m_fSpawnEffect", "0" }
+	};
+
+	bool KeyValue(const string& in szKey, const string& in szValue)
+	{
+		if( szKey == "m_flDelayBeforeStart" ||
+			szKey == "m_flDelayBetweenRevive" ||
+			szKey == "m_flDelayBeforeReactivation" ||
+			szKey == "minhullsize" ||
+			szKey == "maxhullsize" )
+			dictCheckpointValues[szKey] = szValue;
 		else if( szKey == "m_fSpawnEffect" )
-			m_fSpawnEffect = atoi( szValue ) != 0;
+			dictCheckpointValues[szKey] = atoi( szValue ) != 0 ? "1" : "0";
 		else if( szKey == "checkpoint_model" )
-			strModel = szValue;
+			dictCheckpointValues["model"] = szValue;
 		else if( szKey == "sprite" )
 			strFunnelSprite = szValue;
 		else if( szKey == "startsound" )
@@ -69,8 +68,8 @@ final class checkpoint_spawner : ScriptBaseEntity
 	{
 		g_Game.PrecacheOther( "point_checkpoint" );
 		
-		g_Game.PrecacheModel( strModel );
-		g_Game.PrecacheGeneric( strModel );
+		g_Game.PrecacheModel( string( dictCheckpointValues["model"] ) );
+		g_Game.PrecacheGeneric( string( dictCheckpointValues["model"] ) );
 
 		g_Game.PrecacheModel( strFunnelSprite );
 		g_Game.PrecacheGeneric( strFunnelSprite );
@@ -78,8 +77,8 @@ final class checkpoint_spawner : ScriptBaseEntity
 		g_SoundSystem.PrecacheSound( strStartSound );
 		g_SoundSystem.PrecacheSound( strEndSound );
 
-		g_Game.PrecacheGeneric( strStartSound );
-		g_Game.PrecacheGeneric( strEndSound );
+		g_Game.PrecacheGeneric( "sound/" + strStartSound );
+		g_Game.PrecacheGeneric( "sound/" + strEndSound );
 
 		BaseClass.Precache();
 	}
@@ -90,6 +89,8 @@ final class checkpoint_spawner : ScriptBaseEntity
 		self.pev.movetype 	= MOVETYPE_NONE;
 		self.pev.solid 		= SOLID_NOT;
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
+
+		BaseClass.Spawn();
 	}
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -97,7 +98,7 @@ final class checkpoint_spawner : ScriptBaseEntity
 		if( !g_SurvivalMode.IsActive() )
 			return;
 
-		g_Scheduler.SetTimeout( this, "SpawnSnd", 1.6f );
+		@fnSpawnSnd = g_Scheduler.SetTimeout( this, "SpawnSnd", 1.6f );
 
 		NetworkMessage largefunnel( MSG_BROADCAST, NetworkMessages::SVC_TEMPENTITY, null );
 			largefunnel.WriteByte( TE_LARGEFUNNEL );
@@ -110,7 +111,7 @@ final class checkpoint_spawner : ScriptBaseEntity
 			largefunnel.WriteShort( 0 );
 		largefunnel.End();
 
-		g_Scheduler.SetTimeout( this, "CreateCheckpoint", 6.0f );
+		@fnCreateCheckoint = g_Scheduler.SetTimeout( this, "CreateCheckpoint", 6.0f );
 	}
 
 	void SpawnSnd()
@@ -120,23 +121,24 @@ final class checkpoint_spawner : ScriptBaseEntity
 
 	void CreateCheckpoint()
 	{
-		dictionary cp;
-		cp["origin"]						= self.GetOrigin().ToString();
-		cp["angles"]						= self.pev.angles.ToString();
-		cp["target"]						= string( self.pev.target );
-		cp["minhullsize"]					= self.pev.vuser1.ToString();
-		cp["maxhullsize"]					= self.pev.vuser2.ToString();
-		cp["model"]							= strModel;
-		cp["m_fSpawnEffect"]				= "" + m_fSpawnEffect;
-		cp["m_flDelayBeforeReactivation"]	= "" + m_flDelayBeforeReactivation;
-		cp["m_flDelayBetweenRevive"]		= "" + m_flDelayBetweenRevive;
-		cp["m_flDelayBeforeStart"]			= "" + m_flDelayBeforeStart;
-		cp["spawnflags"]					= "" + ( self.pev.spawnflags & SF_CHECKPOINT_REUSABLE );
+		dictCheckpointValues["origin"]		= self.GetOrigin().ToString();
+		dictCheckpointValues["angles"]		= self.pev.angles.ToString();
+		dictCheckpointValues["target"]		= string( self.pev.target );
+		dictCheckpointValues["spawnflags"]	= "" + ( self.pev.spawnflags & SF_CHECKPOINT_REUSABLE );
 
-		g_EntityFuncs.CreateEntity( "point_checkpoint", cp, true );
+		g_EntityFuncs.CreateEntity( "point_checkpoint", dictCheckpointValues, true );
 		g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, strEndSound, 1.0f, ATTN_NORM );
 
 		if( !self.pev.SpawnFlagBitSet( 1 << 1 ) )
 			g_EntityFuncs.Remove( self );
+	}
+
+	void UpdateOnRemove()
+	{
+		if( fnSpawnSnd !is null )
+			g_Scheduler.RemoveTimer( fnSpawnSnd );
+
+		if( fnCreateCheckoint !is null )
+			g_Scheduler.RemoveTimer( fnCreateCheckoint );
 	}
 }

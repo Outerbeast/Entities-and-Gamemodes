@@ -102,7 +102,8 @@ void Trigger(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
     if( !TriggerScriptInstance( EHandle( pCaller ), "$s_sound" ) )
         return;
 
-    CBaseEntity@ pTriggerScript = TriggerScriptInstance( pCaller, "$s_sound" ).GetEntity();
+    //CBaseEntity@ pTriggerScript = TriggerScriptInstance( pCaller, "$s_sound" ).GetEntity();
+    CBaseEntity@ pTriggerScript = pCaller;
     CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
 
     if( pTriggerScript is null )

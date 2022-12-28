@@ -5,9 +5,11 @@ env_dlight
 env_elight
 env_quakefx
 env_shockwave
+env_smoke
 env_trail
 env_sprayer
 env_spritefield
+env_playersprite
 
 Installation:-
 -Import this script in your main map script 
@@ -21,6 +23,13 @@ enum ShockWaveTypes
     WV_CYLINDER = 0,
     WV_DISK,
     WV_TORUS
+};
+
+enum PlayerSpriteTypes
+{
+    PLAYERSPRITE_NONE = 0,
+    PLAYERSPRITE_ATTACH,
+    PLAYERSPRITE_CLUSTER
 };
 
 enum QuakeFxTypes
@@ -61,7 +70,7 @@ RGBA VectorToRGBA(const Vector vecColor, const float flAlpha = 255.0f)
     return RGBA( uint8( vecColor.x ), uint8( vecColor.y ), uint8( vecColor.z ), uint8( flAlpha ) );
 }
 
-class CTempFX : ScriptBaseEntity
+mixin class TempFx
 {
     protected array<uint8> UINT8_QFX =
     {
@@ -71,18 +80,6 @@ class CTempFX : ScriptBaseEntity
         QFX_TAR_EXP,
         QFX_TELE_SPLASH
     };
-
-    void RegisterFXEntities()
-    {
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_dlight" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_elight" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvQuakeFx", "env_quakefx" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvShockwave", "env_shockwave" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvTrail", "env_trail" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSprayer", "env_sprayer" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSpriteField", "env_spritefield" );
-        //g_CustomEntityFuncs.RegisterCustomEntity( "CEnvPlayerSprite", "env_playersprite" );
-    }
 
     void te_dlight(
     Vector pos,
@@ -477,9 +474,26 @@ class CTempFX : ScriptBaseEntity
             m.WriteByte(life);
         m.End();
     }
-}
+};
 
-class CEnvLight : CTempFX
+final class CTempFX : TempFx
+{
+    void RegisterFXEntities()
+    {
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_dlight" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_elight" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvQuakeFx", "env_quakefx" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvShockwave", "env_shockwave" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvTrail", "env_trail" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvTrail", "env_beamtrail" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSprayer", "env_sprayer" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSpriteField", "env_spritefield" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSmoke", "env_smoke" );
+        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvPlayerSprite", "env_playersprite" );
+    }
+};
+
+final class CEnvLight : ScriptBaseEntity, TempFx
 {
 	private bool blToggled;
 
@@ -559,8 +573,8 @@ class CEnvLight : CTempFX
 
 	void MakeELight(EHandle hTarget)
 	{
-		CBaseEntity@ pTarget = hTarget.GetEntity();
-        CBaseEntity@ pFollower = g_EntityFuncs.FindEntityByTargetname( pFollower, "" + self.pev.netname );
+		CBaseEntity@ pTarget = hTarget.GetEntity(),
+                    pFollower = g_EntityFuncs.FindEntityByTargetname( pFollower, "" + self.pev.netname );
 
 		if( !hTarget || pTarget is null || !pTarget.IsPointEnt() )
 			@pTarget = self;
@@ -583,13 +597,19 @@ class CEnvLight : CTempFX
         g_Hooks.RemoveHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.ClientPutInServer ) );
         return HOOK_CONTINUE;
     }
-}
+};
 
-class CEnvShockwave : CTempFX
+final class CEnvShockwave : ScriptBaseEntity, TempFx
 {
     private string strSprite = "sprites/shockwave.spr", strShockwaveStart;
-    private float flRadius = 1000.0f, flStrikeTime = 1.0f;
-    private uint8 iShockwaveType, m_iHeight = 10, m_iScrollRate, m_iNoise;
+    private float
+        flRadius = 1000.0f,
+        flStrikeTime = 1.0f;
+    private uint8
+        iShockwaveType,
+        m_iHeight = 10,
+        m_iScrollRate,
+        m_iNoise;
     private bool blToggled;
 
     bool KeyValue(const string& in szKey, const string& in szValue)
@@ -732,9 +752,9 @@ class CEnvShockwave : CTempFX
         VectorToRGBA( self.pev.rendercolor, uint8( self.pev.renderamt ) ),
         uint8( m_iScrollRate ) );
     }
-}
+};
 
-class CEnvSpriteField : CTempFX
+final class CEnvSpriteField : ScriptBaseEntity, TempFx
 {
     private string strSprite = "sprites/xfire.spr";
     uint16 iRadius = 128;
@@ -801,9 +821,9 @@ class CEnvSpriteField : CTempFX
         uint8( self.pev.spawnflags ),
         uint8( self.pev.health ) );
     }
-}
+};
 
-class CEnvQuakeFx : CTempFX
+final class CEnvQuakeFx : ScriptBaseEntity, TempFx
 {
     void Spawn()
     {
@@ -849,9 +869,9 @@ class CEnvQuakeFx : CTempFX
         if( !self.pev.SpawnFlagBitSet( 1 ) ) // Repeatable?
             g_EntityFuncs.Remove( self );
     }
-}
+};
 
-class CEnvSprayer : CTempFX
+final class CEnvSprayer : ScriptBaseEntity, TempFx
 {
     private string strSprite = "sprites/hotglow.spr";
     private uint8 iSprayType, iSprayCount, iSprayNoise, iSpeed, iSpeedNoise;
@@ -945,9 +965,9 @@ class CEnvSprayer : CTempFX
             uint8( self.pev.renderamt ) );
         }
     }
-}
+};
 
-class CEnvTrail : CTempFX
+final class CEnvTrail : ScriptBaseEntity, TempFx
 {
     private string strSprite = "sprites/laserbeam.spr";
 
@@ -1006,11 +1026,69 @@ class CEnvTrail : CTempFX
         uint8( self.pev.armorvalue ),
         VectorToRGBA( self.pev.rendercolor, self.pev.renderamt ) );
     }
-}
-/* class CEnvPlayerSprite : CTempFX
+};
+// Just a wrapper for native entity env_smoker
+final class CEnvSmoke : ScriptBaseEntity, TempFx
+{
+    EHandle hSmoker;
+
+    void Spawn()
+    {
+        self.pev.movetype   = MOVETYPE_NONE;
+        self.pev.solid      = SOLID_NOT;
+        self.pev.effects    |= EF_NODRAW;
+        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+
+        BaseClass.Spawn();
+
+        if( !self.pev.SpawnFlagBitSet( 1 ) )
+            self.Use( self, self, USE_ON, 0.0f );
+    }
+
+    void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+    {
+        switch( useType )
+        {
+            case USE_ON:
+            {
+                if( !hSmoker )
+                {
+                    hSmoker = g_EntityFuncs.Create( "env_smoker", self.pev.origin, self.pev.angles, true, self.edict() );
+                    hSmoker.GetEntity().pev.health = self.pev.health <= 0.0f ? 9999999.9f : self.pev.health;
+                    hSmoker.GetEntity().pev.scale = self.pev.health <= 0.0f ? 1.0f : self.pev.scale;
+                    hSmoker.GetEntity().pev.dmg = self.pev.dmg;
+                    g_EntityFuncs.DispatchSpawn( hSmoker.GetEntity().edict() );
+                }
+
+                break;
+            }
+
+            case USE_TOGGLE:
+                self.Use( null, null, hSmoker ? USE_OFF : USE_ON, 0.0f );
+                break;
+
+
+            case USE_OFF:
+                g_EntityFuncs.Remove( hSmoker.GetEntity() );
+                break;
+        }
+    }
+
+    void UpdateOnRemove()
+    {
+        if( hSmoker )
+            g_EntityFuncs.Remove( hSmoker.GetEntity() );
+    }
+
+};
+// WIP
+final class CEnvPlayerSprite : ScriptBaseEntity, TempFx
 {
     private float flOffset = 51.0f;
     private string strSprite = "sprites/bubble.spr";
+    private int
+        iSpriteCount = 1,
+        iSpriteType = 2;
 
     private array<bool> BL_PLAYERSPRITE_ACTIVE( g_Engine.maxClients + 1 );
 
@@ -1039,10 +1117,29 @@ class CEnvTrail : CTempFX
 
     void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
     {
-        if( !pActivator.IsPlayer() )
+        if( pActivator is null || !pActivator.IsPlayer() )
             return;
 
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( pActivator );
+
+        switch( useType )
+        {
+            case USE_OFF:
+            {
+                for( uint iPlayer = 0; iPlayer < BL_PLAYERSPRITE_ACTIVE.length(); iPlayer++ )
+                {
+                    if( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) is null || !g_PlayerFuncs.FindPlayerByIndex( iPlayer ).IsConnected() )
+                        continue;
+
+                    te_killplayerattachments( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) );
+                }
+
+                break;
+            }
+
+            case USE_ON:
+                break;
+        }
 
         switch( iSpriteType )
         {
@@ -1051,14 +1148,18 @@ class CEnvTrail : CTempFX
                 break;
 
             case PLAYERSPRITE_ATTACH:
-                te_playerattachment( pPlayer, flOffset, strSprite, self.pev.health );
+            {
+                te_playerattachment( pPlayer, flOffset, strSprite, int( self.pev.health ) );
+                BL_PLAYERSPRITE_ACTIVE[pPlayer.entindex()] = true;
                 break;
+            }
 
             case PLAYERSPRITE_CLUSTER:
+            {
                 te_playersprites( pPlayer, strSprite, iSpriteCount );
+                BL_PLAYERSPRITE_ACTIVE[pPlayer.entindex()] = true;
                 break;
+            }
         }
-
-        BL_PLAYERSPRITE_ACTIVE[pPlayer.entindex()] = true;
     }
-} */
+};

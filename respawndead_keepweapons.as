@@ -113,7 +113,7 @@ void ReEquipCollected(EHandle hPlayer, bool blKeepAmmo = false)
         if( pEquippedWeapon is null )
             continue;
 
-        if( blKeepAmmo && !( pEquippedWeapon.m_iClip <= -1 ) )
+        if( blKeepAmmo && pEquippedWeapon.m_iPrimaryAmmoType > 0 )
         {
             pPlayer.m_rgAmmo( pEquippedWeapon.m_iPrimaryAmmoType, int( vec2DAmmoValues.x ) );
 
@@ -145,8 +145,7 @@ dictionary GetPlayerLoadout(EHandle hPlayer)
         while( pWeapon !is null )
         {
             const string strWeapon = pWeapon.GetClassname() == "weapon_uzi" && pWeapon.m_fIsAkimbo ? "weapon_uziakimbo" : pWeapon.GetClassname();
-            dictLoadout[strWeapon] = pWeapon.m_iClip == -1 ? 
-                                    Vector2D() : 
+            dictLoadout[strWeapon] = pWeapon.m_iPrimaryAmmoType < 0 ? Vector2D() : 
                                     Vector2D( pPlayer.m_rgAmmo( pWeapon.m_iPrimaryAmmoType ), pWeapon.m_iSecondaryAmmoType > 0 ? 
                                                                                             pPlayer.m_rgAmmo( pWeapon.m_iSecondaryAmmoType ) : 
                                                                                             0 );
