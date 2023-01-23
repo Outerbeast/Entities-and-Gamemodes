@@ -49,14 +49,8 @@ funcdef void SentryBuiltCallback(CBaseMonster@, CBasePlayer@);
 funcdef void SentryThinkCallback(CBaseMonster@);
 funcdef void SentryDestroyedCallback(CBaseMonster@);
 
-array<SentryBuiltCallback@> FN_SENTRYBUILT_CBS;
-array<SentryThinkCallback@> FN_SENTRYTHINK_CBS;
-array<SentryDestroyedCallback@> FN_SENTRYDESTROYED_CBS;
-
 namespace PLAYER_SENTRY
 {
-
-array<uint> I_SENTRIES_DEPLOYED( g_Engine.maxClients + 1 );
 
 enum sentrydeployweaponattack
 {
@@ -64,6 +58,11 @@ enum sentrydeployweaponattack
     WPN_SECONDARY_ATTACK,
     WPN_PRIMARY_ATTACK
 };
+
+array<SentryBuiltCallback@> FN_SENTRYBUILT_CBS;
+array<SentryThinkCallback@> FN_SENTRYTHINK_CBS;
+array<SentryDestroyedCallback@> FN_SENTRYDESTROYED_CBS;
+array<uint> I_SENTRIES_DEPLOYED( g_Engine.maxClients + 1 );
 
 string
     strSentryMdl,
@@ -332,8 +331,9 @@ Vector SetPosition(EHandle hPlayer)
 
     TraceResult trForward, trReflect;
     Math.MakeVectors( hPlayer.GetEntity().pev.v_angle );
-    const Vector vecStart = hPlayer.GetEntity().GetOrigin() + hPlayer.GetEntity().pev.view_ofs;
-    const Vector vecEnd = vecStart + g_Engine.v_forward * 128;
+    const Vector 
+        vecStart = hPlayer.GetEntity().GetOrigin() + hPlayer.GetEntity().pev.view_ofs,
+        vecEnd = vecStart + g_Engine.v_forward * 128;
     g_Utility.TraceLine( vecStart, vecEnd, ignore_monsters, dont_ignore_glass, hPlayer.GetEntity().edict(), trForward );
     // If a player is carrying their sentry, ensure they don't clip it through a surface
     Vector vecFinalPos;
@@ -568,10 +568,7 @@ void Disable(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
     g_Hooks.RemoveHook( iSentryWeaponAttackType, DeploySentryAttack );
 
     if( fnThink !is null )
-    {
         g_Scheduler.RemoveTimer( fnThink );
-        @fnThink = null;
-    }
 }
 // Funcs for configuring optional callbacks
 bool SetSentryBuiltCallback(SentryBuiltCallback@ fn)
