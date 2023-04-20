@@ -1,17 +1,35 @@
 /* trigger_sequential
-by Outerbeast
+    by Outerbeast
 
-Literally multi_manager except each target is not triggered automatically, rather only when the entity is triggered manually.
-Each target is now triggered in the order that is set in the entity, not based on delay value. Delay values only determine when the target gets triggered after the trigger_sequential is used.
-When the last target is triggered, the entity will reset back to the initial target and can be used again.
-"health" key sets a wait-reset period before the trigger_sequential is allowed to be triggered again.
-"frags" key keeps track of which number target the entity is expected to trigger next, the first target being "0" and the second "1", ...
-This key can also be preset to override which target to start from, so from a list of 10 targets should you which to start from the 5th target, set the value to "4" (since 10 targets equates to 0th-9th)
-This entity also has the trigger type "#3" which will use whatever the caller entity use type was.
+    Installation:-
+    - Place in scripts/maps
+    - Add
+    map_script trigger_sequential
+    to your map cfg
+    OR
+    - Add
+    #include "trigger_sequential"
+    to your main map script header
+    OR
+    - Create a trigger_script with these keys set in your map:
+    "classname" "trigger_script"
+    "m_iszScriptFile" "trigger_sequential"
+
+    Usage:-
+    Literally multi_manager except each target is not triggered automatically, rather only when the entity is triggered manually.
+    Each target is now triggered in the order that is set in the entity, not based on delay value. Delay values only determine when the target gets triggered after the trigger_sequential is used.
+    When the last target is triggered, the entity will reset back to the initial target and can be used again.
+    "health" key sets a wait-reset period before the trigger_sequential is allowed to be triggered again.
+    "frags" key keeps track of which number target the entity is expected to trigger next, the first target being "0" and the second "1", ...
+    This key can also be preset to override which target to start from, so from a list of 10 targets should you which to start from the 5th target, set the value to "4" (since 10 targets equates to 0th-9th)
+    This entity also has the trigger type "#3" which will use whatever the caller entity use type was.
 */
-void RegisterTriggerSequential()
+bool blRegisterTriggerSequential = RegisterTriggerSequential();
+
+bool RegisterTriggerSequential()
 {
     g_CustomEntityFuncs.RegisterCustomEntity( "trigger_sequential", "trigger_sequential" );
+    return g_CustomEntityFuncs.IsCustomEntity( "trigger_sequential" );
 }
 
 final class trigger_sequential : ScriptBaseEntity

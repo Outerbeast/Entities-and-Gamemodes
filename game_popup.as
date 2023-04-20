@@ -1,20 +1,37 @@
 /*  game_popup
-by Outerbeast
-Entity that creates a custom MOTD popup with title and text
-MOTD code by Geigue
+    by Outerbeast
+    Entity that creates a custom MOTD popup with title and text
+    MOTD code by Geigue
 
-When triggered, the activator (if it is a player) will receive the popup on their screen.
-Setting flag 1 will make the popup display for all players.
+    When triggered, the activator (if it is a player) will receive the popup on their screen.
+    Setting flag 1 will make the popup display for all players.
 
-Keys:-
-"classname" "game_popup"
-"netname" "Title goes here" - Title key
-"message" "Text goes here" - Main body text key. A specific file can be used using the "+" prefix followed by the path starting from "scripts/maps/store/"
-"spawnflags" "1" - All players receive the popup, not just the activator
+    Installation:-
+    - Place in scripts/maps
+    - Add
+    map_script game_popup
+    to your map cfg
+    OR
+    - Add
+    #include "game_popup"
+    to your main map script header
+    OR
+    - Create a trigger_script with these keys set in your map:
+    "classname" "trigger_script"
+    "m_iszScriptFile" "game_popup"
+
+    Keys:-
+    "classname" "game_popup"
+    "netname" "Title goes here" - Title key
+    "message" "Text goes here" - Main body text key. A specific file can be used using the "+" prefix followed by the path starting from "scripts/maps/store/"
+    "spawnflags" "1" - All players receive the popup, not just the activator
 */
-void RegisterGamePopupEntity()
+bool blRegisterGamePopEntity = RegisterGamePopupEntity();
+
+bool RegisterGamePopupEntity()
 {
     g_CustomEntityFuncs.RegisterCustomEntity( "game_popup", "game_popup" );
+    return g_CustomEntityFuncs.IsCustomEntity( "game_ppopup" );
 }
 
 class game_popup : ScriptBaseEntity

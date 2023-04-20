@@ -1,31 +1,32 @@
 /* doom_fall by Outerbeast
-trigger_script that creates a zone at which a player falling at a certain velocity will be sure to take mortal fall damage.
-They will go SPLAT.
+    trigger_script that creates a zone at which a player falling at a certain velocity will be sure to take mortal fall damage.
+    They will go SPLAT.
 
-Template entity:-
-"classname" "trigger_script"
-"m_iszScriptFile" "doom_fall"
-"m_iszScriptFunctionName" "DOOMFALL::FallZone"
-"m_iMode" "2"
-// Don't change any of the above
-"$s_brush" "*m"             - Brush model to provide bounds
-"$v_mins" "x1 y1 z1"        - absmin bound coord for zone
-"$v_maxs" "x2 y2 z2"        - absmax bound coord for zone
-"speed" "s"                 - fall velocity threshold at which point a player will take mortal fall damage when they land at this speed. Default is 700.
-"gravity" "g"               - gravity modifier for player falling. Applied when the player's fall velocity reaches "speed".
-"message" "target_entity"   - entity to trigger when a falling player's fall velocity exceeds "speed". Activator is the player falling.
-"netname" "target_entity"   - entity to trigger after a player lands on the ground. Activator is the player who fell.
+    Template entity:-
+    "classname" "trigger_script"
+    "m_iszScriptFile" "doom_fall"
+    "m_iszScriptFunctionName" "DOOMFALL::FallZone"
+    "m_iMode" "2"
+    // Don't change any of the above
+    "$s_brush" "*m"             - Brush model to provide bounds
+    "$v_mins" "x1 y1 z1"        - absmin bound coord for zone
+    "$v_maxs" "x2 y2 z2"        - absmax bound coord for zone
+    "speed" "s"                 - fall velocity threshold at which point a player will take mortal fall damage when they land at this speed. Default is 700.
+    "gravity" "g"               - gravity modifier for player falling. Applied when the player's fall velocity reaches "speed".
+    "message" "target_entity"   - entity to trigger when a falling player's fall velocity exceeds "speed". Activator is the player falling.
+    "netname" "target_entity"   - entity to trigger after a player lands on the ground. Activator is the player who fell.
 
-If no or invalid min/max bounds for the death zone are set, the entire level is used
+    If no or invalid min/max bounds for the death zone are set, the entire level is used
 */
 namespace DOOMFALL
 {
 
 array<Vector> VEC_PLAYER_FALL_DATA( g_Engine.maxClients + 1 );
 
-const bool blPlayerSpawnHook        = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, OnGround );
-const bool blPlayerPreThinkHook     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, Fall );
-const bool blPlayerPostThinkHook    = g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, Splat );
+const bool
+    blPlayerSpawn        = g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, OnGround ),
+    blPlayerPreThink     = g_Hooks.RegisterHook( Hooks::Player::PlayerPreThink, Fall ),
+    blPlayerPostThink    = g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, Splat );
 
 EHandle Enable(float flMortalVelocity, float flGravityModifier)
 {
@@ -38,7 +39,7 @@ EHandle Enable(float flMortalVelocity, float flGravityModifier)
         { "gravity", "" + flGravityModifier }
     };
 
-    return( g_EntityFuncs.CreateEntity( "trigger_script", dictDoomfall ) );
+    return g_EntityFuncs.CreateEntity( "trigger_script", dictDoomfall );
 }
 
 void FallZone(CBaseEntity@ pTriggerScript)

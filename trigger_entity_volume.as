@@ -1,32 +1,46 @@
 /* trigger_entity_volume
-Custom game_zone_player entity with resiazble bbox and extended functionality to monsters
+	Custom game_zone_player entity with resiazble bbox and extended functionality to monsters
 
-Keys:-
-"classname" "trigger_entity_volume"
-"incount" "i" 								- min number of entities required to be in the zone to trigger "intarget"
-"intarget" "target_entity"					- target to trigger for entities inside the zone
-"outcount" "o"								- min number of entities reqyired to be outside the zone to trigger "outcount"
-"outtarget" "target_entity" 				- target to trigger for entities outside the zone
-"target_incount_fail" "target_entity"		- target to trigger when incount condition fails
-"target_outcount_fail" "target_entity"		- target to trigger when outcount condition fails
-"zoneradius" "256"							- Radius to define the zone
-"zonecornermin" "x1 y1 z1   				- Entity bbox min position
-"zonecornermax" "x2 y2 z2"					- Entity bbox max position
-"spawnflags" "f"							- See Flags section below
+	Installation:-
+	- Place in scripts/maps
+	- Add
+	map_script trigger_entity_volume
+	to your map cfg
+	OR
+	- Add
+	#include "trigger_entity_volume"
+	to your main map script header
+	OR
+	- Create a trigger_script with these keys set in your map:
+	"classname" "trigger_script"
+	"m_iszScriptFile" "trigger_entity_volume"
 
-By default the entity will use its position and radius for its zone boundary, if a bounding box is not set via zonecornermin/max keys.
-"incount"/"outcount" keys are at default 0 and are optional.
-When triggered, the current number of entities inside the zone stored in the entity's "health" key and "frags" for entities outside.
-For more information on how to set up the targets and counters, visit the game_zone_player page in Sven Manor
-https://sites.google.com/site/svenmanor/entguide/game_zone_player
+	Keys:-
+	"classname" "trigger_entity_volume"
+	"incount" "i" 								- min number of entities required to be in the zone to trigger "intarget"
+	"intarget" "target_entity"					- target to trigger for entities inside the zone
+	"outcount" "o"								- min number of entities reqyired to be outside the zone to trigger "outcount"
+	"outtarget" "target_entity" 				- target to trigger for entities outside the zone
+	"target_incount_fail" "target_entity"		- target to trigger when incount condition fails
+	"target_outcount_fail" "target_entity"		- target to trigger when outcount condition fails
+	"zoneradius" "256"							- Radius to define the zone
+	"zonecornermin" "x1 y1 z1   				- Entity bbox min position
+	"zonecornermax" "x2 y2 z2"					- Entity bbox max position
+	"spawnflags" "f"							- See Flags section below
 
-Flags:-
-"1" : Ignore Dead 		- Dead players are not counted when triggered
-"2" : Start Inactive 	- Entity has to be triggered first then it will become activated and perform its actions
-"8" : No players 		- Players will be excluded from the entity
-"32": Monsters 			- Include monsters
+	By default the entity will use its position and radius for its zone boundary, if a bounding box is not set via zonecornermin/max keys.
+	"incount"/"outcount" keys are at default 0 and are optional.
+	When triggered, the current number of entities inside the zone stored in the entity's "health" key and "frags" for entities outside.
+	For more information on how to set up the targets and counters, visit the game_zone_player page in the SC Wiki:
+	https://wiki.svencoop.com/Game_zone_player
 
-- Outerbeast
+	Flags:-
+	"1" : Ignore Dead 		- Dead players are not counted when triggered
+	"2" : Start Inactive 	- Entity has to be triggered first then it will become activated and perform its actions
+	"8" : No players 		- Players will be excluded from the entity
+	"32": Monsters 			- Include monsters
+
+	- Outerbeast
 */
 enum entity_zone_flags
 {
@@ -34,9 +48,12 @@ enum entity_zone_flags
 	SF_START_INACTIVE 	= 1 << 1
 };
 
-void RegisterTriggerEntityVolume()
+bool blRegisterTriggerEntityVolume = RegisterTriggerEntityVolume();
+
+bool RegisterTriggerEntityVolume()
 {
 	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_entity_volume", "trigger_entity_volume" );
+	return g_CustomEntityFuncs.IsCustomEntity( "trigger_entity_volume" );
 }
 
 final class trigger_entity_volume : ScriptBaseEntity

@@ -1,21 +1,21 @@
 /* trigger script for playing sounds individually
 
-Standalone trigger_script entity can be used instead of patching existing ambient_generics with the "User Only" flag set, with optional "$i_channel" key.
-Obey's trigger usetypes - Toggle will toggle the sound on and off and Off will turn the sound off if already playing.
+    Standalone trigger_script entity can be used instead of patching existing ambient_generics with the "User Only" flag set, with optional "$i_channel" key.
+    Obey's trigger usetypes - Toggle will toggle the sound on and off and Off will turn the sound off if already playing.
 
-Entity template:-
-"classname" "trigger_script"
-"m_iszScriptFile" "beast/playsound_individual"
-"m_iszScriptFunctionName" "PLAYSOUND_INDIVIDUAL::Trigger"
-"m_iMode" "1"
-// Do not change any of the above!
-"targetname" "target_me"
-"$s_sound" "sound.wav" // Sound file. This sound must be precached via custom_precache before using, otherwise the sound will not play.
-"$f_volume" "10" // Volume, default is 10 if set to 0 or left undefined.
-"i_channel" "2" // See SOUND_CHANNEL enum for choices for this key: https://baso88.github.io/SC_AngelScript/docs/SOUND_CHANNEL.htm. Default is CHAN_VOICE
+    Entity template:-
+    "classname" "trigger_script"
+    "m_iszScriptFile" "beast/playsound_individual"
+    "m_iszScriptFunctionName" "PLAYSOUND_INDIVIDUAL::Trigger"
+    "m_iMode" "1"
+    // Do not change any of the above!
+    "targetname" "target_me"
+    "$s_sound" "sound.wav" // Sound file. This sound must be precached via custom_precache before using, otherwise the sound will not play.
+    "$f_volume" "10" // Volume, default is 10 if set to 0 or left undefined.
+    "i_channel" "2" // See SOUND_CHANNEL enum for choices for this key: https://baso88.github.io/SC_AngelScript/docs/SOUND_CHANNEL.htm. Default is CHAN_VOICE
 
-IMPORTANT: Use an entity that triggers the sound entity with "target"/"message"/"netname" key or the entity will not be triggered.
-If you can't create a trigger_relay and use that to trigger the entity.
+    IMPORTANT: Use an entity that triggers the sound entity with "target"/"message"/"netname" key or the entity will not be triggered.
+    If you can't create a trigger_relay and use that to trigger the entity.
 
 - Outerbeast */
 namespace PLAYSOUND_INDIVIDUAL

@@ -1,23 +1,22 @@
-/*
-respawndead_keepweapons
-Adds a feature for trigger_respawn to let dead players respawn with the weapons they collected when they died, instead of losing them
-Option to keep ammo as well
+/* respawndead_keepweapons
+    Adds a feature for trigger_respawn to let dead players respawn with the weapons they collected when they died, instead of losing them
+    Option to keep ammo as well
 
-Install:-
-Put the script file into "scripts/maps/beast" then either
-- put "map_script respawndead_keepweapons" to your map cfg
-OR
--Add this as a trigger_script
-"classname" "trigger_script"
-"m_iszScriptFile" "respawndead_keepweapons"
-OR
--Include it in your main map script header
-#include "beast/respawndead_keepweapons"
+    Install:-
+    Put the script file into "scripts/maps/beast" then either
+    - put "map_script respawndead_keepweapons" to your map cfg
+    OR
+    -Add this as a trigger_script
+    "classname" "trigger_script"
+    "m_iszScriptFile" "respawndead_keepweapons"
+    OR
+    -Include it in your main map script header
+    #include "beast/respawndead_keepweapons"
 
-Usage:-
-- make your trigger_respawn, check the flag "Respawn dead" then 
-- check flag box 4 (value 8)- this is the new flag to allow the trigger_respawn to let dead respawning players keep their weapons they had when they died
-- To keep ammo, check box 5 (value 16)
+    Usage:-
+    - make your trigger_respawn, check the flag "Respawn dead" then 
+    - check flag box 4 (value 8)- this is the new flag to allow the trigger_respawn to let dead respawning players keep their weapons they had when they died
+    - To keep ammo, check box 5 (value 16)
 */
 namespace RESPAWNDEAD_KEEPWEAPONS
 {
@@ -50,6 +49,9 @@ void PatchTriggerRespawn()
 
         if( pEntity.pev.SpawnFlagBitSet( 1 << 1 ) && pEntity.pev.SpawnFlagBitSet( KEEP_WEAPONS ) )
         {
+            if( pEntity.pev.SpawnFlagBitSet( 1 << 0 ) && pEntity.pev.target != "" )
+                dictDeadRespawner["netname"] = string( pEntity.pev.target );
+
             pEntity.pev.spawnflags &= ~( 1 << 0 | 1 << 1 );// disable respawn dead setting, trigger_script will do this now
             pEntity.pev.target = string( dictDeadRespawner["targetname"] );
         }
@@ -60,15 +62,29 @@ void PatchTriggerRespawn()
 // Replace trigger_respawn's dead respawner with our own
 void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
-    for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+    if( pCaller.pev.netname != "!activator" )
     {
-        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
+        for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+        {
+            CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 
-        if( pPlayer is null || !pPlayer.IsConnected() || pPlayer.IsAlive() )
-            continue;
+            if( pPlayer is null || !pPlayer.IsConnected() || pPlayer.IsAlive() )
+                continue;
 
-        g_PlayerFuncs.RespawnPlayer( pPlayer, false, true );
-        ReEquipCollected( pPlayer, pCaller !is null ? pCaller.pev.SpawnFlagBitSet( KEEP_AMMO ) : false );
+            if( pCaller.pev.netname != "" && pPlayer.GetTargetname() != pCaller.pev.netname )
+                continue;
+
+            g_PlayerFuncs.RespawnPlayer( pPlayer, false, true );
+            ReEquipCollected( pPlayer, pCaller !is null ? pCaller.pev.SpawnFlagBitSet( KEEP_AMMO ) : false );
+        }
+    }
+    else if( pActivator !is null )
+    {
+        if( !pActivator.IsPlayer() || pActivator.IsAlive() )
+            return;
+
+        g_PlayerFuncs.RespawnPlayer( cast<CBasePlayer@>( pActivator ), false, true );
+        ReEquipCollected( pActivator, pCaller !is null ? pCaller.pev.SpawnFlagBitSet( KEEP_AMMO ) : false );
     }
 }
 // Players get their old loadout when they died

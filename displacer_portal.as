@@ -1,52 +1,52 @@
 /* Displacer Portal
-by Outerbeast
-extension for weapon_displacer to create a portal to teleport other entities
+    by Outerbeast
+    extension for weapon_displacer to create a portal to teleport other entities
 
-Installation:-
-- Place the script file into scripts/maps
-- Load the script with any of the methods below
-Add this cvar in your map cfg
-map_script displacer_portal
-OR
-Load this script via trigger_script entity in your map
-"classname" "trigger_script"
-"m_iszScriptFile" "displacer_portal"
-OR
-Add this in your map script header
-#include "displacer_portal"
+    Installation:-
+    - Place the script file into scripts/maps
+    - Load the script with any of the methods below
+    Add this cvar in your map cfg
+    map_script displacer_portal
+    OR
+    Load this script via trigger_script entity in your map
+    "classname" "trigger_script"
+    "m_iszScriptFile" "displacer_portal"
+    OR
+    Add this in your map script header
+    #include "displacer_portal"
 
-Using the trigger_script method will allow you to customise certain things from your map
+    Using the trigger_script method will allow you to customise certain things from your map
 
-Usage:-
-Use the Displacer's tertiary attack to shoot a portal at the target entity you want to teleport. They will teleport to any entity named "displacer_global_target", the same as displacer 2ndary target
-Recommended using info_player_destination since that will allow you to trigger a target on arrival, with the teleported entity as the activator.
-By default it requires 60 ammo to shoot a portal, same as displacer 2ndary attack ammo requirement
-The portal will not do damage to enemies.*
-The certain npcs are blacklisted from teleporting, see STR_NPC_BLACKLIST below.
+    Usage:-
+    Use the Displacer's tertiary attack to shoot a portal at the target entity you want to teleport. They will teleport to any entity named "displacer_global_target", the same as displacer 2ndary target
+    Recommended using info_player_destination since that will allow you to trigger a target on arrival, with the teleported entity as the activator.
+    By default it requires 60 ammo to shoot a portal, same as displacer 2ndary attack ammo requirement
+    The portal will not do damage to enemies.*
+    The certain npcs are blacklisted from teleporting, see STR_NPC_BLACKLIST below.
 
--How to customise-
-The trigger_script has some keys for customisation. If you want to enable use of these, add these keyvalues to your trigger_script, then check flag 1:
-"m_iMode" "2"
-"m_iszScriptFunctionName" "DISPLACER_PORTAL::Think"
-"targetname" "displacer_portal_ts"
-Keys and flags should now be available for use.
-Keys:
-"message" "target_entity"       - Sets a custom destination entity name (default is "displacer_global_target"). You can choose this trigger_script as a destination. 
-"netname" "targetname_filter"   - Only entities named this will be teleported, rest is ignored. Warning: if the target entity is not included in one of the flags then its also ignored.
-"impulse" "i"                   - Custom displacer ammo amount to shoot the displacer portal
-"spawnflags" "f"                - See flags below
-FLags:
-"1": Start on
-"2": Teleport once      - Each target can only be teleported one time. After being teleported they will no longer be able to be teleported. You can changevalue the monster's "$i_displacer_tp_count" key to 0 to reset this.
-"4": Teleport Enemies   - Hostile npcs can be teleported (Monsters flag must be set first)
-"8": Players            - Players can be teleported
-"32": Monsters          - Monsters can be teleported
+    -How to customise-
+    The trigger_script has some keys for customisation. If you want to enable use of these, add these keyvalues to your trigger_script, then check flag 1:
+    "m_iMode" "2"
+    "m_iszScriptFunctionName" "DISPLACER_PORTAL::Think"
+    "targetname" "displacer_portal_ts"
+    Keys and flags should now be available for use.
+    Keys:
+    "message" "target_entity"       - Sets a custom destination entity name (default is "displacer_global_target"). You can choose this trigger_script as a destination. 
+    "netname" "targetname_filter"   - Only entities named this will be teleported, rest is ignored. Warning: if the target entity is not included in one of the flags then its also ignored.
+    "impulse" "i"                   - Custom displacer ammo amount to shoot the displacer portal
+    "spawnflags" "f"                - See flags below
+    FLags:
+    "1": Start on
+    "2": Teleport once      - Each target can only be teleported one time. After being teleported they will no longer be able to be teleported. You can changevalue the monster's "$i_displacer_tp_count" key to 0 to reset this.
+    "4": Teleport Enemies   - Hostile npcs can be teleported (Monsters flag must be set first)
+    "8": Players            - Players can be teleported
+    "32": Monsters          - Monsters can be teleported
 
-Extra: setting the custom keyvalue "$i_displacer_tp_count" "-1" on any entity will prevent them being teleported no matter what
+    Extra: setting the custom keyvalue "$i_displacer_tp_count" "-1" on any entity will prevent them being teleported no matter what
 
-Known Issues:-
-- *Entities still receive damage from the portal even if its 0, this can lead to strange behaviour like ally npcs becoming hostile, if mp_npckill is set 1. This is a game bug. Please set mp_npckill to 2.
-- The viewmodel animations are missing beam fx for the flaps, this can't be recreated with the API (these are client-side fx not exposed)
+    Known Issues:-
+    - *Entities still receive damage from the portal even if its 0, this can lead to strange behaviour like ally npcs becoming hostile, if mp_npckill is set 1. This is a game bug. Please set mp_npckill to 2.
+    - The viewmodel animations are missing beam fx for the flaps, this can't be recreated with the API (these are client-side fx not exposed)
 */
 namespace DISPLACER_PORTAL
 {
@@ -58,8 +58,10 @@ enum displacerportalflags
     DP_TELEPORT_ENEMIES = 1 << 2
 };
 
-string strDisplacerPortalDestName = "displacer_global_target"; // Same as 2ndary fire default teleport destination
-string strTeleportNameFilter;
+string 
+    strDisplacerPortalDestName = "displacer_global_target", // Same as 2ndary fire default teleport destination
+    strTeleportNameFilter;
+    
 int iDisplacerPortalAmmoCost = 60; // Same as displacer 2ndary fire cost
 bool 
     blTpPlayers = true, 

@@ -1,6 +1,7 @@
-/* Script for swapping default weapons with classic ones without Classic Mode.
-Usage: Add #include "classic_weapons" in the script header
-then add CLASSICWEAPONS::Enable() in MapInit in your main map script
+/* !-OBSOLETE-!: use info_itemswap entity, and customise that to suit a classic mode setup
+    Script for swapping default weapons with classic ones without Classic Mode.
+    Usage: Add #include "classic_weapons" in the script header
+    then add CLASSICWEAPONS::Enable() in MapInit in your main map script
 -Outerbeast */
 
 #include "hl_weapons/weapon_hlcrowbar"
@@ -29,9 +30,7 @@ void Enable()
     RegisterHLShotgun();
 
     g_ClassicMode.SetItemMappings( @CLASSIC_WEAPONS_LIST );
-    g_ClassicMode.ForceItemRemap( true );
-    
-    g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, ItemSpawned );
+    g_ClassicMode.ForceItemRemap( g_Hooks.RegisterHook( Hooks::PickupObject::Materialize, ItemSpawned ) );
 }    
 // World weapon swapper routine (credit to KernCore)
 HookReturnCode ItemSpawned(CBaseEntity@ pOldItem) 
@@ -55,7 +54,6 @@ HookReturnCode ItemSpawned(CBaseEntity@ pOldItem)
             pNewItem.pev.netname = pOldItem.pev.netname;
 
         g_EntityFuncs.Remove( pOldItem );
-        
     }
     
     return HOOK_CONTINUE;

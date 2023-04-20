@@ -1,43 +1,56 @@
 /* trigger_playerfreeze- Freezing entity from Opposing Force
-by Outerbeast
+	by Outerbeast
 
-Made this for backwards compatibility reasons- freezing players can already
-be achieved using changevalue + entity_iterator but this is much more convenient.
+	Made this for backwards compatibility reasons- freezing players can already
+	be achieved using trigger_camera "Freeze players" flag, or changevalue + entity_iterator but this is much more convenient.
 
-Installation:-
-- Place in scripts/maps
--Add the lines to your main mapscript:-
-#include "trigger_playerfreeze" <-- this goes at the top
-RegisterTriggerPlayerFreezeEntity(); <-- this goes inside "void MapInit()"
+	Installation:-
+	- Place in scripts/maps
+	- Add
+	map_script trigger_playerfreeze
+	to your map cfg
+	OR
+	- Add
+	#include "trigger_playerfreeze"
+	to your main map script header
+	OR
+	- Create a trigger_script with these keys set in your map:
+	"classname" "trigger_script"
+	"m_iszScriptFile" "trigger_playerfreeze"
 
-Usage:-
-Simply trigger the entity to start freezing players. The entity will continue to freeze players while its active.
-To unfreeze, trigger it again, or killtarget the entity.
-You can use "target" key followed by the targetname of your player to specifically freeze them and nobody else.
-After the entity triggers it will target entities matching its "message" value.
+	Usage:-
+	Simply trigger the entity to start freezing players. The entity will continue to freeze players while its active.
+	To unfreeze, trigger it again, or killtarget the entity.
+	You can use "target" key followed by the targetname of your player to specifically freeze them and nobody else.
+	After the entity triggers it will target entities matching its "message" value.
 
-Flags:
-1: "Start On" - the entity will be active when the level starts. This is automatically the case if the entity has no targetname
-2: "Invisible" - while the players are frozen, they will also be invisible.
-4: "Invert target" - instead of freezing the target, everyone else but the target will be frozen.
+	Flags:
+	1: "Start On" - the entity will be active when the level starts. This is automatically the case if the entity has no targetname
+	2: "Invisible" - while the players are frozen, they will also be invisible.
+	4: "Invert target" - instead of freezing the target, everyone else but the target will be frozen.
 */
 enum freezespawnflags
 {
-	SF_STARTON 			= 1 << 0,
+	SF_STARTON			= 1 << 0,
 	SF_RENDERINVIS		= 1 << 1,
 	SF_INVERT_TARGET	= 1 << 2
 };
 
-void RegisterTriggerPlayerFreezeEntity()
+bool blTriggerPlayerFreezeRegistered = RegisterTriggerPlayerFreezeEntity();
+
+bool RegisterTriggerPlayerFreezeEntity()
 {
 	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_playerfreeze", "trigger_playerfreeze" );
+	return g_CustomEntityFuncs.IsCustomEntity( "trigger_playerfreeze" );
 }
 
 final class trigger_playerfreeze : ScriptBaseEntity
 {
-	EHandle hActivator;
+	private EHandle hActivator;
 	private bool blShouldFreeze;
 	private float flWaitTime;
+
+	private CScheduledFunction@ fnWaitToggle;
 
 	bool KeyValue(const string& in szKey, const string& in szValue)
 	{
@@ -117,7 +130,7 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		}
 
 		if( flWaitTime > 0 && blShouldFreeze ) 
-			g_Scheduler.SetTimeout( this, "ToggleEntity", flWaitTime );
+			@fnWaitToggle = g_Scheduler.SetTimeout( @self, "Use", flWaitTime, cast<CBaseEntity@>( null ), cast<CBaseEntity@>( null ), USE_TYPE( USE_TOGGLE ), 0.0f );
 
 		if( self.pev.message != "" && self.pev.message != self.GetTargetname() && blShouldFreeze )
 			g_EntityFuncs.FireTargets( self.pev.message, hActivator.GetEntity(), self, USE_TOGGLE );
@@ -128,7 +141,7 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		if( pPlayer is null || !pPlayer.IsConnected() || !blShouldFreeze || !FCanFreezeTarget( pPlayer ) )
 			return HOOK_CONTINUE;
 
-		pPlayer.pev.flags |= FL_FROZEN;
+		pPlayer.EnableControl( false );
 
 		if( self.pev.SpawnFlagBitSet( SF_RENDERINVIS ) && pPlayer.pev.effects & EF_NODRAW == 0 )
 			pPlayer.pev.effects |= EF_NODRAW;
@@ -141,7 +154,7 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.pev.FlagBitSet( FL_FROZEN ) || blShouldFreeze )
 			return HOOK_CONTINUE;
 
-		pPlayer.pev.flags &= ~FL_FROZEN;
+		pPlayer.EnableControl( true );
 
 		if( self.pev.SpawnFlagBitSet( SF_RENDERINVIS ) && pPlayer.pev.effects & EF_NODRAW != 0 )
 			pPlayer.pev.effects &= ~EF_NODRAW;
@@ -160,6 +173,9 @@ final class trigger_playerfreeze : ScriptBaseEntity
 			Defroster( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) );
 
 		g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );
+
+		if( fnWaitToggle !is null )
+			g_Scheduler.RemoveTimer( fnWaitToggle );
 
 		BaseClass.UpdateOnRemove();
 	}

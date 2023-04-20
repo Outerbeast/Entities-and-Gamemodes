@@ -1,31 +1,31 @@
 /* Sven Co-op PVP Deathmatch Mode Script
-- by Outerbeast
+    - by Outerbeast
 
-Script for enabling friendly fire between players for pvp deathmatch maps
-Useful for Half-Life Deathmatch map ports to SC
+    Script for enabling friendly fire between players for pvp deathmatch maps
+    Useful for Half-Life Deathmatch map ports to SC
 
-Usage:-
-- Put this script in scripts/maps folder
-- In your map cfg file put this code in to enable
-    map_script pvp_mode
-- Add your optional cvars
+    Usage:-
+    - Put this script in scripts/maps folder
+    - In your map cfg file put this code in to enable
+        map_script pvp_mode
+    - Add your optional cvars
 
-Map cfg settings:-
-"map_script pvp_mode"               - install the script to the map
-"as_command pvp_spawnprotecttime"   - set the time duration in seconds for how long spawn invulnerbility lasts, by default this is 5 if not set
-"as_command pvp_viewmode"           - set the force viewmode, 0 for first person or 1 for third person, by default this is first person if not set
-"as_command pvp_killinfo"           - enable or disable hud kill info, enabled by default
+    Map cfg settings:-
+    "map_script pvp_mode"               - install the script to the map
+    "as_command pvp_spawnprotecttime"   - set the time duration in seconds for how long spawn invulnerbility lasts, by default this is 5 if not set
+    "as_command pvp_viewmode"           - set the force viewmode, 0 for first person or 1 for third person, by default this is first person if not set
+    "as_command pvp_killinfo"           - enable or disable hud kill info, enabled by default
 
-Chat commands:-
-!pvp_stats/info - show your stats
-!pvp_leave/spectate - enter Spectator mode
-!pvp_join/play/afk - exit Spectator mode
+    Chat commands:-
+    !pvp_stats/info - show your stats
+    !pvp_leave/spectate - enter Spectator mode
+    !pvp_join/play/afk - exit Spectator mode
 
-Issues:-
-- Only supports 17 player slots maximum because of limitations imposed by the game + API. 18th player and following will automatically
-be moved to Spectator mode until a slot becomes free.
-- Some players will have colored usernames in the scoreboard, this is due to the classification system assigning them to
-TEAM classifications which apply these colors.
+    Issues:-
+    - Only supports 17 player slots maximum because of limitations imposed by the game + API. 18th player and following will automatically
+    be moved to Spectator mode until a slot becomes free.
+    - Some players will have colored usernames in the scoreboard, this is due to the classification system assigning them to
+    TEAM classifications which apply these colors.
 */
 namespace PVP_MODE
 {
@@ -62,11 +62,12 @@ array<uint8> I_PLAYER_TEAMS =
 HUDTextParams txtWinner, txtLoser, txtStats;
 
 int8 iTotalTeams = I_PLAYER_TEAMS.length();
-int iForceRespawnDefault = int( g_EngineFuncs.CVarGetFloat( "mp_forcerespawn" ) );
+const int iForceRespawnDefault = int( g_EngineFuncs.CVarGetFloat( "mp_forcerespawn" ) );
 
-CCVar cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly );
-CCVar cvarViewModeSetting( "pvp_viewmode", 0.0f, "View mode setting", ConCommandFlag::AdminOnly );
-CCVar cvarKillInfoSetting( "pvp_killinfo", 1.0f, "Kill hud info", ConCommandFlag::AdminOnly );
+CCVar
+    cvarProtectDuration( "pvp_spawnprotecttime", 10.0f, "Duration of spawn invulnerability", ConCommandFlag::AdminOnly ),
+    cvarViewModeSetting( "pvp_viewmode", 0.0f, "View mode setting", ConCommandFlag::AdminOnly ),
+    cvarKillInfoSetting( "pvp_killinfo", 1.0f, "Kill hud info", ConCommandFlag::AdminOnly );
 
 CScheduledFunction@ fnThink, fnInit = g_Scheduler.SetTimeout( "Initialise", 0.1f );
 
@@ -187,7 +188,7 @@ void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
         pPlayer.SetMaxSpeedOverride( -1 );
         pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
         pPlayer.GetObserver().SetObserverModeControlEnabled( true );
-        pPlayer.RemoveAllItems( true );
+        pPlayer.RemoveAllItems( true, true );
 
         g_PlayerFuncs.ShowMessage( pPlayer, "SPECTATING\nNo player slots available. Please wait..." );
     }   // !-BUG-! - Index out of bounds in 2 player slot server - why???? Hence this check.
@@ -200,7 +201,7 @@ void EnterSpectator(EHandle hPlayer, const bool blSpectatorOverride)
         pPlayer.pev.frags = 0;
         pPlayer.GetObserver().StartObserver( pPlayer.GetOrigin(), pPlayer.pev.angles, false );
         pPlayer.GetObserver().SetObserverModeControlEnabled( true );
-        pPlayer.RemoveAllItems( true );
+        pPlayer.RemoveAllItems( true, true );
 
         g_PlayerFuncs.ShowMessage( pPlayer, "You are in Spectator mode.\n\nType '!pvp_join' to exit." );
     }
@@ -231,11 +232,11 @@ HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
         return HOOK_CONTINUE;
 
     pPlayer.GetUserData()["i_spectating"] = SPECTYPE_NONE;
-    int iAssignedClassification = AssignTeam( EHandle( pPlayer ), true );
+    int iAssignedClassification = AssignTeam( pPlayer, true );
 
     if( iAssignedClassification < CLASS_MACHINE )
     {
-        EnterSpectator( EHandle( pPlayer ), false );
+        EnterSpectator( pPlayer, false );
         return HOOK_CONTINUE;
     }
     
@@ -261,7 +262,7 @@ HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
         IN_BACK | 
         IN_MOVELEFT | 
         IN_MOVERIGHT ) != 0 )
-    SpawnProtection( EHandle( pPlayer ), int( DAMAGE_YES ) );
+        SpawnProtection( pPlayer, int( DAMAGE_YES ) );
 
     return HOOK_CONTINUE;
 }
@@ -322,12 +323,14 @@ HookReturnCode PlayerChatCommand(SayParameters@ pParams)
 
     if( ( cmdArgs[0] == "!pvp_stats" || cmdArgs[0] == "!pvp_info" ) && !pPlayer.GetObserver().IsObserver() )
     {
-        string strMyWeapon = pPlayer.m_hActiveItem ? pPlayer.m_hActiveItem.GetEntity().GetClassname().Replace( "weapon_", "" ) : "No weapon selected";
-        string strStats =  " -Team: " + pPlayer.m_iClassSelection + " - " + pPlayer.GetClassificationName() + "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
+        string
+            strMyWeapon = pPlayer.m_hActiveItem ? pPlayer.m_hActiveItem.GetEntity().GetClassname().Replace( "weapon_", "" ) : "No weapon selected",
+            strStats =  " -Team: " + pPlayer.m_iClassSelection + " - " + pPlayer.GetClassificationName() + "\n -Points: " + pPlayer.pev.frags + "\n -Deaths: " + pPlayer.m_iDeaths + "\n -Weapon: " + strMyWeapon + "\n";
         g_PlayerFuncs.HudMessage( pPlayer, txtStats, "" + pPlayer.pev.netname + "'s Stats:-\n" + strStats );
 
         return HOOK_HANDLED;            
     }
+
     return HOOK_CONTINUE;
 }
 
@@ -372,11 +375,11 @@ HookReturnCode PlayerLeave(CBasePlayer@ pDisconnectedPlayer)
     if( pDisconnectedPlayer is null )
         return HOOK_CONTINUE;
 
-    AssignTeam( EHandle( pDisconnectedPlayer ), false );
+    AssignTeam( pDisconnectedPlayer, false );
     pDisconnectedPlayer.ClearClassification();
     pDisconnectedPlayer.pev.frags = 0;
 
-    for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+    for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
         if( BL_PLAYER_SLOT.find( false ) < 0 )
             break;
@@ -408,10 +411,7 @@ void Disable(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
     g_Hooks.RemoveHook( Hooks::Player::ClientDisconnect, PlayerLeave );
 
     if( fnThink !is null )
-    {
         g_Scheduler.RemoveTimer( fnThink );
-        @fnThink = null;
-    }
 
     BL_PLAYER_SLOT = array<bool>( g_Engine.maxClients + 1, false );
 
