@@ -333,7 +333,7 @@ bool Save(string strMap)
 
 	if( strMap == "" || !g_EngineFuncs.IsMapValid( strMap ) )
 	{
-		g_EngineFuncs.ServerPrint( "!-----------------NEXTMAP INVALID!------------------!\n" );
+		//g_EngineFuncs.ServerPrint( "!-----------------NEXTMAP INVALID!------------------!\n" );
 		return false;
 	}
 
@@ -345,7 +345,7 @@ bool Save(string strMap)
 
 	if( iStatesSaved < 1 )
 	{
-		g_EngineFuncs.ServerPrint( "!-----------------ENTITY STATES FETCH FAILED!------------------!\n" );
+		//g_EngineFuncs.ServerPrint( "!-----------------ENTITY STATES FETCH FAILED!------------------!\n" );
 		return false;
 	}
 
@@ -353,13 +353,13 @@ bool Save(string strMap)
 
 	if( fileSave is null || !fileSave.IsOpen() )
 	{
-		g_EngineFuncs.ServerPrint( "!-----------------WRITE FAILED!------------------!\n" );
+		//g_EngineFuncs.ServerPrint( "!-----------------WRITE FAILED!------------------!\n" );
 		return false;
 	}
 
 	fileSave.Write( strSavedEnts );
 	fileSave.Close();	
-	g_EngineFuncs.ServerPrint( "!-----------------SAVING ENTITY STATES: " + strSavedEnts + " ------------------!\n" );
+	//g_EngineFuncs.ServerPrint( "!-----------------SAVING ENTITY STATES: " + strSavedEnts + " ------------------!\n" );
 
 	return strSavedEnts != "";
 }
@@ -373,14 +373,14 @@ bool Load(string strPrevMap)
 	
 	if( fileLoad is null || !fileLoad.IsOpen() )
 	{
-		g_EngineFuncs.ServerPrint( "!-----------------READ FAILED!------------------!\n" );
+		//g_EngineFuncs.ServerPrint( "!-----------------READ FAILED!------------------!\n" );
 		return false;
 	}
 
 	fileLoad.ReadLine( strSavedEnts );
 	fileLoad.Close();
 	GetTransitionEntities();
-	g_EngineFuncs.ServerPrint( "!-----------------LOADING ENTITY STATES: " + strSavedEnts + " ------------------!\n" );
+	//g_EngineFuncs.ServerPrint( "!-----------------LOADING ENTITY STATES: " + strSavedEnts + " ------------------!\n" );
 	int iStatesLoaded = 0;
 
 	for( int i = BREAKABLES; i <= TRIGGERS; i++ )
@@ -422,11 +422,11 @@ final class CGameEntityState : ScriptBaseEntity
 	};
 
 	bool KeyValue(const string& in szKey, const string& in szValue)
-    {
+	{
 		if( szKey == "map" )
 			strMap = szValue;
 		else
-            return BaseClass.KeyValue( szKey, szValue );
+			return BaseClass.KeyValue( szKey, szValue );
 
 		return true;
 	}
@@ -434,9 +434,9 @@ final class CGameEntityState : ScriptBaseEntity
 	void Spawn()
 	{
 		self.pev.solid      = SOLID_NOT;
-        self.pev.movetype   = MOVETYPE_NONE;
-        self.pev.effects   |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.pev.origin );
+		self.pev.movetype   = MOVETYPE_NONE;
+		self.pev.effects   |= EF_NODRAW;
+		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 		// Delayed a millisecond later because of Sod's Law.
 		g_Scheduler.SetTimeout( this, "Init", 0.01f );
 

@@ -24,7 +24,8 @@ namespace RESPAWNDEAD_KEEPWEAPONS
 enum respawndead_flags
 {
     KEEP_WEAPONS    = 8,
-    KEEP_AMMO       = 16
+    KEEP_AMMO       = 16,
+    RESET_LOADOUT   = 32
 };
 
 CScheduledFunction@ fnPatchTriggerRespawn = g_Scheduler.SetTimeout( "PatchTriggerRespawn", 0.0f );
@@ -62,6 +63,10 @@ void PatchTriggerRespawn()
 // Replace trigger_respawn's dead respawner with our own
 void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 {
+    const bool
+        blKeepAmmo = pCaller !is null ? pCaller.pev.SpawnFlagBitSet( KEEP_AMMO ) : false,
+        blResetLoadout = pCaller !is null ? pCaller.pev.SpawnFlagBitSet( RESET_LOADOUT ) : false;
+
     if( pCaller.pev.netname != "!activator" )
     {
         for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
@@ -75,7 +80,7 @@ void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType
                 continue;
 
             g_PlayerFuncs.RespawnPlayer( pPlayer, false, true );
-            ReEquipCollected( pPlayer, pCaller !is null ? pCaller.pev.SpawnFlagBitSet( KEEP_AMMO ) : false );
+            ReEquipCollected( pPlayer, blKeepAmmo, blResetLoadout );
         }
     }
     else if( pActivator !is null )
@@ -88,13 +93,16 @@ void RespawnDead(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType
     }
 }
 // Players get their old loadout when they died
-void ReEquipCollected(EHandle hPlayer, bool blKeepAmmo = false)
+void ReEquipCollected(EHandle hPlayer, bool blKeepAmmo = false, bool blResetLoadout = false)
 {
     if( !hPlayer )
         return;
 
     CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
     array<string> STR_LOADOUT_WEAPONS = DICT_PLAYER_LOADOUT[pPlayer.entindex()].getKeys();
+
+    if( blResetLoadout )
+        pPlayer.RemoveAllItems( false );
 
     for( uint i = 0; i < STR_LOADOUT_WEAPONS.length(); i++ )
     {

@@ -38,7 +38,7 @@ enum spectatortype
 };
 
 array<bool> BL_PLAYER_SLOT( g_Engine.maxClients + 1 );
-array<uint8> I_PLAYER_TEAMS =
+array<CLASS> PLAYER_TEAMS =
 { 
     CLASS_MACHINE,
     CLASS_PLAYER,
@@ -61,7 +61,7 @@ array<uint8> I_PLAYER_TEAMS =
 
 HUDTextParams txtWinner, txtLoser, txtStats;
 
-int8 iTotalTeams = I_PLAYER_TEAMS.length();
+int8 iTotalTeams = PLAYER_TEAMS.length();
 const int iForceRespawnDefault = int( g_EngineFuncs.CVarGetFloat( "mp_forcerespawn" ) );
 
 CCVar
@@ -73,8 +73,8 @@ CScheduledFunction@ fnThink, fnInit = g_Scheduler.SetTimeout( "Initialise", 0.1f
 
 void Initialise()
 {
-    if( I_PLAYER_TEAMS.length() < uint( g_Engine.maxClients + 1 ) )
-        I_PLAYER_TEAMS.resize( g_Engine.maxClients + 1 );
+    if( PLAYER_TEAMS.length() < uint( g_Engine.maxClients + 1 ) )
+        PLAYER_TEAMS.resize( g_Engine.maxClients + 1 );
 
     if( iForceRespawnDefault < 1 )
         g_EngineFuncs.CVarSetFloat( "mp_forcerespawn", 1 );
@@ -123,12 +123,12 @@ int AssignTeam(EHandle hPlayer, const bool blSetTeam)
 
     if( blSetTeam && BL_PLAYER_SLOT.find( false ) >= 0 )
     {
-        pPlayer.SetClassification( I_PLAYER_TEAMS[BL_PLAYER_SLOT.find( false )] );
-        BL_PLAYER_SLOT[I_PLAYER_TEAMS.find( pPlayer.m_iClassSelection )] = true;
+        pPlayer.SetClassification( PLAYER_TEAMS[BL_PLAYER_SLOT.find( false )] );
+        BL_PLAYER_SLOT[PLAYER_TEAMS.find( CLASS( pPlayer.m_iClassSelection ) )] = true;
     }
     else if( !blSetTeam ) // For when we want to remove classification from player
     {
-        BL_PLAYER_SLOT[I_PLAYER_TEAMS.find( pPlayer.m_iClassSelection )] = false;
+        BL_PLAYER_SLOT[PLAYER_TEAMS.find( CLASS( pPlayer.m_iClassSelection ) )] = false;
         pPlayer.SetClassification( CLASS_FORCE_NONE );
     }
 
@@ -167,8 +167,6 @@ void SpawnProtection(EHandle hPlayer, const int iTakeDamageIn)
 
             break;
         }
-
-        default: break;
     }
 }
 

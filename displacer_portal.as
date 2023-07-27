@@ -82,7 +82,9 @@ const array<string> STR_NPC_BLACKLIST =
     "monster_apache",
     "monster_osprey",
     "monster_blkop_apache",
-    "monster_blkop_osprey"
+    "monster_blkop_osprey",
+    "monstermaker",
+    "squadmaker"
 };
 
 const bool blWeaponTertiaryAttack = g_Hooks.RegisterHook( Hooks::Weapon::WeaponTertiaryAttack, DisplacerTertiaryAttack );
@@ -129,7 +131,8 @@ void DryShoot(EHandle hPlayer, EHandle hDisplacer)
     CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
     CBasePlayerWeapon@ pWeapon = cast<CBasePlayerWeapon@>( hDisplacer.GetEntity() );
 
-    g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_WEAPON, "buttons/button11.wav", Math.RandomFloat( 0.8f, 0.9f ), ATTN_NORM );
+    //g_SoundSystem.EmitSound( pPlayer.edict(), CHAN_WEAPON, "buttons/button11.wav", Math.RandomFloat( 0.8f, 0.9f ), ATTN_NORM );
+    pWeapon.PlayEmptySound();
     FCantFire( pWeapon, 1 );
     SetNextShoot( pWeapon, 0.5f );
 }
@@ -161,7 +164,10 @@ void ShootPortal(EHandle hPlayer, EHandle hDisplacer)
     if( pPlayer is null || pWeapon is null )
         return;
     
-    Vector vecStart = pPlayer.GetGunPosition(), vecAim = pPlayer.GetAutoaimVector( AUTOAIM_10DEGREES );
+    Vector
+        vecStart = pPlayer.GetGunPosition(),
+        vecAim = pPlayer.GetAutoaimVector( AUTOAIM_10DEGREES );
+
     CBaseEntity@ pPortal = g_EntityFuncs.CreateDisplacerPortal( vecStart, vecAim * 500, pPlayer.edict(), 0.0f, 0.0f );
     pPortal.pev.netname = "" + pPortal.GetClassname() + "_" + pWeapon.entindex();
 
@@ -186,8 +192,9 @@ bool PortalExit(EHandle hTarget)
     if( !hTarget )
         return false;
 
-    CBaseEntity@ pPortalExit = g_EntityFuncs.RandomTargetname( strDisplacerPortalDestName != "" ? strDisplacerPortalDestName : "displacer_global_target" ), 
-                pTarget = hTarget.GetEntity();
+    CBaseEntity@
+        pPortalExit = g_EntityFuncs.RandomTargetname( strDisplacerPortalDestName != "" ? strDisplacerPortalDestName : "displacer_global_target" ), 
+        pTarget = hTarget.GetEntity();
 
     if( pPortalExit is null || pTarget is null )
         return false;
