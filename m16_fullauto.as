@@ -203,7 +203,7 @@ void Shoot(EHandle hM16)
         vecDir, vecEnd;
     // !-BUG-!: "BULLET_PLAYER_SAW", which stock M16 fire uses, causes gibbing,
     // - FireBullets method does not obey npc damage modifiers
-    pM16.FireBullets( 1, vecSrc, vecAiming, vecAccuracy, 8192, BULLET_PLAYER_CUSTOMDAMAGE, 2, iDmgCustom > 0 ? iDmgCustom : iDmgDefault );
+    pPlayer.FireBullets( 1, vecSrc, vecAiming, vecAccuracy, 8192, BULLET_PLAYER_CUSTOMDAMAGE, 2, iDmgCustom > 0 ? iDmgCustom : iDmgDefault );
     g_SoundSystem.EmitSoundDyn( pPlayer.edict(), CHAN_WEAPON, "weapons/m16_3single.wav", 0.75f, ATTN_NORM, 0, PITCH_HIGH + 20 );
     MuzzleFlash( pM16.m_hPlayer );
     EjectCasing( hM16 );
