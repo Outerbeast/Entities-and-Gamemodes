@@ -18,6 +18,8 @@ Installation:-
 */
 CTempFX g_TempEffectFuncs;
 
+bool blFXEntitiesRegistered = RegisterFXEntities();
+
 enum ShockWaveTypes
 {
     WV_CYLINDER = 0,
@@ -68,6 +70,22 @@ enum SpriteFieldFlags
 RGBA VectorToRGBA(const Vector vecColor, const float flAlpha = 255.0f)
 {
     return RGBA( uint8( vecColor.x ), uint8( vecColor.y ), uint8( vecColor.z ), uint8( flAlpha ) );
+}
+
+bool RegisterFXEntities()
+{
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_dlight" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_elight" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvQuakeFx", "env_quakefx" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvShockwave", "env_shockwave" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvTrail", "env_trail" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvTrail", "env_beamtrail" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSprayer", "env_sprayer" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSpriteField", "env_spritefield" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSmoke", "env_smoke" );
+    g_CustomEntityFuncs.RegisterCustomEntity( "CEnvPlayerSprite", "env_playersprite" );
+
+    return true;
 }
 
 mixin class TempFx
@@ -476,22 +494,7 @@ mixin class TempFx
     }
 };
 
-final class CTempFX : TempFx
-{
-    void RegisterFXEntities()
-    {
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_dlight" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvLight", "env_elight" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvQuakeFx", "env_quakefx" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvShockwave", "env_shockwave" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvTrail", "env_trail" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvTrail", "env_beamtrail" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSprayer", "env_sprayer" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSpriteField", "env_spritefield" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvSmoke", "env_smoke" );
-        g_CustomEntityFuncs.RegisterCustomEntity( "CEnvPlayerSprite", "env_playersprite" );
-    }
-};
+final class CTempFX : TempFx { };
 
 final class CEnvLight : ScriptBaseEntity, TempFx
 {

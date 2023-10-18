@@ -364,7 +364,7 @@ HookReturnCode PlayerUseM16(CBasePlayer@ pPlayer, uint& out uiFlags)
 
 HookReturnCode M16SecondaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pM16)
 {
-    if( pPlayer is null || pM16 is null || pM16.GetClassname() != "weapon_m16" )
+    if( pPlayer is null || pM16 is null || pM16.m_iID != WEAPON_M16 )
         return HOOK_CONTINUE;
 
     if( FM_PLAYER[pPlayer.entindex()] <= MODE_SELECT_FIRE_BURST || FCantFire( pM16 ) )
@@ -378,7 +378,7 @@ HookReturnCode M16SecondaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pM16)
 
 HookReturnCode M16TertiaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pM16)
 {
-    if( pPlayer is null || pM16 is null || pM16.GetClassname() != "weapon_m16" )
+    if( pPlayer is null || pM16 is null || pM16.m_iID != WEAPON_M16 )
         return HOOK_CONTINUE;
 
     if( iDefaultFireMode >= MODE_SELECT_FIRE_BURST )

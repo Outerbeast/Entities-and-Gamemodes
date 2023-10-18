@@ -28,12 +28,14 @@
 	1: "Start On" - the entity will be active when the level starts. This is automatically the case if the entity has no targetname
 	2: "Invisible" - while the players are frozen, they will also be invisible.
 	4: "Invert target" - instead of freezing the target, everyone else but the target will be frozen.
+	8: "Freeze in place" - players will be frozen in place and cannot be moved through other means, such as being pushed by entities or falling
 */
 enum freezespawnflags
 {
 	SF_STARTON			= 1 << 0,
 	SF_RENDERINVIS		= 1 << 1,
-	SF_INVERT_TARGET	= 1 << 2
+	SF_INVERT_TARGET	= 1 << 2,
+	SF_FREEZE_IN_PLACE	= 1 << 3
 };
 
 bool blTriggerPlayerFreezeRegistered = RegisterTriggerPlayerFreezeEntity();
@@ -41,6 +43,8 @@ bool blTriggerPlayerFreezeRegistered = RegisterTriggerPlayerFreezeEntity();
 bool RegisterTriggerPlayerFreezeEntity()
 {
 	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_playerfreeze", "trigger_playerfreeze" );
+	g_CustomEntityFuncs.RegisterCustomEntity( "trigger_playerfreeze", "player_freeze" ); // alias for SoHL
+
 	return g_CustomEntityFuncs.IsCustomEntity( "trigger_playerfreeze" );
 }
 
@@ -72,11 +76,8 @@ final class trigger_playerfreeze : ScriptBaseEntity
 
 		if( self.pev.SpawnFlagBitSet( SF_STARTON ) || self.GetTargetname() == "" )
 			self.Use( self, self, USE_ON, 0.0f );
-	}
 
-	void ToggleEntity()
-	{
-  		self.Use( self, self, USE_TOGGLE, 0.0f );
+		BaseClass.Spawn();
 	}
 
 	bool FCanFreezeTarget(EHandle hFreezeTarget)
@@ -97,6 +98,11 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		return( self.pev.SpawnFlagBitSet( SF_INVERT_TARGET ) ? 
 				self.pev.target != hFreezeTarget.GetEntity().GetTargetname() : 
 				self.pev.target == hFreezeTarget.GetEntity().GetTargetname() );
+	}
+
+	void TurnOff()
+	{
+  		self.Use( self, self, USE_OFF, 0.0f );
 	}
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
@@ -130,18 +136,24 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		}
 
 		if( flWaitTime > 0 && blShouldFreeze ) 
-			@fnWaitToggle = g_Scheduler.SetTimeout( @self, "Use", flWaitTime, cast<CBaseEntity@>( null ), cast<CBaseEntity@>( null ), USE_TYPE( USE_TOGGLE ), 0.0f );
+			@fnWaitToggle = g_Scheduler.SetTimeout( this, "TurnOff", flWaitTime );
 
 		if( self.pev.message != "" && self.pev.message != self.GetTargetname() && blShouldFreeze )
 			g_EntityFuncs.FireTargets( self.pev.message, hActivator.GetEntity(), self, USE_TOGGLE );
 	}
 
-	private HookReturnCode Freezer(CBasePlayer@ pPlayer)
+	HookReturnCode Freezer(CBasePlayer@ pPlayer)
 	{
 		if( pPlayer is null || !pPlayer.IsConnected() || !blShouldFreeze || !FCanFreezeTarget( pPlayer ) )
 			return HOOK_CONTINUE;
 
-		pPlayer.EnableControl( false );
+		if( self.pev.SpawnFlagBitSet( SF_FREEZE_IN_PLACE ) )
+			pPlayer.EnableControl( false );
+		else
+		{
+			pPlayer.SetMaxSpeedOverride( 0 );
+			pPlayer.pev.fuser4 = 1.0f;
+		}
 
 		if( self.pev.SpawnFlagBitSet( SF_RENDERINVIS ) && pPlayer.pev.effects & EF_NODRAW == 0 )
 			pPlayer.pev.effects |= EF_NODRAW;
@@ -149,12 +161,21 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		return HOOK_CONTINUE;
 	}
 
-	private HookReturnCode Defroster(CBasePlayer@ pPlayer)
+	HookReturnCode Defroster(CBasePlayer@ pPlayer)
 	{
-		if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.pev.FlagBitSet( FL_FROZEN ) || blShouldFreeze )
+		if( pPlayer is null || !pPlayer.IsConnected() || blShouldFreeze )
 			return HOOK_CONTINUE;
 
-		pPlayer.EnableControl( true );
+		if( pPlayer.pev.fuser4 <= 0.0f || pPlayer.pev.SpawnFlagBitSet( FL_FROZEN ) )
+			return HOOK_CONTINUE;
+			
+		if( self.pev.SpawnFlagBitSet( SF_FREEZE_IN_PLACE ) )
+			pPlayer.EnableControl( true );
+		else
+		{
+			pPlayer.SetMaxSpeedOverride( -1 );
+			pPlayer.pev.fuser4 = 0.0f;
+		}
 
 		if( self.pev.SpawnFlagBitSet( SF_RENDERINVIS ) && pPlayer.pev.effects & EF_NODRAW != 0 )
 			pPlayer.pev.effects &= ~EF_NODRAW;
@@ -169,7 +190,7 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Freezer ) );
 		g_Hooks.RemoveHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.Freezer ) );
 
-		for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+		for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
 			Defroster( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) );
 
 		g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.Defroster ) );

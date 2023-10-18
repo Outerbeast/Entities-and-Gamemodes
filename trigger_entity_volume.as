@@ -200,4 +200,4 @@ final class trigger_entity_volume : ScriptBaseEntity
 
 		return( ( vecOrigin - hEntity.GetEntity().pev.origin ).Length() <= flRadius );
 	}
-}
+};

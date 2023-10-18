@@ -1,4 +1,4 @@
-/* checkpoint_spawner- Custom entity for spawning a new point_checkpoint with spawn fx
+/*checkpoint_spawner- Custom entity for spawning a new point_checkpoint with spawn fx
 	This entity only triggers when survival mode is active.
 	Entity supports all the keyvalues that point_checkpoint does
 

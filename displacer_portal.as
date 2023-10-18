@@ -286,7 +286,7 @@ void Think(CBaseEntity@ pTriggerScript)
 
 HookReturnCode DisplacerTertiaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pWeapon)
 {
-    if( pWeapon is null || pPlayer is null || pWeapon.GetClassname() != "weapon_displacer" )
+    if( pWeapon is null || pPlayer is null || pWeapon.m_iID != WEAPON_DISPLACER )
         return HOOK_CONTINUE;
 
     if( !pWeapon.GetUserData().exists( "cant_fire" ) )

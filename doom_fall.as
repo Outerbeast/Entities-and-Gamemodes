@@ -47,8 +47,8 @@ void FallZone(CBaseEntity@ pTriggerScript)
     Vector vecAbsMin = Vector( -WORLD_BOUNDARY, -WORLD_BOUNDARY, -WORLD_BOUNDARY ), vecAbsMax = Vector( WORLD_BOUNDARY, WORLD_BOUNDARY, WORLD_BOUNDARY );
     bool blBoundsSet = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
 
-    pTriggerScript.pev.mins = vecAbsMin - pTriggerScript.GetOrigin();
-    pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.GetOrigin();
+    pTriggerScript.pev.mins = vecAbsMin - pTriggerScript.pev.origin;
+    pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.pev.origin;
     g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
 
     for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )

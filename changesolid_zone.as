@@ -1,21 +1,21 @@
 /* trigger_script for changing player solidity inside a custom zone
-Players leaving the zone will have their solidity reset back to default (SOLID_SLIDEBOX)
-Players can still trigger brush entities that are touched ( trigger_once, trigger_multiple, etc. )
--Outerbeast
+    Players leaving the zone will have their solidity reset back to default (SOLID_SLIDEBOX)
+    Players can still trigger brush entities that are touched ( trigger_once, trigger_multiple, etc. )
+    -Outerbeast
 
-Template entity:-
-"classname" "trigger_script"
-"m_iszScriptFile" "changesolid_zone"
-"m_iszScriptFunctionName" "changesolid_zone::ChangeSolid"
-"m_iMode" "2"
-// Don't change any of the above! //
-"$s_brush" "*m" - use a brush model for bounds
-"$f_radius" "r" - set radius for zone
-"$v_mins" "x1 y1 z1" - absmin bound coord
-"$v_maxs" "x2 y2 z2" - absmax bound coord
-"solid" "0" - New solid value- this is 0 by default if not set
-"netname" "player_targetname" - Filter for targetname: players with the same targetname as this netname only are effected (cant be inverted using flag 4)
-"spawnflags" "f" - See "changsolidzone_flags" for options below
+    Template entity:-
+    "classname" "trigger_script"
+    "m_iszScriptFile" "changesolid_zone"
+    "m_iszScriptFunctionName" "changesolid_zone::ChangeSolid"
+    "m_iMode" "2"
+    // Don't change any of the above! //
+    "$s_brush" "*m" - use a brush model for bounds
+    "$f_radius" "r" - set radius for zone
+    "$v_mins" "x1 y1 z1" - absmin bound coord
+    "$v_maxs" "x2 y2 z2" - absmax bound coord
+    "solid" "0" - New solid value- this is 0 by default if not set
+    "netname" "player_targetname" - Filter for targetname: players with the same targetname as this netname only are effected (cant be inverted using flag 4)
+    "spawnflags" "f" - See "changsolidzone_flags" for options below
 */
 namespace CHANGESOLID_ZONE
 {
@@ -56,7 +56,7 @@ void ChangeSolid(CBaseEntity@ pTriggerScript)
         g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
     }
 
-    for( int iPlayer = 1; iPlayer <= g_PlayerFuncs.GetNumPlayers(); iPlayer++ )
+    for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
         CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
 

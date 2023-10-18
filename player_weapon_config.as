@@ -153,7 +153,11 @@ final class player_weapon_config : ScriptBaseEntity
             return;
 
         @pPreConfigWeapon = cast<CBasePlayerWeapon@>( g_EntityFuncs.CreateEntity( strWeaponType, dictWeaponKeys, false ) );
-        pPreConfigWeapon.pev.spawnflags |= 384;
+        //pPreConfigWeapon.pev.spawnflags |= 384;
+        g_EntityFuncs.DispatchKeyValue( pPreConfigWeapon.edict(), "m_flCustomRespawnTime", "0" );
+        pPreConfigWeapon.pev.origin = self.pev.origin;
+        @pPreConfigWeapon.pev.euser1 = self.edict();
+        g_EntityFuncs.SetOrigin( pPreConfigWeapon, self.pev.origin );
         ConfigWeapon( pPreConfigWeapon );
 
         if( self.pev.SpawnFlagBitSet( SF_CONFIG_WORLD_WEAPONS ) )
@@ -209,8 +213,19 @@ final class player_weapon_config : ScriptBaseEntity
 
     void EquipCustomisedWeapon(EHandle hPlayer)
     {
-        if( hPlayer )
-            pPreConfigWeapon.Use( hPlayer.GetEntity(), hPlayer.GetEntity(), USE_TOGGLE, 0.0f );
+        if( !hPlayer )
+            return;
+
+        pPreConfigWeapon.Use( hPlayer.GetEntity(), hPlayer.GetEntity(), USE_TOGGLE, 0.0f );
+        hPlayer.GetEntity().GetUserData()["b_had_weapon"] = true;
+    }
+
+    bool PlayerHadWeapon(EHandle hPlayer)
+    {
+        if( !hPlayer )
+            return false;
+
+        return bool( hPlayer.GetEntity().GetUserData( "b_had_weapon" ) );
     }
 
     void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -252,10 +267,15 @@ final class player_weapon_config : ScriptBaseEntity
         if( pPlayer is null || pPreConfigWeapon is null || strWeaponType == "" )
             return HOOK_CONTINUE;
 
-        if( pPlayer.HasNamedPlayerItem( strWeaponType ) !is null )
+        CBasePlayerWeapon@ pCurrentWeapon = cast<CBasePlayerWeapon@>( pPlayer.HasNamedPlayerItem( strWeaponType ) );
+
+        if( pCurrentWeapon !is null )
         {
-            if( pPlayer.RemovePlayerItem( pPlayer.HasNamedPlayerItem( strWeaponType ) ) )
-                g_Scheduler.SetTimeout( this, "EquipCustomisedWeapon", 0.01f, EHandle( pPlayer ) );
+            if( pCurrentWeapon.pev.euser1 !is self.edict() )
+            {
+                if( pPlayer.RemovePlayerItem( pPlayer.HasNamedPlayerItem( strWeaponType ) ) )
+                    g_Scheduler.SetTimeout( this, "EquipCustomisedWeapon", 0.01f, EHandle( pPlayer ) );
+            }
         }
 
         return HOOK_CONTINUE;

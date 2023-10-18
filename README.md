@@ -7,10 +7,11 @@ A bunch of trigger_scripts and custom entities for maps that may be useful for m
 
 ### trigger_scripts
 Follow the included instructions in the top of the script.
-For more information on how to use trigger_scripts in your maps, visit https://sites.google.com/site/svenmanor/entguide/trigger_script
+For more information on how to use trigger_scripts in your maps, visit https://wiki.svencoop.com/Trigger_script
 
 ### Custom Entities
-- Put the script in `scripts/maps`. If you wish to use subfolders, you can but take note of the path
+- Put the script in `scripts/maps`. If you wish to use subfolders, you can, but take note of the path
+If the entity requires manual registration (please read the instruction inlucded with the script file), you need to to the following
 - Create a main script for your map and in your map cfg, add `map_script` followed by the name of the script
 - Edit your main script then add this to the top of your main script
 ```#include "<yourmainscriptname>"```
