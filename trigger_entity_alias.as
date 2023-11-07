@@ -38,11 +38,7 @@ bool RegisterEntityAlias()
 
 final class trigger_entity_alias : ScriptBaseEntity
 {
-    private string 
-        strAlias,
-        strNameFilter,
-        strClassnameFilter;
-
+    private string strAlias, strNameFilter, strClassnameFilter;
     private USE_TYPE utTriggerState = USE_TOGGLE;
 
     bool KeyValue(const string& in szKey, const string& in szValue)
@@ -62,15 +58,15 @@ final class trigger_entity_alias : ScriptBaseEntity
     }
 
     void Spawn()
-	{
-		self.pev.movetype 	= MOVETYPE_NONE;
-		self.pev.solid 		= SOLID_NOT;
-		self.pev.effects	|= EF_NODRAW;
-		
-		g_EntityFuncs.SetOrigin( self, self.pev.origin );
+    {
+        self.pev.movetype   = MOVETYPE_NONE;
+        self.pev.solid 	    = SOLID_NOT;
+        self.pev.effects    |= EF_NODRAW;
 
-		BaseClass.Spawn();
-	}
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
+
+        BaseClass.Spawn();
+    }
 
     bool FMatchAlias(EHandle hEntity)
     {

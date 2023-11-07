@@ -28,7 +28,7 @@
 	1: "Start On" - the entity will be active when the level starts. This is automatically the case if the entity has no targetname
 	2: "Invisible" - while the players are frozen, they will also be invisible.
 	4: "Invert target" - instead of freezing the target, everyone else but the target will be frozen.
-	8: "Freeze in place" - players will be frozen in place and cannot be moved through other means, such as being pushed by entities or falling
+	8: "Freeze in place" - players will be frozen in place and cannot be moved through other means, such as being pushed by entities or falling. Players cannot use weapons
 */
 enum freezespawnflags
 {

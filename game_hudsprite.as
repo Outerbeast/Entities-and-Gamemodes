@@ -19,6 +19,8 @@
 	Usage:-
 	Follow the guide for game_text to check for positioning, colouration and timing, since this entity uses the same values: https://wiki.svencoop.com/Game_text
 	"spritename" key is used for the path and filename of the sprite to display, the path already begins in svencoop/sprites, so your value can be "mysubfolder/mysprite.spr"
+	"target" key allows the hud sprite draw on specific players whose targetname matches. "!activator" and "!caller" are supported. If not set, the sprite will display for all players.
+	Killtargeting this entity will remove all currently displayed hud sprites
 
 	See below for "fx" and "spawnflags" settings
 	"fx" "e":-
@@ -47,9 +49,9 @@
 	HUD_SPR_PLAY_ONCE 			262144 	Play the animation only once.
 	HUD_SPR_HIDE_WHEN_STOPPED 	524288 	Hide the sprite when the animation stops.
 */
-bool blGameHudSpriteRegistered = RegisterGameHudSpriteEntity();
+bool blGamehudSpriteRegistered = RegisterGamehudSpriteEntity();
 
-bool RegisterGameHudSpriteEntity()
+bool RegisterGamehudSpriteEntity()
 {
 	g_CustomEntityFuncs.RegisterCustomEntity( "game_hudsprite", "game_hudsprite" );
 	return g_CustomEntityFuncs.IsCustomEntity( "game_hudsprite" );
@@ -57,65 +59,52 @@ bool RegisterGameHudSpriteEntity()
 
 final class game_hudsprite : ScriptBaseEntity
 {
-	private HUDSpriteParams hudspr;
+	private HUDSpriteParams hudSpr, hudNull;
+	private bool blToggled;
+	private CScheduledFunction@ fnResetToggle;
 
 	game_hudsprite()
 	{
-		hudspr.spritename;
-		hudspr.x;
-		hudspr.y;
-		hudspr.left;
-		hudspr.top;
-		hudspr.width;
-		hudspr.height;
-		hudspr.effect = HUD_EFFECT_NONE;
-		hudspr.frame;
-		hudspr.numframes;
-		hudspr.framerate;
-		hudspr.fadeinTime;
-		hudspr.fadeoutTime;
-		hudspr.holdTime;
-		hudspr.fxTime;
-		hudspr.color1 = RGBA( 255, 255, 255, 255 );
-		hudspr.color2 = RGBA( 255, 255, 255, 255 );
-		hudspr.channel;
-		hudspr.flags = HUD_ELEM_SCR_CENTER_X;
+		hudSpr.effect = HUD_EFFECT_NONE;
+		hudSpr.color1 = RGBA( 255, 255, 255, 255 );
+		hudSpr.color2 = RGBA( 255, 255, 255, 255 );
+		hudSpr.flags = HUD_ELEM_SCR_CENTER_X | HUD_ELEM_SCR_CENTER_Y;
 	}
 
-  	bool KeyValue( const string& in szKey, const string& in szValue )
+  	bool KeyValue(const string& in szKey, const string& in szValue)
 	{
 		if( szKey == "spritename" ) 
-			hudspr.spritename = szValue;
+			hudSpr.spritename = szValue;
 		else if( szKey == "x" ) 
-			hudspr.x = atof( szValue );
+			hudSpr.x = atof( szValue );
 		else if( szKey == "y" ) 
-			hudspr.y = atof( szValue );
+			hudSpr.y = atof( szValue );
 		else if( szKey == "left" ) 
-			hudspr.left = int8(Math.clamp( 0, 255, atoi( szValue ) ) );
+			hudSpr.left = int8( Math.clamp( 0, 255, atoi( szValue ) ) );
 		else if( szKey == "top" ) 
-			hudspr.top = int8(Math.clamp( 0, 255, atoi( szValue ) ) );
+			hudSpr.top = int8( Math.clamp( 0, 255, atoi( szValue ) ) );
 		else if( szKey == "width" ) 
-			hudspr.width = int16(Math.clamp( 0, 512, atoi( szValue ) ) );
+			hudSpr.width = int16( Math.clamp( 0, 512, atoi( szValue ) ) );
 		else if( szKey == "height" ) 
-			hudspr.height = int16(Math.clamp( 0, 512, atoi( szValue ) ) );
+			hudSpr.height = int16( Math.clamp( 0, 512, atoi( szValue ) ) );
 		else if( szKey == "numframes" ) 
-			hudspr.numframes = int8(Math.clamp( 0, 255, atoi( szValue ) ) );
+			hudSpr.numframes = int8( Math.clamp( 0, 255, atoi( szValue ) ) );
 		else if( szKey == "channel" ) 
-			hudspr.channel = Math.clamp( 0, 15, atoi( szValue ) );
+			hudSpr.channel = hudNull.channel = Math.clamp( 0, 15, atoi( szValue ) );
 		else if( szKey == "fadein" ) 
-			hudspr.fadeinTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
+			hudSpr.fadeinTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
 		else if( szKey == "fadeout" ) 
-			hudspr.fadeoutTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
+			hudSpr.fadeoutTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
 		else if( szKey == "holdtime" ) 
-			hudspr.holdTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
+			hudSpr.holdTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
 		else if( szKey == "fx" ) 
-			hudspr.effect = int8(Math.clamp( 0, 8, atoi( szValue ) ) );
+			hudSpr.effect = int8( Math.clamp( 0, 8, atoi( szValue ) ) );
 		else if( szKey == "fxtime" ) 
-			hudspr.fxTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
+			hudSpr.fxTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
 		else if( szKey == "color1" ) 
-			hudspr.color1 = StringToRGBA( szValue );
+			hudSpr.color1 = StringToRGBA( szValue );
 		else if( szKey == "color2" ) 
-			hudspr.color2 = StringToRGBA( szValue );
+			hudSpr.color2 = StringToRGBA( szValue );
 		else
 			return BaseClass.KeyValue( szKey, szValue );
 
@@ -124,7 +113,7 @@ final class game_hudsprite : ScriptBaseEntity
 
 	void Precache()
 	{
-		g_Game.PrecacheGeneric( "sprites/" + hudspr.spritename );
+		g_Game.PrecacheGeneric( "sprites/" + hudSpr.spritename );
 		BaseClass.Precache();
 	}
 
@@ -135,9 +124,9 @@ final class game_hudsprite : ScriptBaseEntity
 		self.pev.solid     = SOLID_NOT;
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
-		hudspr.frame = int8( Math.clamp( 0, 255, atoi( self.pev.frame ) ) );
-		hudspr.framerate = Math.clamp( 0.0f, 360.0f, atof( self.pev.framerate ) );
-		hudspr.flags = self.pev.spawnflags;
+		hudSpr.frame = int8( Math.clamp( 0, 255, atoi( self.pev.frame ) ) );
+		hudSpr.framerate = Math.clamp( 0.0f, 360.0f, atof( self.pev.framerate ) );
+		hudSpr.flags = self.pev.spawnflags;
 
 		BaseClass.Spawn();
   	}
@@ -145,19 +134,77 @@ final class game_hudsprite : ScriptBaseEntity
 	RGBA StringToRGBA(string& in szColor)
 	{
 		array<string> arrValues = ( szColor + " 0 0 0 0" ).Split( " " );
-		return RGBA( atoi( arrValues[0] ), atoi( arrValues[1] ), atoi( arrValues[2] ), atoi( arrValues[3] ) );
+		return RGBA( atoui( arrValues[0] ), atoui( arrValues[1] ), atoui( arrValues[2] ), atoui( arrValues[3] ) );
+	}
+
+	bool ShouldTurnOff(USE_TYPE utTriggerstate)
+	{
+		switch( utTriggerstate )
+		{
+			case USE_TOGGLE: return blToggled;
+
+			case USE_OFF:
+			case USE_KILL: 
+				return true;
+
+			default: return false;
+		}
+
+		return false;
 	}
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 	{
-		if( self.pev.target == "!activator" && pActivator !is null )
-			g_PlayerFuncs.HudCustomSprite( cast<CBasePlayer@>( pActivator ), hudspr );
-		else if( self.pev.target == "!caller" && pCaller !is null )
-			g_PlayerFuncs.HudCustomSprite( cast<CBasePlayer@>( pCaller ), hudspr );
+		if( self.pev.target != "" && self.pev.target != self.GetTargetname() )
+		{
+			CBasePlayer@ pTargetPlayer;
+
+			if( self.pev.target == "!activator" && pActivator !is null && pActivator.IsPlayer() )
+				@pTargetPlayer = cast<CBasePlayer@>( pActivator );
+			else if( self.pev.target == "!caller" && pCaller !is null && pCaller.IsPlayer() )
+				@pTargetPlayer = cast<CBasePlayer@>( pCaller );
+			else
+			{
+				for( int iPlayer = 1; iPlayer <= g_Engine.maxClients + 1; iPlayer++ )
+				{
+					if( iPlayer > g_Engine.maxClients )
+					{
+						@pTargetPlayer = null;
+						break;
+					}
+
+					@pTargetPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
+
+					if( pTargetPlayer is null || !pTargetPlayer.IsConnected() || pTargetPlayer.GetTargetname() != self.pev.target )
+						continue;
+
+					g_PlayerFuncs.HudCustomSprite( pTargetPlayer, ShouldTurnOff( useType ) ? hudNull : hudSpr );
+				}
+			}
+
+			if( pTargetPlayer !is null )
+				g_PlayerFuncs.HudCustomSprite( pTargetPlayer, ShouldTurnOff( useType ) ? hudNull : hudSpr );
+		}
 		else
-			g_PlayerFuncs.HudCustomSprite( null, hudspr );
+			g_PlayerFuncs.HudCustomSprite( null, ShouldTurnOff( useType ) ? hudNull : hudSpr );
+
+		if( useType == USE_TOGGLE )
+			blToggled = !blToggled;
+		
+		@fnResetToggle = g_Scheduler.SetTimeout( this, "ResetToggle", hudSpr.holdTime );	
 	}
-}
+
+	void ResetToggle()
+	{
+		blToggled = false;
+	}
+
+	void UpdateOnRemove()
+	{
+		g_Scheduler.RemoveTimer( fnResetTimer );
+		g_PlayerFuncs.HudCustomSprite( null, hudNull );
+	}
+};
 /* My humble thanks to the folks in the Sven Co-op discord for helping create this script:
 - H2
 - Kerncore
