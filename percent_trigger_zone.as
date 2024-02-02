@@ -32,8 +32,10 @@ void TriggerThink(CBaseEntity@ pTriggerScript)
     CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
 
     Vector vecAbsMin, vecAbsMax;
-    const float flZoneRadius = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat()  : 512.0f;
-    const float flWait       = kvTriggerScript.HasKeyvalue( "$f_wait" )   ? kvTriggerScript.GetKeyvalue( "$f_wait" ).GetFloat()    : -1.0f;
+    const float 
+        flZoneRadius = kvTriggerScript.HasKeyvalue( "$f_radius" ) ? kvTriggerScript.GetKeyvalue( "$f_radius" ).GetFloat()  : 512.0f,
+        flWait       = kvTriggerScript.HasKeyvalue( "$f_wait" )   ? kvTriggerScript.GetKeyvalue( "$f_wait" ).GetFloat()    : -1.0f;
+        
     const string strMaster   = kvTriggerScript.HasKeyvalue( "$s_master" ) ? kvTriggerScript.GetKeyvalue( "$s_master" ).GetString() : "";
     
     float flPercentage = kvTriggerScript.HasKeyvalue( "$f_percentage" ) ? kvTriggerScript.GetKeyvalue( "$f_percentage" ).GetFloat() : 
@@ -43,6 +45,7 @@ void TriggerThink(CBaseEntity@ pTriggerScript)
         return;
 
     bool blBoundsSet = SetBounds( pTriggerScript, vecAbsMin, vecAbsMax ) && vecAbsMin != vecAbsMax;
+
 
     if( blBoundsSet )
     {
@@ -124,21 +127,7 @@ bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)
 
     CustomKeyvalues@ kvTriggerScript = hTriggerScript.GetEntity().GetCustomKeyvalues();
 
-    if( kvTriggerScript.HasKeyvalue( "$s_brush" ) )
-    {
-        CBaseEntity@ pBBox = g_EntityFuncs.FindEntityByString( pBBox, "model", "" + kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() );
-
-        if( pBBox !is null && pBBox.IsBSPModel() )
-        {
-            vecMin = pBBox.pev.absmin;
-            vecMax = pBBox.pev.absmax;
-
-            return true;
-        }
-        else
-            return false;
-    }
-    else if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
+    if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
     {
         if( kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector() != kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector() )
         {
@@ -152,6 +141,32 @@ bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)
     }
     else
         return false;
+}
+
+bool SetBrushModel(EHandle hTriggerScript, EHandle& out hBrushModel)
+{
+    if( !hTriggerScript )
+        return false;
+
+    CustomKeyvalues@ kvTriggerScript = hTriggerScript.GetEntity().GetCustomKeyvalues();
+
+    if( kvTriggerScript.HasKeyvalue( "$s_brush" ) )
+    {
+        CBaseEntity@ pBBox = 
+            kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString()[0] == "*" ?
+            g_EntityFuncs.FindEntityByString( pBBox, "model", kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() ) :
+            g_EntityFuncs.FindEntityByTargetname( pBBox, kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() );
+
+        if( pBBox !is null && pBBox.IsBSPModel() )
+        {
+            hBrushModel = pBBox;
+            return hBrushModel.IsValid();
+        }
+        else
+            return false;
+    }
+    else
+        return false; 
 }
 
 }

@@ -34,18 +34,18 @@ EHandle Enable(Vector vecAbsMinIn, Vector vecAbsMaxIn)
         { "$v_maxs", "" + vecAbsMaxIn.ToString() }
     };
 
-    return EHandle( g_EntityFuncs.CreateEntity( "trigger_script", blocker, true ) );
+    return g_EntityFuncs.CreateEntity( "trigger_script", blocker, true );
 }
 
 void PlayerBlocker(CBaseEntity@ pTriggerScript)
 {
     Vector vecAbsMin, vecAbsMax;
+    EHandle hBrushModel;
 
     CustomKeyvalues@ kvTriggerScript = pTriggerScript.GetCustomKeyvalues();
-    bool blBoundsSet = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
-
-    if( !blBoundsSet || vecAbsMin == vecAbsMax )
-        return;
+    bool 
+        blBoundsSet = SetBounds( pTriggerScript, vecAbsMin, vecAbsMax ),
+        blBrushSet = SetBrushModel( pTriggerScript, hBrushModel );
 
     if( blBoundsSet )
     {
@@ -53,6 +53,8 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
         pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.GetOrigin();
         g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
     }
+    else if( !blBrushSet )
+        return;
     
     for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
@@ -70,7 +72,9 @@ void PlayerBlocker(CBaseEntity@ pTriggerScript)
         if( pTriggerScript.pev.netname != "" && pPlayer.GetTargetname() == pTriggerScript.pev.netname )
             continue;
 
-        bool blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 1 << 1 ) ? !pPlayer.Intersects( pTriggerScript ) : pPlayer.Intersects( pTriggerScript );
+        const bool 
+            blInZone = hBrushModel ? g_Utility.IsPlayerInVolume( pPlayer, hBrushModel.GetEntity() ) : pPlayer.Intersects( pTriggerScript ),
+            blIsFree = pTriggerScript.pev.SpawnFlagBitSet( 1 << 1 ) ? !blInZone : blInZone;
 
         if( blIsFree )
             pTriggerScript.GetUserData( string( iPlayer ) ) = pPlayer.pev.origin;
@@ -90,34 +94,49 @@ bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)
 
     CustomKeyvalues@ kvTriggerScript = hTriggerScript.GetEntity().GetCustomKeyvalues();
 
-    if( kvTriggerScript.HasKeyvalue( "$s_brush" ) )
-    {
-        CBaseEntity@ pBBox = g_EntityFuncs.FindEntityByString( pBBox, "model", "" + kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() );
-
-        if( pBBox !is null && pBBox.IsBSPModel() )
-        {
-            vecMin = pBBox.pev.absmin;
-            vecMax = pBBox.pev.absmax;
-
-            return true;
-        }
-        else
-            return false;
-    }
-    else if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
+    if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
     {
         if( kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector() != kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector() )
         {
             vecMin = kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector();
             vecMax = kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector();
 
-            return true;
+            return vecMin != vecMax;
         }
         else
             return false;
     }
     else
         return false;
+}
+
+bool SetBrushModel(EHandle hTriggerScript, EHandle& out hBrushModel)
+{
+    if( !hTriggerScript )
+        return false;
+
+    CustomKeyvalues@ kvTriggerScript = hTriggerScript.GetEntity().GetCustomKeyvalues();
+
+    if( kvTriggerScript.HasKeyvalue( "$s_brush" ) )
+    {
+        if( kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() == "" )
+            return false;
+
+        CBaseEntity@ pBBox = 
+            kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString()[0] == "*" ?
+            g_EntityFuncs.FindEntityByString( pBBox, "model", kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() ) :
+            g_EntityFuncs.FindEntityByTargetname( pBBox, kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() );
+
+        if( pBBox !is null && pBBox.IsBSPModel() )
+        {
+            hBrushModel = pBBox;
+            return hBrushModel.IsValid();
+        }
+        else
+            return false;
+    }
+    else
+        return false; 
 }
 
 }

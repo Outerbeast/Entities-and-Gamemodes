@@ -179,7 +179,7 @@ void Shoot(EHandle hM16)
     CBasePlayerWeapon@ pM16 = cast<CBasePlayerWeapon@>( hM16.GetEntity() );
     CBasePlayer@ pPlayer = pM16 !is null ? cast<CBasePlayer@>( pM16.m_hPlayer.GetEntity() ) : null;
 
-    if( pM16 is null || pPlayer is null )
+    if( pM16 is null || pPlayer is null || pM16.m_fInReload )
         return;
 
     if( pPlayer.pev.waterlevel == WATERLEVEL_HEAD || pM16.m_iClip <= 0 )
@@ -302,10 +302,7 @@ bool AutoReload(EHandle hM16)
     pM16.DefaultReload( pM16.iMaxClip(), 6/* RELOAD*/, flDuration_Reload, 0 );
 
     if( pPlayer !is null )
-    {
         pPlayer.SetAnimation( PLAYER_RELOAD );
-        pPlayer.m_flNextAttack = flDuration_Reload;
-    }
 
     return pM16.m_iClip == pM16.iMaxClip();
 }
@@ -332,31 +329,19 @@ HookReturnCode PlayerUseM16(CBasePlayer@ pPlayer, uint& out uiFlags)
     CBasePlayerWeapon@ pM16 = GetM16( pPlayer );
     pM16.m_flNextPrimaryAttack = 2.0f;
 
-    if( FCantFire( pM16 ) )
+    if( FCantFire( pM16 ) || pM16.m_fInReload )
         return HOOK_CONTINUE;
-    // Player is reloading
-    if( pPlayer.pev.button & IN_RELOAD != 0 && pM16.m_iClip < pM16.iMaxClip() )
-    {
-        FCantFire( pM16, 1 );
-        SetNextShoot( pM16, flDuration_Reload );
-
-        return HOOK_CONTINUE;
-    }
 
     if( pPlayer.pev.button & IN_ATTACK != 0 )
     {
-        FCantFire( pM16, 1 );
-        // reloads immediately, not when the moment the fire button is released while held down
-        if( pM16.m_iClip <= 0 )
+        if( pM16.m_iClip > 0 )
         {
-            AutoReload( pM16 );
-            SetNextShoot( pM16, flDuration_Reload );
-        }
-        else
-        {
+            FCantFire( pM16, 1 );
             Shoot( pM16 );
             SetNextShoot( pM16, flShootDelay );
         }
+        else// reloads immediately, not when the moment the fire button is released while held down
+            AutoReload( pM16 );
     }
 
     return HOOK_CONTINUE;
@@ -364,7 +349,7 @@ HookReturnCode PlayerUseM16(CBasePlayer@ pPlayer, uint& out uiFlags)
 
 HookReturnCode M16SecondaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pM16)
 {
-    if( pPlayer is null || pM16 is null || pM16.m_iID != WEAPON_M16 )
+    if( pPlayer is null || pM16 is null || pM16.m_iId != WEAPON_M16 )
         return HOOK_CONTINUE;
 
     if( FM_PLAYER[pPlayer.entindex()] <= MODE_SELECT_FIRE_BURST || FCantFire( pM16 ) )
@@ -378,7 +363,7 @@ HookReturnCode M16SecondaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pM16)
 
 HookReturnCode M16TertiaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pM16)
 {
-    if( pPlayer is null || pM16 is null || pM16.m_iID != WEAPON_M16 )
+    if( pPlayer is null || pM16 is null || pM16.m_iId != WEAPON_M16 )
         return HOOK_CONTINUE;
 
     if( iDefaultFireMode >= MODE_SELECT_FIRE_BURST )

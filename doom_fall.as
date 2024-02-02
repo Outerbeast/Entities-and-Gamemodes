@@ -46,10 +46,14 @@ void FallZone(CBaseEntity@ pTriggerScript)
 {
     Vector vecAbsMin = Vector( -WORLD_BOUNDARY, -WORLD_BOUNDARY, -WORLD_BOUNDARY ), vecAbsMax = Vector( WORLD_BOUNDARY, WORLD_BOUNDARY, WORLD_BOUNDARY );
     bool blBoundsSet = SetBounds( EHandle( pTriggerScript ), vecAbsMin, vecAbsMax );
-
-    pTriggerScript.pev.mins = vecAbsMin - pTriggerScript.pev.origin;
-    pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.pev.origin;
-    g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
+    EHandle hBrushModel;
+    
+    if( !SetBrushModel( pTriggerScript, hBrushModel ) )
+    {
+        pTriggerScript.pev.mins = vecAbsMin - pTriggerScript.pev.origin;
+        pTriggerScript.pev.maxs = vecAbsMax - pTriggerScript.pev.origin;
+        g_EntityFuncs.SetSize( pTriggerScript.pev, pTriggerScript.pev.mins, pTriggerScript.pev.maxs );
+    }
 
     for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
@@ -61,7 +65,8 @@ void FallZone(CBaseEntity@ pTriggerScript)
             continue;
         }
 
-        VEC_PLAYER_FALL_DATA[iPlayer].z = pPlayer.Intersects( pTriggerScript ) ? pTriggerScript.entindex() : 0;
+        const bool blInZone = hBrushModel ? g_Utility.IsPlayerInVolume( pPlayer, hBrushModel.GetEntity() ) : pPlayer.Intersects( pTriggerScript );
+        VEC_PLAYER_FALL_DATA[iPlayer].z = blInZone ? pTriggerScript.entindex() : 0;
     }
 }
 
@@ -138,34 +143,49 @@ bool SetBounds(EHandle hTriggerScript, Vector& out vecMin, Vector& out vecMax)
 
     CustomKeyvalues@ kvTriggerScript = hTriggerScript.GetEntity().GetCustomKeyvalues();
 
-    if( kvTriggerScript.HasKeyvalue( "$s_brush" ) )
-    {
-        CBaseEntity@ pBBox = g_EntityFuncs.FindEntityByString( pBBox, "model", "" + kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() );
-
-        if( pBBox !is null && pBBox.IsBSPModel() )
-        {
-            vecMin = pBBox.pev.absmin;
-            vecMax = pBBox.pev.absmax;
-
-            return true;
-        }
-        else
-            return false;
-    }
-    else if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
+    if( kvTriggerScript.HasKeyvalue( "$v_mins" ) && kvTriggerScript.HasKeyvalue( "$v_maxs" ) )
     {
         if( kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector() != kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector() )
         {
             vecMin = kvTriggerScript.GetKeyvalue( "$v_mins" ).GetVector();
             vecMax = kvTriggerScript.GetKeyvalue( "$v_maxs" ).GetVector();
 
-            return true;
+            return vecMin != vecMax;
         }
         else
             return false;
     }
     else
         return false;
+}
+
+bool SetBrushModel(EHandle hTriggerScript, EHandle& out hBrushModel)
+{
+    if( !hTriggerScript )
+        return false;
+
+    CustomKeyvalues@ kvTriggerScript = hTriggerScript.GetEntity().GetCustomKeyvalues();
+
+    if( kvTriggerScript.HasKeyvalue( "$s_brush" ) )
+    {
+        if( kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() == "" )
+            return false;
+
+        CBaseEntity@ pBBox = 
+            kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString()[0] == "*" ?
+            g_EntityFuncs.FindEntityByString( pBBox, "model", kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() ) :
+            g_EntityFuncs.FindEntityByTargetname( pBBox, kvTriggerScript.GetKeyvalue( "$s_brush" ).GetString() );
+
+        if( pBBox !is null && pBBox.IsBSPModel() )
+        {
+            hBrushModel = pBBox;
+            return hBrushModel.IsValid();
+        }
+        else
+            return false;
+    }
+    else
+        return false; 
 }
 
 }

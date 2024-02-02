@@ -50,7 +50,7 @@ final class trigger_entity_alias : ScriptBaseEntity
         else if( szKey == "classname_filter" )
             strClassnameFilter = szValue;
         else if( szKey == "triggerstate" )
-            utTriggerState = USE_TYPE( atoui( szValue ) < 0 ? 0 : atoui( szValue ) );
+            utTriggerState = USE_TYPE( atoui( szValue ) );
         else
             return BaseClass.KeyValue( szKey, szValue );
             
@@ -151,7 +151,7 @@ final class trigger_entity_alias : ScriptBaseEntity
         return H_ALIASES;
     }
 
-    void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+    void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType. float flValue)
     {
         if( self.pev.target == self.GetTargetname() || strAlias == "" )
             return;
@@ -169,10 +169,10 @@ final class trigger_entity_alias : ScriptBaseEntity
             if( !H_ALIASES[i] )
                 continue;
 
-            if( self.pev.target == ""  || self.pev.target == self.GetTargetname() )
+            if( self.pev.target == "" || self.pev.target == self.GetTargetname() )
             {
                 if( utTriggerState != USE_KILL )
-                    H_ALIASES[i].GetEntity().Use( pActivator, pCaller, utTriggerState, 0.0f );// Direct trigger
+                    H_ALIASES[i].GetEntity().Use( pActivator, pCaller, utTriggerState );// Direct trigger
                 else
                     g_EntityFuncs.Remove( H_ALIASES[i].GetEntity() );// killtarget
             }
@@ -181,7 +181,7 @@ final class trigger_entity_alias : ScriptBaseEntity
                 CBaseEntity@ pEntity = g_EntityFuncs.FindEntityByTargetname( pEntity, string( self.pev.target ) );
 
                 if( pEntity !is null )
-                    pEntity.Use( H_ALIASES[i].GetEntity(), pCaller, utTriggerState, 0.0f );
+                    pEntity.Use( H_ALIASES[i].GetEntity(), pCaller, utTriggerState );
             }
         }
     }

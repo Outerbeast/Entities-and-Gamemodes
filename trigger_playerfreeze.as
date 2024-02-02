@@ -75,7 +75,7 @@ final class trigger_playerfreeze : ScriptBaseEntity
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
 		if( self.pev.SpawnFlagBitSet( SF_STARTON ) || self.GetTargetname() == "" )
-			self.Use( self, self, USE_ON, 0.0f );
+			self.Use( self, self, USE_ON );
 
 		BaseClass.Spawn();
 	}
@@ -102,10 +102,10 @@ final class trigger_playerfreeze : ScriptBaseEntity
 
 	void TurnOff()
 	{
-  		self.Use( self, self, USE_OFF, 0.0f );
+  		self.Use( self, self, USE_OFF );
 	}
 
-	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float value)
+	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
 	{
 		switch( useType )
 		{
@@ -131,7 +131,7 @@ final class trigger_playerfreeze : ScriptBaseEntity
 			}
 			
 			case USE_TOGGLE:
-				self.Use( null, null, blShouldFreeze ? USE_OFF : USE_ON, 0 );
+				self.Use( null, null, blShouldFreeze ? USE_OFF : USE_ON );
 				break;
 		}
 
