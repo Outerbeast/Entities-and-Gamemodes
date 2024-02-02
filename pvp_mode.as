@@ -114,7 +114,7 @@ void Initialise()
     @fnThink = g_Scheduler.SetInterval( "Think", 0.01f, g_Scheduler.REPEAT_INFINITE_TIMES );
 }
 
-int AssignTeam(EHandle hPlayer, const bool blSetTeam)
+CLASS AssignTeam(EHandle hPlayer, const bool blSetTeam)
 {
     if( !hPlayer )
         return CLASS_NONE;
@@ -132,7 +132,7 @@ int AssignTeam(EHandle hPlayer, const bool blSetTeam)
         pPlayer.SetClassification( CLASS_FORCE_NONE );
     }
 
-    return pPlayer.m_iClassSelection;
+    return CLASS( pPlayer.m_iClassSelection );
 }
 
 void SpawnProtection(EHandle hPlayer, const int iTakeDamageIn)
@@ -230,9 +230,8 @@ HookReturnCode PlayerSpawn(CBasePlayer@ pPlayer)
         return HOOK_CONTINUE;
 
     pPlayer.GetUserData()["i_spectating"] = SPECTYPE_NONE;
-    int iAssignedClassification = AssignTeam( pPlayer, true );
 
-    if( iAssignedClassification < CLASS_MACHINE )
+    if( AssignTeam( pPlayer, true ) < CLASS_MACHINE )
     {
         EnterSpectator( pPlayer, false );
         return HOOK_CONTINUE;
