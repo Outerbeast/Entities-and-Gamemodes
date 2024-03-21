@@ -44,15 +44,15 @@ namespace LASER_TRIP_SENSOR
 
 enum SensorTypes
 {
-    DEFAULT = 0,    // Laser triggers again when renentering or someone else enters
+    DEFAULT,        // Laser triggers again when renentering or someone else enters
     TRIP_ONCE,      // Triggers once, then the laser turns off. Uses "wait" value for automatic reset delay, otherwise the env_laser needs to be manually turned on again
     TRIP_MULTIPLE   // Triggers constantly so long as laser is being blocked
 }
 
 enum LaserSpawnFlags
 {
-    MONSTERS            = 2,
-    PUSHABLES           = 4
+    MONSTERS    = 2,
+    PUSHABLES   = 4
 }
 
 const array<string> STR_IGNORE_BRUSH_ENTS =
@@ -67,10 +67,7 @@ CScheduledFunction@ fnTripSensorThink = g_Scheduler.SetInterval( "TripSensor", 0
 void TripSensor(CBaseEntity@ pTriggerScript)
 {
     if( pTriggerScript !is null && fnTripSensorThink !is null )
-    {
         g_Scheduler.RemoveTimer( fnTripSensorThink );
-        @fnTripSensorThink = null;
-    }
 
     Vector vecEnd;
     TraceResult trSensor;
@@ -116,7 +113,7 @@ void TripSensor(CBaseEntity@ pTriggerScript)
         {
             case TRIP_ONCE:
             {
-                g_EntityFuncs.FireTargets( pLaser.pev.target, pTrip, pLaser, USE_TOGGLE, 0.0f, 0.0f );
+                g_EntityFuncs.FireTargets( pLaser.pev.target, pTrip, pLaser, USE_TOGGLE );
                 pLaser.Use( pLaser, pLaser, USE_OFF, 0.0f );
 
                 if( pLaser.pev.health > 0.0f )
@@ -128,13 +125,13 @@ void TripSensor(CBaseEntity@ pTriggerScript)
             }
 
             case TRIP_MULTIPLE:
-                g_EntityFuncs.FireTargets( pLaser.pev.target, pTrip, pLaser, USE_TOGGLE, 0.0f, 0.0f );
+                g_EntityFuncs.FireTargets( pLaser.pev.target, pTrip, pLaser, USE_TOGGLE );
                 break;
 
             default:
             {
-                if( pTrip !is g_EntityFuncs.Instance( @pLaser.pev.euser1 ) )
-                    g_EntityFuncs.FireTargets( pLaser.pev.target, pTrip, pLaser, USE_TOGGLE, 0.0f, 0.0f );
+                if( pTrip !is g_EntityFuncs.Instance( pLaser.pev.euser1 ) )
+                    g_EntityFuncs.FireTargets( pLaser.pev.target, pTrip, pLaser, USE_TOGGLE );
             }
         }
 
@@ -147,7 +144,7 @@ void ResetSensor(EHandle hLaser)
     if( !hLaser )
         return;
 
-    hLaser.GetEntity().Use( null, null, USE_ON, 0.0f );
+    hLaser.GetEntity().Use( null, null, USE_ON );
 }
 
 }

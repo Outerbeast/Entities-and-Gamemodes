@@ -31,7 +31,7 @@ bool blRegisterGamePopEntity = RegisterGamePopupEntity();
 bool RegisterGamePopupEntity()
 {
     g_CustomEntityFuncs.RegisterCustomEntity( "game_popup", "game_popup" );
-    return g_CustomEntityFuncs.IsCustomEntity( "game_ppopup" );
+    return g_CustomEntityFuncs.IsCustomEntity( "game_popup" );
 }
 
 class game_popup : ScriptBaseEntity

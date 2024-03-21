@@ -64,10 +64,10 @@ string
     
 int iDisplacerPortalAmmoCost = 60; // Same as displacer 2ndary fire cost
 bool 
-    blTpPlayers = true, 
-    blTpMonsters = true,
-    blTpEnemies = false, 
-    blTeleportOnce = false;
+    blTpPlayers     = true, 
+    blTpMonsters    = true,
+    blTpEnemies     = false, 
+    blTeleportOnce  = false;
 // We shouldn't be teleporting these guys
 const array<string> STR_NPC_BLACKLIST = 
 {
@@ -83,6 +83,7 @@ const array<string> STR_NPC_BLACKLIST =
     "monster_osprey",
     "monster_blkop_apache",
     "monster_blkop_osprey",
+    "grenade",
     "monstermaker",
     "squadmaker"
 };

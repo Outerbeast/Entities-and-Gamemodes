@@ -41,12 +41,8 @@ void AttachSprite(CSprite@ pSprite, CBaseAnimating@ pCarrier)
 {
     if( pSprite is null || pCarrier is null )
         return;
-    // No more than 4 attachment points are allowed, so I'm told
-    pSprite.pev.impulse = Math.clamp( 0, 3, pSprite.pev.impulse );
 
-    if( pSprite.pev.impulse >= pCarrier.GetAttachmentCount() )
-        pSprite.pev.impulse = pCarrier.GetAttachmentCount() - 1;
-
+    pSprite.pev.impulse %= ( pCarrier.GetAttachmentCount() - 1 );
     @pSprite.pev.owner = pCarrier.edict();
     pSprite.SetAttachment( pSprite.pev.owner, pSprite.pev.impulse );
     pSprite.GetUserData( "attach_state" ) = ATTACHED;
@@ -95,14 +91,14 @@ void SpriteThink()
             if( AttachState( pSprite.GetUserData( "attach_state" ) ) == ATTACHED )
             {
                 if( pSprite.pev.body != pSprite.pev.impulse )
-                    pSprite.pev.body = Math.clamp( 0, 3, pSprite.pev.impulse );
+                    pSprite.pev.body = pSprite.pev.impulse %= ( cast<CBaseAnimating@>( g_EntityFuncs.Instance( pSprite.pev.owner ) ).GetAttachmentCount() - 1 );
                 // Mapper wants to make this sprite free from carrier
                 if( pSprite.pev.iuser1 == 1 )
                     FreeSprite( pSprite );
             }
             else if( AttachState( pSprite.GetUserData( "attach_state" ) ) == FREE && pSprite.pev.iuser1 == 0 )
             {// Sprite was previously freed, now reattach
-                pSprite.SetAttachment( pSprite.pev.owner, Math.clamp( 0, 3, pSprite.pev.impulse ) );
+                pSprite.SetAttachment( pSprite.pev.owner, pSprite.pev.impulse % ( cast<CBaseAnimating@>( g_EntityFuncs.Instance( pSprite.pev.owner ) ).GetAttachmentCount() - 1 ) );
                 pSprite.GetUserData( "attach_state" ) = ATTACHED;
             }
             else if( string( pSprite.pev.netname ) != string( pSprite.pev.owner.vars.targetname ) )// sprite netname changed by mapper, find a new carrier
@@ -112,4 +108,3 @@ void SpriteThink()
 }
 
 }
-

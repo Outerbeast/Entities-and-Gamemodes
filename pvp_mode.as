@@ -30,7 +30,7 @@
 namespace PVP_MODE
 {
 
-enum spectatortype
+enum SpectatorType
 {
     SPECTYPE_NONE = 0,
     SPECTYPE_WAITING,
@@ -386,7 +386,7 @@ HookReturnCode PlayerLeave(CBasePlayer@ pDisconnectedPlayer)
         if( pObserverPlayer is null || !pObserverPlayer.GetObserver().IsObserver() )
             continue;
         // Skip players who are spectating voluntarily
-        if( int( pObserverPlayer.GetUserData( "i_spectating" ) ) == SPECTYPE_VOLUNTARY )
+        if( SpectatorType( pObserverPlayer.GetUserData( "i_spectating" ) ) == SPECTYPE_VOLUNTARY )
             continue;
 
         pObserverPlayer.GetObserver().StopObserver( true );
@@ -414,12 +414,12 @@ void Disable(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, fl
 
     for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
     {
-        if( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) !is null )
-        {
-            g_PlayerFuncs.FindPlayerByIndex( iPlayer ).pev.frags = 0.0f;
-            g_PlayerFuncs.FindPlayerByIndex( iPlayer ).SetClassification( CLASS_PLAYER );
-            g_PlayerFuncs.FindPlayerByIndex( iPlayer ).GetUserData( "i_spectating" ) = SPECTYPE_NONE;
-        }
+        if( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) is null )
+            continue;
+
+        g_PlayerFuncs.FindPlayerByIndex( iPlayer ).pev.frags = 0.0f;
+        g_PlayerFuncs.FindPlayerByIndex( iPlayer ).SetClassification( CLASS_PLAYER );
+        g_PlayerFuncs.FindPlayerByIndex( iPlayer ).GetUserData( "i_spectating" ) = SPECTYPE_NONE;
     }
 }
 
