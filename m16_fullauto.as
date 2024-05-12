@@ -53,13 +53,17 @@ const int
 float flShootDelay = 0.1f;
 
 const float
+    flDuration_Deploy       = 0.87f,
     flDuration_Reload       = 3.4f,
     flDuration_GrenadeFire  = 1.0f,
     flDuration_GrenadeLoad  = 1.5f;
 
 bool blInitialised;
 CCVar cvarFireMode( "m16_firemode", float( MODE_SELECT_FIRE_AUTO ), "Select M16 firing mode", ConCommandFlag::AdminOnly );
-CScheduledFunction@ fnSetup = g_Scheduler.SetTimeout( "Setup", 1.0f );
+
+CScheduledFunction@
+    fnSetup = g_Scheduler.SetTimeout( "Setup", 1.0f ),
+    fnThink = g_Scheduler.SetInterval( "Think", 0.1f );
 
 int Precache()
 {
@@ -82,20 +86,13 @@ void Setup()
 
         case MODE_SELECT_FIRE_BURST:
         case MODE_SELECT_FIRE_AUTO:
-        {
             g_Hooks.RegisterHook( Hooks::Weapon::WeaponTertiaryAttack, M16TertiaryAttack );
-            g_Hooks.RegisterHook( Hooks::Player::ClientPutInServer, ClearFireModeSelection );
-            g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClearFireModeSelection );
-            
             break;
-        }
 
         default:
         {
             iDefaultFireMode = MODE_SELECT_FIRE_AUTO;
             g_Hooks.RegisterHook( Hooks::Weapon::WeaponTertiaryAttack, M16TertiaryAttack );
-            g_Hooks.RegisterHook( Hooks::Player::ClientPutInServer, ClearFireModeSelection );
-            g_Hooks.RegisterHook( Hooks::Player::ClientDisconnect, ClearFireModeSelection );
         }
     }
 
@@ -203,7 +200,9 @@ void Shoot(EHandle hM16)
         vecDir, vecEnd;
     // !-BUG-!: "BULLET_PLAYER_SAW", which stock M16 fire uses, causes gibbing,
     // - FireBullets method does not obey npc damage modifiers
+    g_WeaponFuncs.ClearMultiDamage();
     pPlayer.FireBullets( 1, vecSrc, vecAiming, vecAccuracy, 8192, BULLET_PLAYER_CUSTOMDAMAGE, 2, iDmgCustom > 0 ? iDmgCustom : iDmgDefault );
+    g_WeaponFuncs.ApplyMultiDamage( pM16.pev, pM16.pev );
     g_SoundSystem.EmitSoundDyn( pPlayer.edict(), CHAN_WEAPON, "weapons/m16_3single.wav", 0.75f, ATTN_NORM, 0, PITCH_HIGH + 20 );
     MuzzleFlash( pM16.m_hPlayer );
     EjectCasing( hM16 );
@@ -321,13 +320,48 @@ void SetNextShoot(EHandle hM16, float flDelay)
         FCantFire( hM16, 0 );
 }
 
+void Think()
+{
+    if( !blInitialised )
+        return;
+
+    for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
+    {
+        CBasePlayer@ pPlayer = g_PlayerFuncs.FindPlayerByIndex( iPlayer );
+
+        if( pPlayer is null || !pPlayer.IsConnected() )
+        {
+            FM_PLAYER[iPlayer] = FireMode( iDefaultFireMode );
+            continue;
+        }
+
+        if( !pPlayer.IsAlive() )
+            continue;
+
+        pPlayer.GetUserData( "last_used_weapon" ) = pPlayer.m_hActiveItem;
+    }
+}
+
 HookReturnCode PlayerUseM16(CBasePlayer@ pPlayer, uint& out uiFlags)
 {
-    if( pPlayer is null || GetM16( pPlayer ) is null || FM_PLAYER[pPlayer.entindex()] == MODE_SELECT_FIRE_BURST )
+    if( pPlayer is null || FM_PLAYER[pPlayer.entindex()] == MODE_SELECT_FIRE_BURST )
         return HOOK_CONTINUE;
 
     CBasePlayerWeapon@ pM16 = GetM16( pPlayer );
-    pM16.m_flNextPrimaryAttack = 2.0f;
+
+    if( pM16 is null )
+        return HOOK_CONTINUE;
+
+    if( EHandle( pPlayer.GetUserData( "last_used_weapon" ) ).GetEntity() !is pM16 )
+    {
+        FCantFire( pM16, 1 );
+        SetNextShoot( pM16, flDuration_Deploy );
+        pPlayer.GetUserData( "last_used_weapon" ) = EHandle( pM16 );
+        
+        return HOOK_CONTINUE;
+    }
+
+    pM16.m_flNextPrimaryAttack = 2.0f;  
 
     if( FCantFire( pM16 ) || pM16.m_fInReload )
         return HOOK_CONTINUE;
@@ -368,16 +402,6 @@ HookReturnCode M16TertiaryAttack(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pM16)
 
     if( iDefaultFireMode >= MODE_SELECT_FIRE_BURST )
         SelectFireMode( pPlayer );
-
-    return HOOK_CONTINUE;
-}
-
-HookReturnCode ClearFireModeSelection(CBasePlayer@ pPlayer)
-{
-    if( pPlayer is null || FM_PLAYER.length() < 1 )
-        return HOOK_CONTINUE;
-
-    FM_PLAYER[pPlayer.entindex()] = FireMode( iDefaultFireMode );
 
     return HOOK_CONTINUE;
 }
