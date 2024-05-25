@@ -59,7 +59,7 @@ void Repel(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster)
         return;
 
     TraceResult trDown;
-	g_Utility.TraceLine( pSquadmaker.pev.origin,  pSquadmaker.pev.origin + Vector( 0, 0, -4096.0 ), dont_ignore_monsters, pSquadmaker.edict(), trDown );
+    g_Utility.TraceLine( pSquadmaker.pev.origin,  pSquadmaker.pev.origin + Vector( 0, 0, -4096.0 ), dont_ignore_monsters, pSquadmaker.edict(), trDown );
 
     CBaseMonster@ pRappeller = cast<CBaseMonster@>( pMonster );
     pRappeller.pev.movetype = MOVETYPE_FLY;
@@ -74,16 +74,16 @@ void Repel(CBaseMonster@ pSquadmaker, CBaseEntity@ pMonster)
     pRappeller.m_vecLastPosition = trDown.vecEndPos;
 
     CBeam@ pRope = g_EntityFuncs.CreateBeam( "sprites/rope.spr", 10 );
-	pRope.PointEntInit( pSquadmaker.pev.origin + Vector( 0, 0, 112 ), pRappeller.entindex() );
-	pRope.SetFlags( BEAM_FSOLID );
-	pRope.SetColor( 255, 255, 255 );
+    pRope.PointEntInit( pSquadmaker.pev.origin + Vector( 0, 0, 112 ), pRappeller.entindex() );
+    pRope.SetFlags( BEAM_FSOLID );
+    pRope.SetColor( 255, 255, 255 );
     pRappeller.GetUserData( "h_rope" ) = EHandle( pRope );
     H_RAPPELERS.insertLast( pRappeller );
 }
 
 void RopeThink()
 {
-    if( H_RAPPELERS.length() < 0 )
+    if( H_RAPPELERS.length() < 1 )
         return;
 
     for( uint i = 0; i < H_RAPPELERS.length(); i++ )
