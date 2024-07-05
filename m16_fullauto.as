@@ -42,9 +42,7 @@ enum FireMode
 
 array<FireMode> FM_PLAYER;
 
-int 
-    iDefaultFireMode, 
-    iDmgCustom;
+int iDefaultFireMode, iDmgCustom;
 
 const int
     iShellMdl = Precache(),
@@ -168,7 +166,7 @@ bool FCantFire(EHandle hM16, int iSetState = -1)
     return int( hM16.GetEntity().GetUserData( "cant_fire" ) ) > 0;
 }
 
-void Shoot(EHandle hM16)
+void Shoot(EHandle hM16, Vector& in vecAiming, Vector& in vecAccuracy, float flRange = 8192.0f)
 {
     if( !hM16 )
         return;
@@ -179,7 +177,7 @@ void Shoot(EHandle hM16)
     if( pM16 is null || pPlayer is null || pM16.m_fInReload )
         return;
 
-    if( pPlayer.pev.waterlevel == WATERLEVEL_HEAD || pM16.m_iClip <= 0 )
+    if( pPlayer.pev.waterlevel == WATERLEVEL_HEAD || pM16.m_iClip < 1 )
     {
         pM16.PlayEmptySound();
         pPlayer.m_flNextAttack = flShootDelay;
@@ -188,47 +186,25 @@ void Shoot(EHandle hM16)
 
         return;
     }
-
-    pM16.SendWeaponAnim( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 1 ) < 1 ? 4 : 5, 0, 0 );
-    pPlayer.SetAnimation( PLAYER_ATTACK1 );
-    pPlayer.pev.punchangle.x = Math.RandomLong( -1, 1 );
-
-    Vector
-        vecSrc = pPlayer.GetGunPosition(),
-        vecAiming = pPlayer.GetAutoaimVector( AUTOAIM_5DEGREES ),
-        vecAccuracy = pM16.BulletAccuracy( VECTOR_CONE_6DEGREES, VECTOR_CONE_4DEGREES, VECTOR_CONE_3DEGREES ),
-        vecDir, vecEnd;
     // !-BUG-!: "BULLET_PLAYER_SAW", which stock M16 fire uses, causes gibbing,
     // - FireBullets method does not obey npc damage modifiers
+    pM16.SendWeaponAnim( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 1 ) < 1 ? 4 : 5, 0, 0 );
+    pPlayer.SetAnimation( PLAYER_ATTACK1 );
     g_WeaponFuncs.ClearMultiDamage();
-    pPlayer.FireBullets( 1, vecSrc, vecAiming, vecAccuracy, 8192, BULLET_PLAYER_CUSTOMDAMAGE, 2, iDmgCustom > 0 ? iDmgCustom : iDmgDefault );
-    g_WeaponFuncs.ApplyMultiDamage( pM16.pev, pM16.pev );
+    pM16.FireBullets( 1, pPlayer.GetGunPosition(), vecAiming, vecAccuracy, flRange, BULLET_PLAYER_CUSTOMDAMAGE, 2, iDmgCustom > 0 ? iDmgCustom : iDmgDefault, pPlayer.pev );
+    g_WeaponFuncs.ApplyMultiDamage( pM16.pev, pPlayer.pev );
     g_SoundSystem.EmitSoundDyn( pPlayer.edict(), CHAN_WEAPON, "weapons/m16_3single.wav", 0.75f, ATTN_NORM, 0, PITCH_HIGH + 20 );
-    MuzzleFlash( pM16.m_hPlayer );
+    MuzzleFlash( pM16.m_hPlayer, RGBA( 255, 200, 180, 8 ) );
     EjectCasing( hM16 );
+    pPlayer.pev.punchangle.x = Math.RandomLong( -1, 1 );
 
-    if( --pM16.m_iClip <= 0 && pPlayer.m_rgAmmo( pM16.m_iPrimaryAmmoType ) <= 0 )
+    if( --pM16.m_iClip < 1 && pPlayer.m_rgAmmo( pM16.m_iPrimaryAmmoType ) < 1 )
         pPlayer.SetSuitUpdate( "!HEV_AMO0", false, 0 );
-    // Bullet hole decals
-    TraceResult trBullet;
-    float spread_x, spread_y;
-    g_Utility.GetCircularGaussianSpread( spread_x, spread_y );
-    vecDir = vecAiming + spread_x * vecAccuracy.x * g_Engine.v_right + spread_y * vecAccuracy.y * g_Engine.v_up;
-    vecEnd = vecSrc + vecDir * 4096;
-    g_Utility.TraceLine( vecSrc, vecEnd, dont_ignore_monsters, pPlayer.edict(), trBullet );
-
-    if( trBullet.flFraction < 1.0f )
-    {
-        CBaseEntity@ pHit = g_EntityFuncs.Instance( trBullet.pHit );
-        
-        if( pHit is null || pHit.IsBSPModel() )
-            g_WeaponFuncs.DecalGunshot( trBullet, BULLET_PLAYER_SAW );
-    }
 
     pPlayer.m_flNextAttack = flShootDelay;
 }
 
-void MuzzleFlash(EHandle hPlayer)
+void MuzzleFlash(EHandle hPlayer, RGBA& in rgbaColor, float flOffset = 59.0f)
 {
     if( !hPlayer )
         return;
@@ -239,7 +215,7 @@ void MuzzleFlash(EHandle hPlayer)
     pPlayer.m_iWeaponFlash = NORMAL_GUN_FLASH;
     pPlayer.pev.effects |= EF_MUZZLEFLASH;//!-BUG-!: using EF_MUZZLEFLASH doesn't work, forced replicate it via temporary fx
     // This will have to do
-    Vector vecFlashPos = pPlayer.GetGunPosition() + g_Engine.v_forward * 59;// extra bit to align it perfectly with gun muzzle
+    Vector vecFlashPos = pPlayer.GetGunPosition() + g_Engine.v_forward * flOffset; // extra bit to align it perfectly with gun muzzle
     vecFlashPos.z = pPlayer.pev.origin.z - ( pPlayer.pev.FlagBitSet( FL_DUCKING ) ? 18 : 36 );
 
     NetworkMessage flash( MSG_PVS, NetworkMessages::SVC_TEMPENTITY, vecFlashPos );
@@ -249,10 +225,11 @@ void MuzzleFlash(EHandle hPlayer)
         flash.WriteCoord( vecFlashPos.y );
         flash.WriteCoord( vecFlashPos.z );
 
-        flash.WriteByte( 8 );
-        flash.WriteByte( 255 );
-        flash.WriteByte( 200 );
-        flash.WriteByte( 180 );
+        flash.WriteByte( rgbaColor.a );// scale
+        flash.WriteByte( rgbaColor.r );
+        flash.WriteByte( rgbaColor.g );
+        flash.WriteByte( rgbaColor.b );
+
         flash.WriteByte( 1 );
         flash.WriteByte( 0 );
     flash.End();
@@ -371,7 +348,7 @@ HookReturnCode PlayerUseM16(CBasePlayer@ pPlayer, uint& out uiFlags)
         if( pM16.m_iClip > 0 )
         {
             FCantFire( pM16, 1 );
-            Shoot( pM16 );
+            Shoot( pM16, pPlayer.GetAutoaimVector( AUTOAIM_5DEGREES ), pM16.BulletAccuracy( VECTOR_CONE_8DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_4DEGREES ) );
             SetNextShoot( pM16, flShootDelay );
         }
         else// reloads immediately, not when the moment the fire button is released while held down

@@ -153,7 +153,7 @@ final class player_weapon_config : ScriptBaseEntity
             return;
 
         @pPreConfigWeapon = cast<CBasePlayerWeapon@>( g_EntityFuncs.CreateEntity( strWeaponType, dictWeaponKeys, false ) );
-        //pPreConfigWeapon.pev.spawnflags |= 384;
+        pPreConfigWeapon.pev.spawnflags |= 384 | SF_CREATEDWEAPON;
         g_EntityFuncs.DispatchKeyValue( pPreConfigWeapon.edict(), "m_flCustomRespawnTime", "0" );
         pPreConfigWeapon.pev.origin = self.pev.origin;
         @pPreConfigWeapon.pev.euser1 = self.edict();
@@ -286,4 +286,4 @@ final class player_weapon_config : ScriptBaseEntity
         g_Hooks.RemoveHook( Hooks::PickupObject::Materialize, MaterializeHook( this.ItemSpawned ) );
         g_Hooks.RemoveHook( Hooks::Player::PlayerSpawn, PlayerSpawnHook( this.PlayerSpawn ) );
     }
-}
+};
