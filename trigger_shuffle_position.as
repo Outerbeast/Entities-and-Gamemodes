@@ -19,12 +19,23 @@
     If there are more than one entity for a given name (meaning there entities with duplicate names) those entities will also be included.
     The angles of the previous entity will be applied to the new entity during the shuffle, otherwise you can check flag 2 to disable this so that
     the entity's angles are kept as it was originally placed.
-
+    You can instead use the key "target" to set target entities to shuffle, though you will need to mark those entities with the custom keyvalue "$s_shuffle"
     If the entity has no targetname set, it will automatically trigger and shuffle the set entities.
     If the entity is triggered with "Off" use type, the entities will revert back to their original positions before being shuffled the first time.
 
+    Keys:-
+    "classname" "trigger_shuffle_position"
+    "targetname" "target_me" - if targetname is not set, the entity will automatically trigger itself after map is loaded
+    "netname" "entityA;entityB;entityC;...;entityZ" - list of entity targetnames to shuffle
+    "target" "shuffletarget" - this will target entities with the custom key "$s_shuffle" with the value matching the "target" value
+
+    Flags:-
+    1: Start On (no targetname also does this)
+    2: Preserve angles - keeps the original orientiation of the entity as it was before it was shuffled
+
+    Extra notes:-
     If you wish to simply randomise the position of one or more entities in a set number of locations, you may use some dummy entity like info_target
-    in the other locations and inlcude those dummy entities in the list. This will make it appear as if the entity is placed in a random location.
+    in the other locations and include those dummy entities in the list. This will make it appear as if the entity is placed in a random location.
 
 - Outerbeast
 */
@@ -48,42 +59,39 @@ final class trigger_shuffle_position : ScriptBaseEntity
 
     void Spawn()
     {
-        self.pev.movetype 	= MOVETYPE_NONE;
-        self.pev.solid 		= SOLID_NOT;
-        self.pev.effects	|= EF_NODRAW;
+        self.pev.movetype = MOVETYPE_NONE;
+        self.pev.solid = SOLID_NOT;
+        self.pev.effects |= EF_NODRAW;
 
         g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         if( self.GetTargetname() == "" || self.pev.SpawnFlagBitSet( SF_STARTON ) )
-            g_Scheduler.SetTimeout( this, "Shuffle", 1.0f, string( self.pev.netname ), false );
+            g_Scheduler.SetTimeout( this, "Shuffle", 1.0f, string( self.pev.netname ), string( self.pev.target ), false, self.pev.SpawnFlagBitSet( SF_PRESERVE_ANGLES ) );
 
         BaseClass.Spawn();
     }
 
-    void Shuffle(string strEntityNames, bool blResetPositions)
+    void Shuffle(string strEntityList, string strTarget, bool blResetPositions, bool blPreserveAngles)
     {
-        if( strEntityNames == "" )
-            return;
-
-        array<string> STR_ENTITY_NAMES = strEntityNames.Split( ";" );
-        array<EHandle> H_ENTITIES;
+        CBaseEntity@ pEntity;
+        array<CBaseEntity@> P_ENTITIES;
         array<Vector> VEC_POSITIONS, VEC_ANGLES, VEC_OCCUPIED;
-
-        for( uint i = 0; i < STR_ENTITY_NAMES.length(); i++ )
+        // Could condense this code further, but this will do for now
+        if( strEntityList != "" )
         {
-            if( STR_ENTITY_NAMES[i] == "" )
-                continue;
+            array<string> STR_ENTITY_NAMES = strEntityList.Split( ";" );
 
-            CBaseEntity@ pEntity;
-
-            if( !blResetPositions )
+            for( uint i = 0; i < STR_ENTITY_NAMES.length(); i++ )
             {
+                if( STR_ENTITY_NAMES[i] == "" )
+                    continue;
+
                 while( ( @pEntity = g_EntityFuncs.FindEntityByTargetname( pEntity, STR_ENTITY_NAMES[i] ) ) !is null )
                 {
-                    if( pEntity is null || H_ENTITIES.findByRef( EHandle( pEntity ) ) >= 0 )
+                    if( pEntity is null || !pEntity.IsInWorld() || P_ENTITIES.findByRef( pEntity ) >= 0 )
                         continue;
 
-                    H_ENTITIES.insertLast( pEntity );
+                    P_ENTITIES.insertLast( pEntity );
                     VEC_POSITIONS.insertLast( pEntity.pev.origin );
                     VEC_ANGLES.insertLast( pEntity.pev.angles );
                     
@@ -91,38 +99,60 @@ final class trigger_shuffle_position : ScriptBaseEntity
                         pEntity.pev.oldorigin = pEntity.pev.origin;
                 }
             }
-            else
+        }
+        else if( strTarget != "" )
+        {
+            for( int i = g_Engine.maxClients + 1; i <= g_EngineFuncs.NumberOfEntities(); i++ )
             {
-                while( ( @pEntity = g_EntityFuncs.FindEntityByTargetname( pEntity, STR_ENTITY_NAMES[i] ) ) !is null )
-                {
-                    if( pEntity is null )
-                        continue;
-                    
-                    if( pEntity.pev.oldorigin != pEntity.pev.origin )
-                        g_EntityFuncs.SetOrigin( pEntity, pEntity.pev.oldorigin );
-                }
+                @pEntity = g_EntityFuncs.Instance( i );
+
+                if( pEntity is null || !pEntity.IsInWorld() || P_ENTITIES.findByRef( pEntity ) >= 0  )
+                    continue;
+
+                CustomKeyvalues@ kvEntity = pEntity.GetCustomKeyvalues();
+
+                if( kvEntity is null || !kvEntity.HasKeyvalue( "$s_shuffle" ) || kvEntity.GetKeyvalue( "$s_shuffle" ).GetString() != strTarget )
+                    continue;
+
+                P_ENTITIES.insertLast( pEntity );
+                VEC_POSITIONS.insertLast( pEntity.pev.origin );
+                VEC_ANGLES.insertLast( pEntity.pev.angles );
+
+                if( !blShuffledOnce )
+                    pEntity.pev.oldorigin = pEntity.pev.origin;
             }
         }
         // Unless you show me how to shuffle a set containing one item.
-        if( H_ENTITIES.length() < 2 || VEC_POSITIONS.length() < 2 )
+        if( P_ENTITIES.length() < 2 )
             return;
 
         VEC_OCCUPIED.resize( VEC_POSITIONS.length() );
   
-        for( uint i = 0; i < H_ENTITIES.length(); i++ )
+        for( uint i = 0; i < P_ENTITIES.length(); i++ )
         {
-            if( !H_ENTITIES[i] )
+            @pEntity = P_ENTITIES[i];
+
+            if( pEntity is null || !pEntity.IsInWorld() )
                 continue;
 
-            CBaseEntity@ pEntity = H_ENTITIES[i].GetEntity();
-            
-            do( g_EntityFuncs.SetOrigin( pEntity, VEC_POSITIONS[Math.RandomLong( 0, VEC_POSITIONS.length() - 1 )] ) );
-            while( VEC_OCCUPIED.find( pEntity.pev.origin ) >= 0 );
+            if( blResetPositions )
+            {
+                if( pEntity.pev.oldorigin == g_vecZero )
+                    continue;
 
-            VEC_OCCUPIED[i] = pEntity.pev.origin;
+                if( pEntity.pev.oldorigin != pEntity.pev.origin )
+                    g_EntityFuncs.SetOrigin( pEntity, pEntity.pev.oldorigin );
+            }
+            else
+            {
+                do( g_EntityFuncs.SetOrigin( pEntity, VEC_POSITIONS[Math.RandomLong( 0, VEC_POSITIONS.length() - 1 )] ) );
+                while( VEC_OCCUPIED.find( pEntity.pev.origin ) >= 0 );
 
-            if( !self.pev.SpawnFlagBitSet( SF_PRESERVE_ANGLES ) )
-                pEntity.pev.angles = VEC_ANGLES[VEC_POSITIONS.find( pEntity.pev.origin )];
+                VEC_OCCUPIED[i] = pEntity.pev.origin;
+
+                if( blPreserveAngles )
+                    pEntity.pev.angles = VEC_ANGLES[VEC_POSITIONS.find( pEntity.pev.origin )];
+            }
         }
 
         blShuffledOnce = true;
@@ -130,6 +160,9 @@ final class trigger_shuffle_position : ScriptBaseEntity
 
     void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
     {
-        Shuffle( self.pev.netname, useType == USE_OFF || useType == USE_KILL );
+        if( self.pev.target != "" )
+            Shuffle( "", self.pev.target, useType == USE_OFF || useType == USE_KILL, self.pev.SpawnFlagBitSet( SF_PRESERVE_ANGLES ) );
+        else
+            Shuffle( self.pev.netname, "", useType == USE_OFF || useType == USE_KILL, self.pev.SpawnFlagBitSet( SF_PRESERVE_ANGLES ) );
     }
 };
