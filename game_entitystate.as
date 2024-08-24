@@ -43,9 +43,9 @@
 namespace GAME_ENTITYSTATE
 {
 
-enum enttype
+enum EntType
 {
-	NONE = 0,
+	NONE,
 	BREAKABLES,
 	PUSHABLES,
 	DOORS,
@@ -117,11 +117,11 @@ void GetTransitionEntities()
 	}
 }
 // !-TO-DO-!: save "health" for anything that is breakable
-int FetchEntityStates(const int iEntType)
+int FetchEntityStates(const EntType type)
 {
 	array<EHandle> H_ENTITIES;
 
-	switch( iEntType )
+	switch( type )
 	{
 		case BREAKABLES:
 			H_ENTITIES = H_BREAKABLES;
@@ -158,14 +158,14 @@ int FetchEntityStates(const int iEntType)
 
 		CBaseEntity@ pEntity = H_ENTITIES[i].GetEntity();
 
-		switch( iEntType )
+		switch( type )
 		{
 			case PUSHABLES:
 			case TRAMS: // Tram entities untested, but the logic is sound
 			{
 				strSavedEnts += ";" + TransitionName( pEntity ) + ";" + pEntity.pev.origin.ToString().Replace( ", ", ";" );
 
-				if( iEntType == TRAMS )
+				if( type == TRAMS )
 					strSavedEnts += ";" + TransitionName( pEntity ) + ";" + pEntity.pev.angles.ToString().Replace( ", ", ";" );
 
 				iEntitiesProcessed++;
@@ -202,8 +202,6 @@ int FetchEntityStates(const int iEntType)
 			{
 				strSavedEnts += ";" + TransitionName( pEntity );
 				iEntitiesProcessed++;
-
-				break;
 			}
 		}
 	}
@@ -211,7 +209,7 @@ int FetchEntityStates(const int iEntType)
 	return strSavedEnts != "" ? iEntitiesProcessed : 0;
 }
 
-int ApplyEntityStates(const int iEntType)
+int ApplyEntityStates(const EntType type)
 {
 	if( strSavedEnts == "" )
 		return 0;
@@ -223,7 +221,7 @@ int ApplyEntityStates(const int iEntType)
 
 	array<EHandle> H_ENTITIES;
 
-	switch( iEntType )
+	switch( type )
 	{
 		case BREAKABLES:
 			H_ENTITIES = H_BREAKABLES;
@@ -266,7 +264,7 @@ int ApplyEntityStates(const int iEntType)
 			continue;
 		}
 
-		switch( iEntType )
+		switch( type )
 		{
 			case PUSHABLES:
 			case TRAMS:
@@ -277,7 +275,7 @@ int ApplyEntityStates(const int iEntType)
 				vecSavedPos.z = atof( STR_SAVED_ENTS[STR_SAVED_ENTS.find( TransitionName( pEntity ) ) + 3] );
 				g_EntityFuncs.SetOrigin( pEntity, vecSavedPos );
 
-				if( iEntType == TRAMS )
+				if( type == TRAMS )
 				{
 					Vector vecSavedAngles;
 					vecSavedAngles.x = atof( STR_SAVED_ENTS[STR_SAVED_ENTS.find( TransitionName( pEntity ) ) + 4] );
@@ -320,7 +318,6 @@ int ApplyEntityStates(const int iEntType)
 
 			default:
 				iEntitiesProcessed++;
-				break;
 		}
 	}
 
@@ -463,9 +460,15 @@ final class CGameEntityState : ScriptBaseEntity
 			g_EntityFuncs.FireTargets( self.pev.message, pActivator, self, USE_TOGGLE, 0.0f, 0.0f );
 	}
 
-	HookReturnCode MapChange()
+	HookReturnCode MapChange(const string& in szNextMap)
 	{
-		self.Use( self, self, USE_ON, 0.0f );
+		if( g_Engine.mapname == szNextMap )
+			return;
+
+		if( strMap == "" )
+			strMap = szNextMap;
+
+		self.Use( self, self, USE_ON );
 		return HOOK_CONTINUE;
 	}
 };

@@ -29,7 +29,6 @@ bool blRegisterCheckPointSpawnerEntity = RegisterCheckPointSpawnerEntity();
 
 bool RegisterCheckPointSpawnerEntity()
 {
-	g_CustomEntityFuncs.RegisterCustomEntity( "point_checkpoint", "point_checkpoint" );
 	g_CustomEntityFuncs.RegisterCustomEntity( "checkpoint_spawner", "checkpoint_spawner" );
 
 	g_Game.PrecacheOther( "point_checkpoint" );
@@ -47,7 +46,7 @@ final class checkpoint_spawner : ScriptBaseEntity
 	private string 
 		strFunnelSprite = "sprites/glow01.spr",
 		strStartSound 	= "ambience/particle_suck2.wav",
-		strEndSound 	= "debris/beamstart7.wav";
+		strEndSound 	= "debris/beamstart7.wav",
 
 	private dictionary dictCheckpointValues =
 	{
@@ -55,6 +54,7 @@ final class checkpoint_spawner : ScriptBaseEntity
 		{ "m_flDelayBeforeStart", "3" },
 		{ "m_flDelayBetweenRevive", "1" },
 		{ "m_flDelayBeforeReactivation", "60" },
+		{ "m_sActivationMusic", "../media/valve.mp3" },
 		{ "m_fSpawnEffect", "0" },
 		{ "minhullsize", "0 0 0" },
 		{ "maxhullsize", "0 0 0" }
@@ -68,6 +68,8 @@ final class checkpoint_spawner : ScriptBaseEntity
 			dictCheckpointValues[szKey] = atoi( szValue ) != 0 ? "1" : "0";
 		else if( szKey == "checkpoint_model" )
 			dictCheckpointValues["model"] = szValue;
+		else if( szKey == "checkpoint_targetname" )
+			dictCheckpointValues["targetname"] = szValue;
 		else if( szKey == "sprite" )
 			strFunnelSprite = szValue;
 		else if( szKey == "startsound" )
@@ -85,16 +87,11 @@ final class checkpoint_spawner : ScriptBaseEntity
 		g_Game.PrecacheOther( "point_checkpoint" );
 		
 		g_Game.PrecacheModel( string( dictCheckpointValues["model"] ) );
-		g_Game.PrecacheGeneric( string( dictCheckpointValues["model"] ) );
-
 		g_Game.PrecacheModel( strFunnelSprite );
-		g_Game.PrecacheGeneric( strFunnelSprite );
 
 		g_SoundSystem.PrecacheSound( strStartSound );
 		g_SoundSystem.PrecacheSound( strEndSound );
-
-		g_Game.PrecacheGeneric( "sound/" + strStartSound );
-		g_Game.PrecacheGeneric( "sound/" + strEndSound );
+		g_SoundSystem.PrecacheSound( string( dictCheckpointValues["m_sActivationMusic"] ) );
 
 		BaseClass.Precache();
 	}
@@ -107,6 +104,27 @@ final class checkpoint_spawner : ScriptBaseEntity
 		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
 		BaseClass.Spawn();
+	}
+
+	void SpawnSnd()
+	{
+		g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, strStartSound, 1.0f, ATTN_NORM );
+	}
+
+	void CreateCheckpoint()
+	{
+		dictCheckpointValues["origin"]		= self.pev.origin.ToString();
+		dictCheckpointValues["angles"]		= self.pev.angles.ToString();
+		dictCheckpointValues["target"]		= string( self.pev.target );
+		dictCheckpointValues["spawnflags"]	= "" + ( self.pev.spawnflags & SF_CHECKPOINT_REUSABLE );
+
+		if( g_EntityFuncs.CreateEntity( "point_checkpoint", dictCheckpointValues, true ) is null )
+			return;
+
+		g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, strEndSound, 1.0f, ATTN_NORM );
+
+		if( !self.pev.SpawnFlagBitSet( 1 << 1 ) )
+			g_EntityFuncs.Remove( self );
 	}
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -129,25 +147,6 @@ final class checkpoint_spawner : ScriptBaseEntity
 		largefunnel.End();
 
 		@fnCreateCheckoint = g_Scheduler.SetTimeout( this, "CreateCheckpoint", 6.0f );
-	}
-
-	void SpawnSnd()
-	{
-		g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, strStartSound, 1.0f, ATTN_NORM );
-	}
-
-	void CreateCheckpoint()
-	{
-		dictCheckpointValues["origin"]		= self.GetOrigin().ToString();
-		dictCheckpointValues["angles"]		= self.pev.angles.ToString();
-		dictCheckpointValues["target"]		= string( self.pev.target );
-		dictCheckpointValues["spawnflags"]	= "" + ( self.pev.spawnflags & SF_CHECKPOINT_REUSABLE );
-
-		g_EntityFuncs.CreateEntity( "point_checkpoint", dictCheckpointValues, true );
-		g_SoundSystem.EmitSound( self.edict(), CHAN_ITEM, strEndSound, 1.0f, ATTN_NORM );
-
-		if( !self.pev.SpawnFlagBitSet( 1 << 1 ) )
-			g_EntityFuncs.Remove( self );
 	}
 
 	void UpdateOnRemove()

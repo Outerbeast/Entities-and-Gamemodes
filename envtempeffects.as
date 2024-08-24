@@ -1,20 +1,20 @@
-/*
-CTempFX extension for temporary effect entities (WIP)
-Includes entities:
-env_dlight
-env_elight
-env_quakefx
-env_shockwave
-env_smoke
-env_trail
-env_sprayer
-env_spritefield
-env_playersprite
+/*  CTempFX extension for temporary effect entities (WIP)
+    Includes entities:
+    env_dlight
+    env_elight
+    env_quakefx
+    env_shockwave
+    env_smoke
+    env_trail
+    env_sprayer
+    env_spritefield
+    env_playersprite
 
-Installation:-
--Import this script in your main map script 
-#include "envtempeffects"
-- Register entities by calling g_TempEffectFuncs.RegisterFXEntities() in MapInit
+    Installation:-
+    -Import this script in your main map script 
+    #include "envtempeffects"
+
+- Outerbeast
 */
 CTempFX g_TempEffectFuncs;
 
@@ -22,14 +22,14 @@ bool blFXEntitiesRegistered = RegisterFXEntities();
 
 enum ShockWaveTypes
 {
-    WV_CYLINDER = 0,
+    WV_CYLINDER,
     WV_DISK,
     WV_TORUS
 };
 
 enum PlayerSpriteTypes
 {
-    PLAYERSPRITE_NONE = 0,
+    PLAYERSPRITE_NONE,
     PLAYERSPRITE_ATTACH,
     PLAYERSPRITE_CLUSTER
 };
@@ -66,11 +66,6 @@ enum SpriteFieldFlags
     SF_SPRFL_TRANSPARENT    = 1 << 3,
     SF_SPRFL_FLAT           = 1 << 4
 };
-// Why is this not a standard RGBA method?
-RGBA VectorToRGBA(const Vector vecColor, const float flAlpha = 255.0f)
-{
-    return RGBA( uint8( vecColor.x ), uint8( vecColor.y ), uint8( vecColor.z ), uint8( flAlpha ) );
-}
 
 bool RegisterFXEntities()
 {
@@ -99,13 +94,16 @@ mixin class TempFx
         QFX_TELE_SPLASH
     };
 
-    void te_dlight(
-    Vector pos,
-    uint8 radius = 32, 
-    RGBA c = WHITE,
-	uint8 life = 255, 
-    uint8 decayRate = 255,
-	NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_dlight
+    (
+        Vector pos,
+        uint8 radius = 32, 
+        RGBA c = WHITE,
+        uint8 life = 255, 
+        uint8 decayRate = 255,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage dlight(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
             dlight.WriteByte( TE_DLIGHT );
@@ -123,15 +121,18 @@ mixin class TempFx
         dlight.End();
     }
 
-    void te_elight(
-    CBaseEntity@ target, 
-    Vector pos, 
-    float radius = 1024.0f, 
-	RGBA c = WHITE, 
-    uint8 life = 255, 
-    float decayRate = 2000.0f, 
-    uint8 iAttachment = 0,
-	NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_elight
+    (
+        CBaseEntity@ target, 
+        Vector pos, 
+        float radius = 1024.0f, 
+        RGBA c = WHITE, 
+        uint8 life = 255, 
+        float decayRate = 2000.0f, 
+        uint8 iAttachment = 0,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage elight(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
             elight.WriteByte( TE_ELIGHT );
@@ -151,13 +152,16 @@ mixin class TempFx
         elight.End();
     }
     // Quake Style FX
-    void te_quakefx(
-    uint8 iFxType, 
-    Vector pos, 
-    uint16 radius = 128, 
-    uint8 color = 250, 
-    uint8 life = 5, 
-    NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest=null)
+    void te_quakefx
+    (
+        uint8 iFxType, 
+        Vector pos, 
+        uint16 radius = 128, 
+        uint8 color = 250, 
+        uint8 life = 5, 
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest=null
+    )
     {
         if( UINT8_QFX.find( iFxType ) < 0 )
             iFxType = QFX_EXP;
@@ -184,19 +188,22 @@ mixin class TempFx
         qfx.End();
     }
 
-    void te_shockwave(
-    uint8 iWaveType,
-    Vector pos, 
-    float radius, 
-	string sprite = "sprites/shockwave.spr", 
-    uint8 startFrame = 0, 
-	uint8 frameRate = 16, 
-    uint8 life = 8, 
-    uint8 width = 8, 
-    uint8 noise = 0, 
-	RGBA c = WHITE, 
-    uint8 scrollSpeed = 0, 
-	NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_shockwave
+    (
+        uint8 iWaveType,
+        Vector pos, 
+        float radius, 
+        string sprite = "sprites/shockwave.spr", 
+        uint8 startFrame = 0, 
+        uint8 frameRate = 16, 
+        uint8 life = 8, 
+        uint8 width = 8, 
+        uint8 noise = 0, 
+        RGBA c = WHITE, 
+        uint8 scrollSpeed = 0, 
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage sw( MSG_BROADCAST, NetworkMessages::SVC_TEMPENTITY, null );
             sw.WriteByte( iWaveType );
@@ -224,16 +231,19 @@ mixin class TempFx
         sw.End();
     }
 
-    void te_spray(
-    uint8 iSprayType,
-    Vector pos,
-    Vector dir,
-    string sprite = "sprites/bubble.spr", 
-    uint8 count = 8,
-    uint8 speed = 127,
-    uint8 noise = 255,
-    uint8 rendermode = 0,
-    NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_spray
+    (
+        uint8 iSprayType,
+        Vector pos,
+        Vector dir,
+        string sprite = "sprites/bubble.spr", 
+        uint8 count = 8,
+        uint8 speed = 127,
+        uint8 noise = 255,
+        uint8 rendermode = 0,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage spray( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
 
@@ -259,16 +269,19 @@ mixin class TempFx
         spray.End();
     }
 
-    void te_spritetrail(
-    Vector start,
-    Vector end, 
-	string sprite = "sprites/hotglow.spr",
-    uint8 count = 2,
-    uint8 life = 0, 
-	uint8 scale = 1,
-    uint8 speed = 16,
-    uint8 speedNoise = 8,
-	NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_spritetrail
+    (
+        Vector start,
+        Vector end, 
+        string sprite = "sprites/hotglow.spr",
+        uint8 count = 2,
+        uint8 life = 0, 
+        uint8 scale = 1,
+        uint8 speed = 16,
+        uint8 speedNoise = 8,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage trail(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
             trail.WriteByte( TE_SPRITETRAIL );
@@ -291,13 +304,16 @@ mixin class TempFx
         trail.End();
     }
 
-    void te_trail(
-    CBaseEntity@ target,
-    string sprite = "sprites/laserbeam.spr", 
-	uint8 life = 100,
-    uint8 width = 2,
-    RGBA c = WHITE,
-	NetworkMessageDest msgType=MSG_BROADCAST, edict_t@ dest=null)
+    void te_trail
+    (
+        CBaseEntity@ target,
+        string sprite = "sprites/laserbeam.spr", 
+        uint8 life = 100,
+        uint8 width = 2,
+        RGBA c = WHITE,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage trail( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
             trail.WriteByte( TE_BEAMFOLLOW );
@@ -315,13 +331,16 @@ mixin class TempFx
         trail.End();
     }
     // Not yet programmed enities for these fx
-    void te_playersprites(
-    CBasePlayer@ target, 
-    string sprite = "sprites/bubble.spr", 
-    uint8 count = 16,
-    NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_playersprites
+    (
+        CBasePlayer@ target, 
+        string sprite = "sprites/bubble.spr", 
+        uint8 count = 16,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
-        NetworkMessage m(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
+        NetworkMessage m( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
             m.WriteByte( TE_PLAYERSPRITES );
             m.WriteShort( target.entindex() );
             m.WriteShort( g_EngineFuncs.ModelIndex(sprite) );
@@ -330,38 +349,42 @@ mixin class TempFx
         m.End();
     }
 
-    void te_playerattachment(
-    CBasePlayer@ target,
-    float vOffset = 51.0f, 
-    string sprite = "sprites/bubble.spr",
-    uint16 life = 16, 
-    NetworkMessageDest msgType=MSG_BROADCAST, edict_t@ dest=null)
+    void te_playerattachment
+    (
+        CBasePlayer@ target,
+        float vOffset = 51.0f, 
+        string sprite = "sprites/bubble.spr",
+        uint16 life = 16, 
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
-        NetworkMessage m(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
-            m.WriteByte(TE_PLAYERATTACHMENT);
-            m.WriteByte(target.entindex());
-            m.WriteCoord(vOffset);
-            m.WriteShort(g_EngineFuncs.ModelIndex(sprite));
-            m.WriteShort(life);
+        NetworkMessage m( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
+            m.WriteByte( TE_PLAYERATTACHMENT );
+            m.WriteByte( target.entindex() );
+            m.WriteCoord( vOffset );
+            m.WriteShort( g_EngineFuncs.ModelIndex(sprite) );
+            m.WriteShort( life );
         m.End();
     }
 
-    void te_killplayerattachments(
-    CBasePlayer@ plr, 
-	NetworkMessageDest msgType=MSG_BROADCAST, edict_t@ dest=null)
+    void te_killplayerattachments(CBasePlayer@ pPlayer, NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
     {
-        NetworkMessage m(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
-            m.WriteByte(TE_KILLPLAYERATTACHMENTS);
-            m.WriteByte(plr.entindex());
+        NetworkMessage m( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
+            m.WriteByte( TE_KILLPLAYERATTACHMENTS );
+            m.WriteByte( pPlayer.entindex() );
         m.End();
     }
 
-    void te_smoke(
-    Vector pos, 
-    string sprite = "sprites/steam1.spr", 
-	int scale = 10,
-    int frameRate = 15,
-	NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest=null)
+    void te_smoke
+    (
+        Vector pos, 
+        string sprite = "sprites/steam1.spr", 
+        int scale = 10,
+        int frameRate = 15,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest=null
+    )
     {
         NetworkMessage smoke( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
             smoke.WriteByte( TE_SMOKE );
@@ -373,38 +396,44 @@ mixin class TempFx
             smoke.WriteShort( g_EngineFuncs.ModelIndex( sprite ) );
 
             smoke.WriteByte( scale );
-            smoke.WriteByte(  frameRate );
+            smoke.WriteByte( frameRate );
         smoke.End();
     }
 
-    void te_firefield(
-    Vector pos,
-    uint16 radius = 128, 
-	string sprite = "xfire.spr",
-    uint8 count = 128, 
-	uint8 flags = 30,
-    uint8 life = 5,
-	NetworkMessageDest msgType=MSG_BROADCAST, edict_t@ dest = null) 
+    void te_firefield
+    (
+        Vector pos,
+        uint16 radius = 128, 
+        string sprite = "xfire.spr",
+        uint8 count = 128, 
+        uint8 flags = 30,
+        uint8 life = 5,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    ) 
     {
-        NetworkMessage m(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
-            m.WriteByte(TE_FIREFIELD);
-            m.WriteCoord(pos.x);
-            m.WriteCoord(pos.y);
-            m.WriteCoord(pos.z);
+        NetworkMessage m( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
+            m.WriteByte( TE_FIREFIELD );
+            m.WriteCoord( pos.x );
+            m.WriteCoord( pos.y );
+            m.WriteCoord( pos.z );
 
-            m.WriteShort(radius);
+            m.WriteShort( radius );
 
-            m.WriteShort(g_EngineFuncs.ModelIndex(sprite));
-            m.WriteByte(count);
-            m.WriteByte(flags);
-            m.WriteByte(life);
+            m.WriteShort( g_EngineFuncs.ModelIndex(sprite) );
+            m.WriteByte( count );
+            m.WriteByte( flags );
+            m.WriteByte( life );
         m.End();
     }
 
-    void te_tracer(
-    Vector start,
-    Vector end, 
-	NetworkMessageDest msgType=MSG_BROADCAST, edict_t@ dest = null)
+    void te_tracer
+    (
+        Vector start,
+        Vector end, 
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage tracer(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
             tracer.WriteByte(TE_TRACER);
@@ -419,41 +448,47 @@ mixin class TempFx
         tracer.End();
     }
 
-    void te_usertracer(
-    Vector pos,
-    Vector dir,
-    float speed = 6000.0f, 
-	uint8 life = 32,
-    uint color = 4,
-    uint8 length = 12,
-	NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_usertracer
+    (
+        Vector pos,
+        Vector dir,
+        float speed = 6000.0f, 
+        uint8 life = 32,
+        uint color = 4,
+        uint8 length = 12,
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
-        Vector velocity = dir*speed;
-        NetworkMessage tracer(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
-            tracer.WriteByte(TE_USERTRACER);
+        Vector velocity = dir * speed;
+        NetworkMessage tracer( msgType, NetworkMessages::SVC_TEMPENTITY, dest );
+            tracer.WriteByte( TE_USERTRACER );
 
-            tracer.WriteCoord(pos.x);
-            tracer.WriteCoord(pos.y);
-            tracer.WriteCoord(pos.z);
+            tracer.WriteCoord( pos.x );
+            tracer.WriteCoord( pos.y );
+            tracer.WriteCoord( pos.z );
 
-            tracer.WriteCoord(velocity.x);
-            tracer.WriteCoord(velocity.y);
-            tracer.WriteCoord(velocity.z);
+            tracer.WriteCoord( velocity.x );
+            tracer.WriteCoord( velocity.y );
+            tracer.WriteCoord( velocity.z );
 
-            tracer.WriteByte(life);
-            tracer.WriteByte(color);
-            tracer.WriteByte(length);
+            tracer.WriteByte( life );
+            tracer.WriteByte( color );
+            tracer.WriteByte( length );
         tracer.End();
     }
 
-    void te_streaksplash(
-    Vector start,
-    Vector dir,
-    uint8 color = 4, 
-    uint16 count = 256,
-    uint16 speed = 2048,
-    uint16 speedNoise = 128, 
-    NetworkMessageDest msgType = MSG_BROADCAST, edict_t@ dest = null)
+    void te_streaksplash
+    (
+        Vector start,
+        Vector dir,
+        uint8 color = 4, 
+        uint16 count = 256,
+        uint16 speed = 2048,
+        uint16 speedNoise = 128, 
+        NetworkMessageDest msgType = MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage m(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
             m.WriteByte(TE_STREAK_SPLASH);
@@ -473,12 +508,15 @@ mixin class TempFx
     }
 
 
-    void te_implosion(
-    Vector pos,
-    uint8 radius = 255,
-    uint8 count = 32,
-    uint8 life = 5,
-    NetworkMessageDest msgType=MSG_BROADCAST, edict_t@ dest = null)
+    void te_implosion
+    (
+        Vector pos,
+        uint8 radius = 255,
+        uint8 count = 32,
+        uint8 life = 5,
+        NetworkMessageDest msgType=MSG_BROADCAST,
+        edict_t@ dest = null
+    )
     {
         NetworkMessage m(msgType, NetworkMessages::SVC_TEMPENTITY, dest);
             m.WriteByte(TE_IMPLOSION);
@@ -505,7 +543,7 @@ final class CEnvLight : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-		g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+		g_EntityFuncs.SetOrigin( self, self.pev.origin );
 		
 		blToggled = self.pev.SpawnFlagBitSet( SF_LIGHT_STARTON ) || self.GetTargetname() == "";
 
@@ -556,7 +594,7 @@ final class CEnvLight : ScriptBaseEntity, TempFx
 				@pTarget = g_EntityFuncs.FindEntityByTargetname( pTarget, "" + self.pev.target );
 			else
 			{
-				while( ( @pTarget = g_EntityFuncs.FindEntityInSphere( pTarget, self.GetOrigin(), self.pev.renderamt, "*", "classname" ) ) !is null )
+				while( ( @pTarget = g_EntityFuncs.FindEntityInSphere( pTarget, self.pev.origin, self.pev.renderamt, "*", "classname" ) ) !is null )
 					MakeELight( pTarget );
 			}
 		}
@@ -567,11 +605,14 @@ final class CEnvLight : ScriptBaseEntity, TempFx
 
 	void MakeDLight()
 	{
-        te_dlight( self.pev.origin,
-        uint8( self.pev.renderamt ), 
-        VectorToRGBA( self.pev.rendercolor, self.pev.renderamt ),
-        uint8( self.pev.health <= 0.0f ? 255.5f : self.pev.health ),
-        uint8( self.pev.frags ) );
+        te_dlight
+        (
+            self.pev.origin,
+            uint8( self.pev.renderamt ), 
+            RGBA( self.pev.rendercolor, int( self.pev.renderamt ) ),
+            uint8( self.pev.health <= 0.0f ? 255.5f : self.pev.health ),
+            uint8( self.pev.frags )
+        );
 	}
 
 	void MakeELight(EHandle hTarget)
@@ -585,19 +626,23 @@ final class CEnvLight : ScriptBaseEntity, TempFx
         if( pFollower is null )
             @pFollower = self;
 
-        te_elight( pTarget, 
-        pFollower.pev.origin, 
-        uint8( self.pev.renderamt ), 
-        VectorToRGBA( self.pev.rendercolor, self.pev.renderamt ), 
-        uint8( self.pev.health <= 0.0f ? 255.5f : self.pev.health ),
-        uint8( self.pev.frags ), 
-        0x1000 * self.pev.impulse );
+        te_elight
+        (
+            pTarget, 
+            pFollower.pev.origin, 
+            uint8( self.pev.renderamt ), 
+            RGBA( self.pev.rendercolor, int( self.pev.renderamt ) ), 
+            uint8( self.pev.health <= 0.0f ? 255.5f : self.pev.health ),
+            uint8( self.pev.frags ), 
+            0x1000 * self.pev.impulse
+        );
 	}
     // !-HACK-!: effect only happens when a valid player is connected to the server
-    private HookReturnCode ClientPutInServer(CBasePlayer@ pPlayer)
+    HookReturnCode ClientPutInServer(CBasePlayer@ pPlayer)
     {
         self.pev.nextthink = g_Engine.time + Math.RandomFloat( 0.0f, 1.0f );
         g_Hooks.RemoveHook( Hooks::Player::ClientPutInServer, ClientPutInServerHook( this.ClientPutInServer ) );
+        
         return HOOK_CONTINUE;
     }
 };
@@ -661,7 +706,7 @@ final class CEnvShockwave : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         if( self.pev.framerate <= 0.0f )
             self.pev.framerate = 16.0f;
@@ -743,17 +788,19 @@ final class CEnvShockwave : ScriptBaseEntity, TempFx
     void MakeShockwave(Vector pos, float radius, uint8 iBeamTypeIn)
     {
         te_shockwave
-        ( iBeamTypeIn,
-        pos, 
-        radius, 
-	    strSprite,
-        uint8( self.pev.frame ), 
-	    uint8( self.pev.framerate ),
-        uint8( self.pev.health ),
-        uint8( m_iHeight ),
-        uint8( m_iNoise ),
-        VectorToRGBA( self.pev.rendercolor, uint8( self.pev.renderamt ) ),
-        uint8( m_iScrollRate ) );
+        (
+            iBeamTypeIn,
+            pos, 
+            radius, 
+            strSprite,
+            uint8( self.pev.frame ), 
+            uint8( self.pev.framerate ),
+            uint8( self.pev.health ),
+            uint8( m_iHeight ),
+            uint8( m_iNoise ),
+            RGBA( self.pev.rendercolor, uint8( self.pev.renderamt ) ),
+            uint8( m_iScrollRate ) 
+        );
     }
 };
 
@@ -792,7 +839,7 @@ final class CEnvSpriteField : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         BaseClass.Spawn();
     }
@@ -816,13 +863,15 @@ final class CEnvSpriteField : ScriptBaseEntity, TempFx
         if( pTarget is null )
             @pTarget = self;
 
-        te_firefield(
-        pTarget.pev.origin,
-        uint16( iRadius ), 
-        strSprite,
-        iSpriteCount,
-        uint8( self.pev.spawnflags ),
-        uint8( self.pev.health ) );
+        te_firefield
+        (
+            pTarget.pev.origin,
+            uint16( iRadius ), 
+            strSprite,
+            iSpriteCount,
+            uint8( self.pev.spawnflags ),
+            uint8( self.pev.health )
+        );
     }
 };
 
@@ -833,7 +882,7 @@ final class CEnvQuakeFx : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         if( self.pev.frags < 0.0f )
             self.pev.frags = 70.0f;
@@ -862,12 +911,14 @@ final class CEnvQuakeFx : ScriptBaseEntity, TempFx
         if( pTarget is null )
             @pTarget = self;
 
-        te_quakefx( 
-        uint8( self.pev.impulse ), 
-        pTarget.pev.origin, 
-        uint16( self.pev.armortype ), 
-        uint8( self.pev.frags ), 
-        uint8( self.pev.health ) );
+        te_quakefx
+        ( 
+            uint8( self.pev.impulse ), 
+            pTarget.pev.origin, 
+            uint16( self.pev.armortype ), 
+            uint8( self.pev.frags ), 
+            uint8( self.pev.health )
+        );
 
         if( !self.pev.SpawnFlagBitSet( 1 ) ) // Repeatable?
             g_EntityFuncs.Remove( self );
@@ -910,7 +961,7 @@ final class CEnvSprayer : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         BaseClass.Spawn();
     }
@@ -941,31 +992,37 @@ final class CEnvSprayer : ScriptBaseEntity, TempFx
                 @pEndEntity = g_EntityFuncs.FindEntityByTargetname( pStartEntity, self.pev.target );
         }
 
-        const Vector start = pStartEntity.pev.origin, end = pEndEntity.pev.origin;
+        const Vector
+            start = pStartEntity.pev.origin,
+            end = pEndEntity.pev.origin;
         
         if( iSprayType == TE_SPRITETRAIL )
         {
-            te_spritetrail(
-            start,
-            end, 
-            strSprite,
-            uint8( iSprayCount ),
-            uint8( self.pev.health ), 
-            uint8( self.pev.scale ),
-            uint8( iSpeed ),
-            uint8( iSpeedNoise ) );
+            te_spritetrail
+            (
+                start,
+                end, 
+                strSprite,
+                uint8( iSprayCount ),
+                uint8( self.pev.health ), 
+                uint8( self.pev.scale ),
+                uint8( iSpeed ),
+                uint8( iSpeedNoise )
+            );
         }
         else
         {
-            te_spray(
-            uint8( iSprayType ),
-            start,
-            self.pev.angles,
-            strSprite, 
-            uint8( iSprayCount ),
-            uint8( iSpeed ),
-            uint8( iSprayNoise ),
-            uint8( self.pev.renderamt ) );
+            te_spray
+            (
+                uint8( iSprayType ),
+                start,
+                self.pev.angles,
+                strSprite, 
+                uint8( iSprayCount ),
+                uint8( iSpeed ),
+                uint8( iSprayNoise ),
+                uint8( self.pev.renderamt ) 
+            );
         }
     }
 };
@@ -992,7 +1049,7 @@ final class CEnvTrail : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         BaseClass.Spawn();
 
@@ -1023,12 +1080,19 @@ final class CEnvTrail : ScriptBaseEntity, TempFx
             @pTarget = self;
 
         te_trail
-        ( pTarget,
-        strSprite, 
-        uint8( self.pev.health * 10 ),
-        uint8( self.pev.armorvalue ),
-        VectorToRGBA( self.pev.rendercolor, self.pev.renderamt ) );
+        (
+            pTarget,
+            strSprite, 
+            uint8( self.pev.health * 10 ),
+            uint8( self.pev.armorvalue ),
+            RGBA( self.pev.rendercolor, int( self.pev.renderamt ) )
+        );
     }
+};
+
+final class CSparkShower : ScriptBaseEntity, TempFx
+{
+    
 };
 // Just a wrapper for native entity env_smoker
 final class CEnvSmoke : ScriptBaseEntity, TempFx
@@ -1040,12 +1104,12 @@ final class CEnvSmoke : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         BaseClass.Spawn();
 
         if( !self.pev.SpawnFlagBitSet( 1 ) )
-            self.Use( self, self, USE_ON, 0.0f );
+            self.Use( self, self, USE_ON );
     }
 
     void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -1067,7 +1131,7 @@ final class CEnvSmoke : ScriptBaseEntity, TempFx
             }
 
             case USE_TOGGLE:
-                self.Use( null, null, hSmoker ? USE_OFF : USE_ON, 0.0f );
+                self.Use( null, null, hSmoker ? USE_OFF : USE_ON );
                 break;
 
 
@@ -1113,7 +1177,7 @@ final class CEnvPlayerSprite : ScriptBaseEntity, TempFx
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
-        g_EntityFuncs.SetOrigin( self, self.GetOrigin() );
+        g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         BaseClass.Spawn();
     }
@@ -1128,8 +1192,9 @@ final class CEnvPlayerSprite : ScriptBaseEntity, TempFx
         switch( useType )
         {
             case USE_OFF:
+            case USE_KILL
             {
-                for( uint iPlayer = 0; iPlayer < BL_PLAYERSPRITE_ACTIVE.length(); iPlayer++ )
+                for( uint iPlayer = 1; iPlayer < BL_PLAYERSPRITE_ACTIVE.length(); iPlayer++ )
                 {
                     if( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) is null || !g_PlayerFuncs.FindPlayerByIndex( iPlayer ).IsConnected() )
                         continue;
@@ -1137,11 +1202,8 @@ final class CEnvPlayerSprite : ScriptBaseEntity, TempFx
                     te_killplayerattachments( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) );
                 }
 
-                break;
+                return;
             }
-
-            case USE_ON:
-                break;
         }
 
         switch( iSpriteType )
@@ -1163,6 +1225,17 @@ final class CEnvPlayerSprite : ScriptBaseEntity, TempFx
                 BL_PLAYERSPRITE_ACTIVE[pPlayer.entindex()] = true;
                 break;
             }
+        }
+    }
+
+    void UpdateOnRemove()
+    {
+        for( int iPlayer = 1; iPlayer < g_Engine.maxClients; iPlayer++ )
+        {
+            if( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) is null || !g_PlayerFuncs.FindPlayerByIndex( iPlayer ).IsConnected() )
+                continue;
+
+            te_killplayerattachments( g_PlayerFuncs.FindPlayerByIndex( iPlayer ) );
         }
     }
 };

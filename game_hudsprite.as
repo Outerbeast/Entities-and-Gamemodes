@@ -66,8 +66,7 @@ final class game_hudsprite : ScriptBaseEntity
 	game_hudsprite()
 	{
 		hudSpr.effect = HUD_EFFECT_NONE;
-		hudSpr.color1 = RGBA( 255, 255, 255, 255 );
-		hudSpr.color2 = RGBA( 255, 255, 255, 255 );
+		hudSpr.color1 = hudSpr.color2 = RGBA( 255, 255, 255, 255 );
 		hudSpr.flags = HUD_ELEM_SCR_CENTER_X | HUD_ELEM_SCR_CENTER_Y;
 	}
 
@@ -102,9 +101,9 @@ final class game_hudsprite : ScriptBaseEntity
 		else if( szKey == "fxtime" ) 
 			hudSpr.fxTime = Math.clamp( 0.0f, 360.0f, atof( szValue ) );
 		else if( szKey == "color1" ) 
-			hudSpr.color1 = StringToRGBA( szValue );
+			g_Utility.StringToRGBA( hudSpr.color1, szValue );
 		else if( szKey == "color2" ) 
-			hudSpr.color2 = StringToRGBA( szValue );
+			g_Utility.StringToRGBA( hudSpr.color2, szValue );
 		else
 			return BaseClass.KeyValue( szKey, szValue );
 
@@ -130,12 +129,6 @@ final class game_hudsprite : ScriptBaseEntity
 
 		BaseClass.Spawn();
   	}
-	// This needs to be a standard API method!!!
-	RGBA StringToRGBA(string& in szColor)
-	{
-		array<string> arrValues = ( szColor + " 0 0 0 0" ).Split( " " );
-		return RGBA( atoui( arrValues[0] ), atoui( arrValues[1] ), atoui( arrValues[2] ), atoui( arrValues[3] ) );
-	}
 
 	bool ShouldTurnOff(USE_TYPE utTriggerstate)
 	{
@@ -149,8 +142,6 @@ final class game_hudsprite : ScriptBaseEntity
 
 			default: return false;
 		}
-
-		return false;
 	}
 
 	void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
@@ -201,8 +192,10 @@ final class game_hudsprite : ScriptBaseEntity
 
 	void UpdateOnRemove()
 	{
-		g_Scheduler.RemoveTimer( fnResetTimer );
+		g_Scheduler.RemoveTimer( fnResetToggle );
 		g_PlayerFuncs.HudCustomSprite( null, hudNull );
+
+		BaseClass.UpdateOnRemove();
 	}
 };
 /* My humble thanks to the folks in the Sven Co-op discord for helping create this script:

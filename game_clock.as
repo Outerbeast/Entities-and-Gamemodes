@@ -19,66 +19,57 @@ Template:
 
 - Outerbeast
 */
-namespace GAME_CLOCK
-{
-
-Vector2D HudClockPos    = Vector2D( 0.95, 0.1 );
-RGBA HudClockColor1     = RGBA( 250, 250, 250, 0 );
-RGBA HudClockColor2     = RGBA( 250, 250, 250, 0 );
-
 enum game_clock_flags
 {
-    START_ON                = 1,
-    SHOW_HUD_CLOCK          = 2,// Display time and date onscreen
+    SHOW_HUD_CLOCK          = 1,// Display time and date onscreen
     // The following flags only work when SHOW_HUD_CLOCK flag is set:
-    SHOW_SECONDS            = 4,// Display seconds
-    DD_MONTH_YYYY_FORMAT    = 8 // Changes the on screen date format to "DD, Month, YYYY"
+    SHOW_SECONDS            = 2,// Display seconds
+    DD_MONTH_YYYY_FORMAT    = 4 // Changes the on screen date format to "DD, Month, YYYY"
 }
 
-EHandle CreateClock(bool blShowHUDClock = false)
+bool blGameClockRegistered = RegisterGameClock();
+
+bool RegisterGameClock()
 {
-    dictionary clock =
+    g_CustomEntityFuncs.RegisterCustomEntity( "game_clock", "game_clock" );
+    return g_CustomEntityFuncs.IsCustomEntity( "game_clock" );
+}
+
+final class game_clock : ScriptBaseEntity
+{
+    private RGBA
+        HudClockColor1 = RGBA( 250, 250, 250, 0 ),
+        HudClockColor2 = RGBA( 250, 250, 250, 0 );
+
+    private HUDTextParams txtTimeDate;
+
+    game_clock()
     {
-        { "targetname", "clock_entity" },
-        { "m_iszScriptFile", "game_clock" },
-        { "m_iszScriptFunctionName", "GAME_CLOCK::Clock" },
-        { "m_iMode", "2" },
-        { "spawnflags", "" + blShowHUDClock }
-    };
+        txtTimeDate.x = 0.95f;
+        txtTimeDate.y = 0.1f;
+        txtTimeDate.fadeinTime = txtTimeDate.fadeoutTime = txtTimeDate.fxTime = 0.0;
+        txtTimeDate.holdTime = 10.0;
+        txtTimeDate.channel = 5;
+    }
 
-    return( g_EntityFuncs.CreateEntity( "trigger_script", clock ) );
-}
+    bool KeyValue(const string& in szKey, const string& in szValue)
+    {
+        if( szKey == "x" )
+            txtTimeDate.x = atof( szValue );
+        else if( szKey == "y" )
+            txtTimeDate.y = atof( szValue );
+        else if( szKey == "color1" )
+            g_Utility.StringToRGBA( HudClockColor1, szValue );
+        else if( szKey == "color2" )
+            g_Utility.StringToRGBA( HudClockColor2, szValue );
+        else
+            return BaseClass.KeyValue( szKey, szValue );
 
-void Clock(CBaseEntity@ pTriggerScript)
-{
-    DateTime obj_DateTime;
-    string strTime, strDate, strDay;
+        return true;
+    }
 
-    const Vector vecTime = pTriggerScript.pev.vuser1 = Vector( obj_DateTime.GetHour(), obj_DateTime.GetMinutes(), obj_DateTime.GetSeconds() );
-    const Vector vecDate = pTriggerScript.pev.vuser2 = Vector( obj_DateTime.GetDayOfMonth(), obj_DateTime.GetMonth(), obj_DateTime.GetYear() );
-    
-    obj_DateTime.Format( strDay, "%A" );
-    pTriggerScript.pev.netname = string( strDay ).ToLowercase();
-
-    if( !pTriggerScript.pev.SpawnFlagBitSet( SHOW_HUD_CLOCK ) )
-        return;
-    
-    const string strTimeColon = vecTime.z % 2 != 0 ? " " : ":";
-
-    if( pTriggerScript.pev.SpawnFlagBitSet( SHOW_SECONDS ) )
-        obj_DateTime.Format( strTime, "%H" + strTimeColon + "%M" + strTimeColon + "%S" );
-    else
-        obj_DateTime.Format( strTime, "%H" + strTimeColon + "%M" );
-
-    if( pTriggerScript.pev.SpawnFlagBitSet( DD_MONTH_YYYY_FORMAT ) )
-        obj_DateTime.Format( strDate, "%e %B, %Y" );
-    else
-        obj_DateTime.Format( strDate, "%d/%m/%Y" );
-
-    HUDTextParams txtTimeDate;
-        txtTimeDate.x = HudClockPos.x;
-        txtTimeDate.y = HudClockPos.y;
-
+    void Spawn()
+    {
         txtTimeDate.r1 = HudClockColor1.r;
         txtTimeDate.g1 = HudClockColor1.g;
         txtTimeDate.b1 = HudClockColor1.b;
@@ -89,12 +80,33 @@ void Clock(CBaseEntity@ pTriggerScript)
         txtTimeDate.b2 = HudClockColor2.b;
         txtTimeDate.a2 = HudClockColor2.a;
 
-        txtTimeDate.fadeinTime = 0.0;
-        txtTimeDate.fadeoutTime = 0.0;
-        txtTimeDate.holdTime = 10.0;
-        txtTimeDate.fxTime = 0.0;
-        txtTimeDate.channel = 5;
-    g_PlayerFuncs.HudMessageAll( txtTimeDate, strTime + "\n" + strDay + " " + strDate );
-}
+        self.pev.nextthink = g_Engine.time + 0.1f;
 
-}
+        BaseClass.Spawn();
+    }
+
+    void Think()
+    {
+        DateTime obj_DateTime;
+        string strTime, strDate, strDay;
+
+        self.pev.vuser1 = Vector( obj_DateTime.GetHour(), obj_DateTime.GetMinutes(), obj_DateTime.GetSeconds() );// Time, in 24H format: "hh mm ss"
+        self.pev.vuser2 = Vector( obj_DateTime.GetDayOfMonth(), obj_DateTime.GetMonth(), obj_DateTime.GetYear() );// Date, in the format: "dd mm yyyy"
+        
+        obj_DateTime.Format( strDay, "%A" );
+        self.pev.netname = string( strDay ).ToLowercase();
+
+        if( !self.pev.SpawnFlagBitSet( SHOW_HUD_CLOCK ) )
+            return;
+        
+        const string 
+            strTimeColon = vuser1.z % 2 != 0 ? " " : ":",
+            strDateFormat = self.pev.SpawnFlagBitSet( DD_MONTH_YYYY_FORMAT ) ? "%e %B, %Y" : "%d/%m/%Y";
+
+        obj_DateTime.Format( strTime, "%H" + strTimeColon + "%M" + ( self.pev.SpawnFlagBitSet( SHOW_SECONDS ) ? strTimeColon + "%S" : "" ) );
+        obj_DateTime.Format( strDate, strDateFormat );
+        g_PlayerFuncs.HudMessageAll( txtTimeDate, strTime + "\n" + strDay + " " + strDate );
+
+        self.pev.nextthink = g_Engine.time + 0.001f;
+    }
+};
