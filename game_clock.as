@@ -1,22 +1,26 @@
-/* game_clock
-trigger_script for getting the current time and date
+/* game_clock- custom entity for getting the current time and date
 
-Current time is stored in "vuser1" in 24H format "hh mm ss"
-Current date is stored in "vuser2" in the format "dd mm yyyy"
-Current weekday is stored "netname" in lowercase e.g. "monday"
-Use entities "trigger_condition" and "trigger_copyvalue" to check and retrieve
-these values and create trigger logic accordingly
+    Installation:-
+	- Place in scripts/maps
+	- Add
+	map_script game_clock
+	to your map cfg
+	OR
+	- Add
+	#include "game_clock"
+	to your main map script header
+	OR
+	- Create a trigger_script with these keys set in your map:
+	"classname" "trigger_script"
+	"m_iszScriptFile" "game_clock"
 
-Includes feature to display the time and date as an optional flag
-Template:
-"classname" "trigger_script"
-"m_iszScriptFile" "game_clock"
-"m_iszScriptFunctionName" "GAME_CLOCK::Clock"
-"m_iMode" "2"
-// Don't change any of the above!
-"targetname" "clock_entity" - entity name
-"spawnflags" "f" - See "game_clock_flags" for flag values
-
+    Usage:-
+    Simply make a game_clock entity in your level and name it.
+    Use entities "trigger_condition" and "trigger_copyvalue" to check and retrieve
+    these values and create trigger logic accordingly:
+    Current time is stored in "vuser1" in 24H format "hh mm ss"
+    Current date is stored in "vuser2" in the format "dd mm yyyy"
+    Current weekday is stored "netname" in lowercase e.g. "monday"
 - Outerbeast
 */
 enum game_clock_flags

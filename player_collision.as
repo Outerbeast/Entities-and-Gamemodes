@@ -1,6 +1,30 @@
 /*  player_collision - Custom entity that removes player-player collision when touching the entity
 
+    Installation:-
+	- Place in scripts/maps
+	- Add
+	map_script player_collision
+	to your map cfg
+	OR
+	- Add
+	#include "player_collision"
+	to your main map script header
+	OR
+	- Create a trigger_script with these keys set in your map:
+	"classname" "trigger_script"
+	"m_iszScriptFile" "player_collision"
 
+    Usage:-
+    These entities allow you to to enclose an area where player-player collision needs to be disabled.
+    You can use the brush entity func_player_collision, or the point entity env_player_collision (this requires custom set bounds)
+    Keys (env_player_collision only):
+    "zonecornermin" "x1 y1 z1" - Position of zone bounding box minimum
+    "zonecornermax" "x2 y2 z2" - Position of zone bounding box maximum
+    "zoneradius" "r" - if you don't use the zonecorner keys, you can make a radius zone
+
+    This script also automatically disables player-player collisions whenever players are in crawl spaces.
+    If you don't want this behaviour, execute "g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, CrawlSpaceCollision )" in MapInit or later.
+- Outerbeast
 */
 enum playercollisionflags
 {
@@ -165,9 +189,9 @@ final class CPlayerCollision : ScriptBaseEntity
     }
 
     void UpdateOnRemove()
-	{
-		blRemoveCollision = false;
-		g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, PlayerPreThinkHook( this.ModifyCollision ) );
+    {
+        blRemoveCollision = false;
+        g_Hooks.RemoveHook( Hooks::Player::PlayerPreThink, PlayerPreThinkHook( this.ModifyCollision ) );
         PLRC_INSTANCES.removeAt( PLRC_INSTANCES.findByRef( this ) );
 
         for( int iPlayer = 1; iPlayer <= g_Engine.maxClients; iPlayer++ )
@@ -177,5 +201,5 @@ final class CPlayerCollision : ScriptBaseEntity
         }
 
         BaseClass.UpdateOnRemove();
-	}
+    }
 };
