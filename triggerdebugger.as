@@ -1,1 +1,0 @@
-This file was moved to the repository: https://github.com/Outerbeast/Debugging/blob/main/triggerdebugger.as
