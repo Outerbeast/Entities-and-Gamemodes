@@ -29,12 +29,13 @@ const array<string> STR_SPEECH_GROUPS =
 /*     "look",
     "throw",
     "follow",
-    "help", */
+    "help",
+    "jump",*/
+    "heal",
     "pain",
     "wounded",
     "die",
-    "kill",
-    "jump"
+    "kill"
 };
 
 const array<dictionary> DICT_PRESETS =
@@ -42,8 +43,9 @@ const array<dictionary> DICT_PRESETS =
     dictionary(),
     {//Scientist
         { "base", "scientist/" },
-        { "idle", "!SC_IDLE;!SC_PIDLE" },
+        { "idle", "!SC_IDLE;!SC_PIDLE;!SC_COUGH" },
         { "alert", "!SC_FEAR;!SC_SCREAM" },
+        { "heal", "!SC_HEAL;!SC_REVIVE;!SC_M" },
         { "pain", "sci_pain1;sci_pain2;sci_pain3;sci_pain4;sci_pain5;sci_pain6;sci_pain7;sci_pain8;sci_pain9;sci_pain10" },
         { "wounded", "!SC_WOUND;!SC_MORTAL" },
         { "die", "sci_die1;sci_die2;sci_die3;sci_die4;scream21" }
@@ -52,20 +54,23 @@ const array<dictionary> DICT_PRESETS =
         { "base", "barney/" },
         { "idle", "!BA_IDLE" },
         { "alert", "!BA_ATTACK" },
+        { "heal", "checkwounds;youneedmedic;realbadwound;ba_cure0;ba_cure1" },
         { "fight", "!BA_MAD" },
+        { "help", "c2a5_ba_helpme" },
         { "pain", "ba_pain1;ba_pain2;ba_pain3" },
         { "wounded", "!BA_WOUND" },
         { "die", "ba_die1;ba_die2;ba_die3" },
         { "kill", "!BA_KILL" }
     },
     {//Otis
-        { "base", "barney/" },
+        { "base", "" },
         { "idle", "!OT_IDLE" },
         { "alert", "!OT_ATTACK" },
+        { "heal", "otis/scar;otis/insurance;otis/medic;otis/yourback" },
         { "fight", "!OT_MAD" },
-        { "pain", "ba_pain1;ba_pain2;ba_pain3" },
+        { "pain", "barney/ba_pain1;barney/ba_pain2;barney/ba_pain3" },
         { "wounded", "!OT_WOUND;!OT_MORTAL" },
-        { "die", "ba_die1;ba_die2;ba_die3" },
+        { "die", "barney/ba_die1;barney/ba_die2;barney/ba_die3" },
         { "kill", "!OT_KILL" }
     },
     {//HEV
@@ -78,6 +83,7 @@ const array<dictionary> DICT_PRESETS =
         { "idle", "!FG_IDLE" },
         { "alert", "!FG_ALERT;!FG_MONSTER" },
         { "fight", "!FG_ATTACK;!FG_TAUNT" },
+        { "heal", "!MG_HEAL" },
         { "pain", "gr_pain1;gr_pain2;gr_pain3;gr_pain4;gr_pain5;gr_pain6;pain1;pain2;pain3;pain4;pain5;pain6" },
         { "die", "death1;death2;death3;death4;death5;death6" },
         { "kill", "!FG_KILL" }
@@ -114,6 +120,51 @@ const array<dictionary> DICT_PRESETS =
     }
 };
 
+array<info_player_speech> OBJ_PLAYER_SPEECHS;
+
+// Note to devs: this should be a standard CBasePlayer method.
+string GetPlayerModel(EHandle hPlayer)
+{
+    if( !hPlayer )
+        return "";
+
+    CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
+
+    if( pPlayer !is null && pPlayer.IsPlayer() ) // This only returns the filename of the playermodel, not the full path + extension.
+        return string( g_EngineFuncs.GetInfoKeyBuffer( pPlayer.edict() ).GetValue( "model" ) );
+    else
+        return "";
+}
+// !-UNDER-CONSTRUCTION-!
+/* CTextMenu@ menuSpech = CreateTextMenu( SpeechMenu, "Say a voice line: ", { "help" } );
+
+CTextMenu@ CreateTextMenu(TextMenuPlayerSlotCallback@ fnMenuSelected, string title, array<string>@ ITEMS)
+{
+    CTextMenu menu( fnMenuSelected );
+    menu.SetTitle( title );
+
+    for( uint i = 0; i < ITEMS.length(); i++ )
+    {
+        if( ITEMS[i] != "" )
+            menu.AddItem( ITEMS[i] );
+    }
+
+    return menu.Register() ? menu : CTextMenu( null );
+}
+
+void SpeechMenu(CTextMenu@ menu, CBasePlayer@ pPlayer, int iSlot, const CTextMenuItem@ pItem)
+{
+    if( pPlayer is null || pItem is null )
+        return;
+
+    if( pItem.m_szName == "help" )
+    {
+        for( uint i = 0; i < OBJ_PLAYER_SPEECHS.length(); i++ )
+            OBJ_PLAYER_SPEECHS[i].Speak( pPlayer, "help" );
+    }
+}
+*/
+
 bool InfoPlayerSpeechRegister()
 {
     g_CustomEntityFuncs.RegisterCustomEntity( "INFO_PLAYER_SPEECH::info_player_speech", "info_player_speech" );
@@ -123,14 +174,14 @@ bool InfoPlayerSpeechRegister()
 final class info_player_speech : ScriptBaseEntity
 {
     private dictionary dictSpeech;
-    private string strPlayerModels;
+    string strPlayerModels;
     private float flSpeechDelay = 0.6f;
     private uint iPreset;
 
     private array<EHandle> H_PLAYER_ENEMIES( g_Engine.maxClients + 1 );
     private array<float> FL_LAST_SPOKE( g_Engine.maxClients + 1 );
 
-    private CScheduledFunction@ fnCanTalk, fnResetBaddiesSeen;
+    private CScheduledFunction@ fnResetBaddiesSeen;
 
     private string strBase
     {
@@ -195,8 +246,9 @@ final class info_player_speech : ScriptBaseEntity
         g_EntityFuncs.SetOrigin( self, self.pev.origin );
 
         StartThink();
-
         BaseClass.Spawn();
+
+        OBJ_PLAYER_SPEECHS.insertLast( ( cast<info_player_speech@>( CastToScriptClass( self ) ) ) );
     }
     
     void StartThink()
@@ -207,11 +259,14 @@ final class info_player_speech : ScriptBaseEntity
         if( string( dictSpeech["alert"] ) != "" )
             g_Hooks.RegisterHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.EnemySpotted ) );
 
+        if( string( dictSpeech["heal"] ) != "" )
+        {
+            g_Hooks.RegisterHook( Hooks::Weapon::WeaponPrimaryAttack, WeaponPrimaryAttackHook( this.MedkitUse ) );
+            g_Hooks.RegisterHook( Hooks::Weapon::WeaponSecondaryAttack, WeaponSecondaryAttackHook( this.MedkitUse ) );
+        }
+
 /*         if( string( dictSpeech["kill"] ) != "" )
             g_Hooks.RegisterHook( Hooks::Monster::MonsterKilled, MonsterKilledHook( this.EnemyKilled ) ); */
-
-/*         if( dictSpeech["follow"] != "" || dictSpeech["help"] != "" )
-            g_Hooks.RegisterHook( Hooks::Player::PlayerUse, PlayerUseHook( this.PlayerUse ) );*/
 
         if( string( dictSpeech["pain"] ) != "" )
             g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( this.PlayerTakeDamage ) );
@@ -219,20 +274,7 @@ final class info_player_speech : ScriptBaseEntity
         if( string( dictSpeech["die"] ) != "" )
             g_Hooks.RegisterHook( Hooks::Player::PlayerKilled, PlayerKilledHook( this.PlayerKilled ) );
     }
-    // Note to devs: this should be a standard CBasePlayer method.
-    string GetPlayerModel(EHandle hPlayer)
-    {
-        if( !hPlayer )
-            return "";
 
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
-
-        if( pPlayer !is null && pPlayer.IsPlayer() ) // This only returns the filename of the playermodel, not the full path + extension.
-            return string( g_EngineFuncs.GetInfoKeyBuffer( pPlayer.edict() ).GetValue( "model" ) );
-        else
-            return "";
-    }
-    
     void Speak(EHandle hPlayer, string strSpeechGroup, int pitch = PITCH_NORM)
     {
         if
@@ -306,7 +348,7 @@ final class info_player_speech : ScriptBaseEntity
                 continue;
 
             if( pPlayer.IsAlive() )
-            {
+            {   // Sometimes this plays when taking damage
                 if( string( dictSpeech["idle"] ) != "" )
                     Idle( pPlayer );
 
@@ -423,6 +465,8 @@ final class info_player_speech : ScriptBaseEntity
         if( g_Engine.time > FL_LAST_SPOKE[pPlayer.entindex()] + flSpeechDelay )
             Speak( pPlayer, "pain" );
 
+        self.pev.nextthink = g_Engine.time + flSpeechDelay;
+
         return HOOK_CONTINUE;
     }
 
@@ -436,6 +480,17 @@ final class info_player_speech : ScriptBaseEntity
         return HOOK_CONTINUE;
     }
 
+    HookReturnCode MedkitUse(CBasePlayer@ pPlayer, CBasePlayerWeapon@ pWeapon)
+    {
+        if( pPlayer is null || pWeapon is null || pWeapon.m_iId != WEAPON_MEDKIT )
+            return HOOK_CONTINUE;
+
+        if( g_Engine.time > FL_LAST_SPOKE[pPlayer.entindex()] + flSpeechDelay + 4.0f )
+            Speak( pPlayer, "heal" );
+
+        return HOOK_CONTINUE;
+    }
+
     void UpdateOnRemove()
     {
         g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.EnemySpotted ) );
@@ -443,8 +498,7 @@ final class info_player_speech : ScriptBaseEntity
         g_Hooks.RemoveHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( this.PlayerTakeDamage ) );
         g_Hooks.RemoveHook( Hooks::Player::PlayerKilled, PlayerKilledHook( this.PlayerKilled ) );
 
-        g_Scheduler.RemoveTimer( fnCanTalk );
-        g_Scheduler.RemoveTimer( fnCanTalk );
+        g_Scheduler.RemoveTimer( fnResetBaddiesSeen );
     }
 };
 
