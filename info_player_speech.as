@@ -25,17 +25,14 @@ const array<string> STR_SPEECH_GROUPS =
     "idle",
     "alert",
     "fight",
-    // !-TODO-!
-/*     "look",
-    "throw",
-    "follow",
-    "help",
-    "jump",*/
     "heal",
     "pain",
     "wounded",
+    "help",
     "die",
-    "kill"
+    "kill",
+    "jump",
+    "message"
 };
 
 const array<dictionary> DICT_PRESETS =
@@ -45,7 +42,9 @@ const array<dictionary> DICT_PRESETS =
         { "base", "scientist/" },
         { "idle", "!SC_IDLE;!SC_PIDLE;!SC_COUGH" },
         { "alert", "!SC_FEAR;!SC_SCREAM" },
-        { "heal", "!SC_HEAL;!SC_REVIVE;!SC_M" },
+        { "heal", "!SC_HEAL;!SC_REVIVE;!SC_M;!SC_CUREA;!SC_CUREB;!SC_CUREC" },
+        { "fight", "SC_POK0" },
+        { "help", "dontwantdie;canttakemore" },
         { "pain", "sci_pain1;sci_pain2;sci_pain3;sci_pain4;sci_pain5;sci_pain6;sci_pain7;sci_pain8;sci_pain9;sci_pain10" },
         { "wounded", "!SC_WOUND;!SC_MORTAL" },
         { "die", "sci_die1;sci_die2;sci_die3;sci_die4;scream21" }
@@ -55,11 +54,11 @@ const array<dictionary> DICT_PRESETS =
         { "idle", "!BA_IDLE" },
         { "alert", "!BA_ATTACK" },
         { "heal", "checkwounds;youneedmedic;realbadwound;ba_cure0;ba_cure1" },
-        { "fight", "!BA_MAD" },
-        { "help", "c2a5_ba_helpme" },
+        { "fight", "!BA_MAD;ba_bring;ba_attacking1" },
+        { "help", "!BA_HELPME" },
         { "pain", "ba_pain1;ba_pain2;ba_pain3" },
-        { "wounded", "!BA_WOUND" },
-        { "die", "ba_die1;ba_die2;ba_die3" },
+        { "wounded", "!BA_WOUND;!BA_CANAL_WOUND2" },
+        { "die", "!BA_DIE1;ba_die2;ba_die3;!BA_CANAL_DEATH1" },
         { "kill", "!BA_KILL" }
     },
     {//Otis
@@ -68,9 +67,10 @@ const array<dictionary> DICT_PRESETS =
         { "alert", "!OT_ATTACK" },
         { "heal", "otis/scar;otis/insurance;otis/medic;otis/yourback" },
         { "fight", "!OT_MAD" },
+        { "help", "otis/tooyoung;otis/virgin;otis/imdead" },
         { "pain", "barney/ba_pain1;barney/ba_pain2;barney/ba_pain3" },
         { "wounded", "!OT_WOUND;!OT_MORTAL" },
-        { "die", "barney/ba_die1;barney/ba_die2;barney/ba_die3" },
+        { "die", "!BA_DIE1;barney/ba_die2;barney/ba_die3" },
         { "kill", "!OT_KILL" }
     },
     {//HEV
@@ -121,7 +121,6 @@ const array<dictionary> DICT_PRESETS =
 };
 
 array<info_player_speech> OBJ_PLAYER_SPEECHS;
-
 // Note to devs: this should be a standard CBasePlayer method.
 string GetPlayerModel(EHandle hPlayer)
 {
@@ -135,35 +134,6 @@ string GetPlayerModel(EHandle hPlayer)
     else
         return "";
 }
-// !-UNDER-CONSTRUCTION-!
-/* CTextMenu@ menuSpech = CreateTextMenu( SpeechMenu, "Say a voice line: ", { "help" } );
-
-CTextMenu@ CreateTextMenu(TextMenuPlayerSlotCallback@ fnMenuSelected, string title, array<string>@ ITEMS)
-{
-    CTextMenu menu( fnMenuSelected );
-    menu.SetTitle( title );
-
-    for( uint i = 0; i < ITEMS.length(); i++ )
-    {
-        if( ITEMS[i] != "" )
-            menu.AddItem( ITEMS[i] );
-    }
-
-    return menu.Register() ? menu : CTextMenu( null );
-}
-
-void SpeechMenu(CTextMenu@ menu, CBasePlayer@ pPlayer, int iSlot, const CTextMenuItem@ pItem)
-{
-    if( pPlayer is null || pItem is null )
-        return;
-
-    if( pItem.m_szName == "help" )
-    {
-        for( uint i = 0; i < OBJ_PLAYER_SPEECHS.length(); i++ )
-            OBJ_PLAYER_SPEECHS[i].Speak( pPlayer, "help" );
-    }
-}
-*/
 
 bool InfoPlayerSpeechRegister()
 {
@@ -179,7 +149,10 @@ final class info_player_speech : ScriptBaseEntity
     private uint iPreset;
 
     private array<EHandle> H_PLAYER_ENEMIES( g_Engine.maxClients + 1 );
-    private array<float> FL_LAST_SPOKE( g_Engine.maxClients + 1 );
+    private array<float> 
+        FL_LAST_SPOKE( g_Engine.maxClients + 1 ),
+        FL_LAST_DAMAGE_TIME( g_Engine.maxClients + 1 );
+    private array<string> STR_LAST_SPOKE( g_Engine.maxClients + 1 );
 
     private CScheduledFunction@ fnResetBaddiesSeen;
 
@@ -231,19 +204,22 @@ final class info_player_speech : ScriptBaseEntity
         BaseClass.Precache();
     }
 
-    void Spawn()
+    void PreSpawn()
     {
-        g_Log.PrintF( "Spawning: " + self.GetClassname() + "\n" );
-
         if( iPreset > 0 )
             dictSpeech = DICT_PRESETS[iPreset];
+    }
 
+    void Spawn()
+    {
         self.Precache();
-
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
         g_EntityFuncs.SetOrigin( self, self.pev.origin );
+
+        if( self.pev.message != "" )
+            dictSpeech["message"] = string( self.pev.message );
 
         StartThink();
         BaseClass.Spawn();
@@ -279,7 +255,9 @@ final class info_player_speech : ScriptBaseEntity
     {
         if
         (
-            !hPlayer || 
+            !hPlayer ||
+            hPlayer.GetEntity().pev.waterlevel > WATERLEVEL_WAIST ||
+            hPlayer.GetEntity().pev.effects & EF_NODRAW != 0 ||
             strSpeechGroup == "" || 
             !dictSpeech.exists( strSpeechGroup ) ||
             string( dictSpeech[strSpeechGroup] ) == "" ||
@@ -290,22 +268,26 @@ final class info_player_speech : ScriptBaseEntity
         if( strPlayerModels != "" && strPlayerModels.Find( GetPlayerModel( hPlayer ) ) == String::INVALID_INDEX )
             return;
 
-        const array<string> VOICE_RESPONSES = string( dictSpeech[strSpeechGroup] ).Split( ";" );
-        string strSelectedSnd = VOICE_RESPONSES[Math.RandomLong( 0, VOICE_RESPONSES.length() - 1 )];
+        const array<string> PHRASES = string( dictSpeech[strSpeechGroup] ).Split( ";" );
+        string strSelectedSnd;
 
-        if( strSelectedSnd[0] == '!' )
+        do( strSelectedSnd = PHRASES[Math.RandomLong( 0, PHRASES.length() - 1 )] );
+        while( PHRASES.length() > 1 && strSelectedSnd == STR_LAST_SPOKE[hPlayer.GetEntity().entindex()] );
+
+        if( strSelectedSnd.StartsWith( '!' ) )
         {
             strSelectedSnd.Trim( '!' );
             g_SoundSystem.PlaySentenceGroup( hPlayer.GetEntity().edict(), strSelectedSnd, VOL_NORM, ATTN_NORM, 0, pitch );
-            g_Log.PrintF( "! info_player_speech !: " + hPlayer.GetEntity().pev.netname + " spoke " + strSpeechGroup + " sentence: " + strSelectedSnd + "\n" );
+            g_Log.PrintF( "! " + self.GetClassname() + " !: " + hPlayer.GetEntity().pev.netname + " spoke " + strSpeechGroup + " sentence: " + strSelectedSnd + "\n" );
         }
         else
         {
             g_SoundSystem.EmitSoundDyn( hPlayer.GetEntity().edict(), CHAN_VOICE, strBase + strSelectedSnd + ".wav", VOL_NORM, ATTN_NORM, 0, pitch );
-            g_Log.PrintF( "! info_player_speech !: " + hPlayer.GetEntity().pev.netname + " spoke " + strSpeechGroup + " voiceline: " + strSelectedSnd + "\n" );
+            g_Log.PrintF(  "! " + self.GetClassname() + " !: " + hPlayer.GetEntity().pev.netname + " spoke " + strSpeechGroup + " voiceline: " + strSelectedSnd + "\n" );
         }
 
         FL_LAST_SPOKE[hPlayer.GetEntity().entindex()] = g_Engine.time;
+        STR_LAST_SPOKE[hPlayer.GetEntity().entindex()] = strSelectedSnd;
     }
 
     EHandle PlayerEnemy(EHandle hPlayer, EHandle hNewEnemy = EHandle(), bool blResetEnemy = false)
@@ -347,19 +329,23 @@ final class info_player_speech : ScriptBaseEntity
             if( g_Engine.time < FL_LAST_SPOKE[pPlayer.entindex()] + flSpeechDelay )
                 continue;
 
+            if( g_Engine.time < FL_LAST_DAMAGE_TIME[pPlayer.entindex()] + flSpeechDelay )
+                continue;
+            // !-BUG-!: Sometimes idle chatter plays while taking damage
             if( pPlayer.IsAlive() )
-            {   // Sometimes this plays when taking damage
-                if( string( dictSpeech["idle"] ) != "" )
+            {
+                if( string( dictSpeech["idle"] ) != "" && !PlayerEnemy( pPlayer ) )
                     Idle( pPlayer );
-
-/*                 if( string( dictSpeech["fight"] ) != "" )
-                    Fight( pPlayer ); */
+                else if( string( dictSpeech["fight"] ) != "" )
+                    Fight( pPlayer );
             }
+            else if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 )
+                Speak( pPlayer, "help" );
         }
 
-        self.pev.nextthink = g_Engine.time + 1.5f;
+        self.pev.nextthink = g_Engine.time + Math.RandomFloat( 0.7f, 1.5f );
     }
-    
+    // Random chatter
     void Idle(EHandle hPlayer)
     {
         if( !hPlayer )
@@ -372,7 +358,7 @@ final class info_player_speech : ScriptBaseEntity
 
         if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 )
         {
-            if( string( dictSpeech["wounded"] ) != "" && hPlayer.GetEntity().pev.health < 26 )
+            if( string( dictSpeech["wounded"] ) != "" && hPlayer.GetEntity().pev.health <= 25 )
                 Speak( hPlayer, "wounded" );
             else
                 Speak( hPlayer, "idle" );
@@ -386,10 +372,10 @@ final class info_player_speech : ScriptBaseEntity
 
         CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
 
-        if( pPlayer is null || !pPlayer.m_hActiveItem || pPlayer.pev.button & ( IN_ATTACK | IN_ATTACK2 ) != 0 )
+        if( pPlayer is null || !pPlayer.m_hActiveItem || !PlayerEnemy( pPlayer ) )
             return;
 
-        if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 && PlayerEnemy( pPlayer ) )
+        if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 )
             Speak( hPlayer, "fight" );	
     }
     //!-TODO-!: add functions for saying help if player is dead, speak alert looking at an enemy or speak follow if looking at a player
@@ -403,49 +389,6 @@ final class info_player_speech : ScriptBaseEntity
 
 		return HOOK_CONTINUE;
 	}
-    // !-BUG-!: not playing sentences.
-    HookReturnCode EnemySpotted(CBasePlayer@ pPlayer)
-    {
-        if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
-            return HOOK_CONTINUE;
-
-        CBaseEntity@ pAimedEntity = g_Utility.FindEntityForward( pPlayer );
-
-        if
-        ( 
-            pAimedEntity is null || 
-            !pAimedEntity.IsMonster() || 
-            pPlayer.IRelationship( pAimedEntity, false ) <= R_NO || 
-            pAimedEntity.pev.deadflag == DEAD_DEAD
-        )
-            return HOOK_CONTINUE;
-
-        if( H_PLAYER_ENEMIES[pPlayer.entindex()].IsValid() && H_PLAYER_ENEMIES[pPlayer.entindex()].GetEntity() is pAimedEntity )
-            return HOOK_CONTINUE;
-
-        if( Math.RandomLong( 0, 1 ) == 0 )
-            Speak( pPlayer, "alert", 0 );
-
-        PlayerEnemy( pPlayer, pAimedEntity );
-        @fnResetBaddiesSeen = g_Scheduler.SetTimeout( this, "ResetBaddieSeen", 10.0f, EHandle( pPlayer ) );
-
-        return HOOK_CONTINUE;
-    }
-    // !-TODO-!: Implement for 5.26
-    HookReturnCode EnemyKilled(CBaseMonster@ pMonster, CBaseEntity@ pAttacker, int bitsDamageType)
-    {
-        if( pMonster is null || pMonster.IsPlayer() || pAttacker is null || !pAttacker.IsPlayer() )
-            return HOOK_CONTINUE;
-
-        CBasePlayer@ pPlayer = cast<CBasePlayer@>( pAttacker );
-        //TO-DO: have a check for visible in range
-        if( Math.RandomLong( 0, 10 ) >= 6 )
-            Speak( pPlayer, "kill" );
-        // Remove the player's enemy
-        PlayerEnemy( pPlayer, EHandle(), true );
-
-        return HOOK_CONTINUE;
-    }
 
     HookReturnCode PlayerTakeDamage(DamageInfo@ pDamageInfo)
     {
@@ -465,6 +408,7 @@ final class info_player_speech : ScriptBaseEntity
         if( g_Engine.time > FL_LAST_SPOKE[pPlayer.entindex()] + flSpeechDelay )
             Speak( pPlayer, "pain" );
 
+        FL_LAST_DAMAGE_TIME[pPlayer.entindex()] = g_Engine.time;
         self.pev.nextthink = g_Engine.time + flSpeechDelay;
 
         return HOOK_CONTINUE;
@@ -489,6 +433,57 @@ final class info_player_speech : ScriptBaseEntity
             Speak( pPlayer, "heal" );
 
         return HOOK_CONTINUE;
+    }
+
+    HookReturnCode EnemySpotted(CBasePlayer@ pPlayer)
+    {
+        if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
+            return HOOK_CONTINUE;
+
+        CBaseEntity@ pAimedEntity = g_Utility.FindEntityForward( pPlayer, 500.0f );
+
+        if
+        ( 
+            pAimedEntity is null || 
+            !pAimedEntity.pev.FlagBitSet( FL_MONSTER ) || 
+            pPlayer.IRelationship( pAimedEntity, false ) <= R_NO || 
+            pAimedEntity.pev.deadflag == DEAD_DEAD
+        )
+            return HOOK_CONTINUE;
+
+        if( H_PLAYER_ENEMIES[pPlayer.entindex()].IsValid() && H_PLAYER_ENEMIES[pPlayer.entindex()].GetEntity() is pAimedEntity )
+            return HOOK_CONTINUE;
+
+        if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 1 ) == 1 )
+            Speak( pPlayer, "alert" );
+
+        PlayerEnemy( pPlayer, pAimedEntity );
+        @fnResetBaddiesSeen = g_Scheduler.SetTimeout( this, "ResetBaddieSeen", 10.0f, EHandle( pPlayer ) );
+
+        return HOOK_CONTINUE;
+    }
+    // !-TODO-!: Implement for 5.26
+    HookReturnCode EnemyKilled(CBaseMonster@ pMonster, CBaseEntity@ pAttacker, int bitsDamageType)
+    {
+        if( pMonster is null || pMonster.IsPlayer() || pAttacker is null || !pAttacker.IsPlayer() )
+            return HOOK_CONTINUE;
+
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( pAttacker );
+        //TO-DO: have a check for visible in range
+        if( Math.RandomLong( 0, 10 ) >= 6 )
+            Speak( pPlayer, "kill" );
+        // Remove the player's enemy
+        PlayerEnemy( pPlayer, EHandle(), true );
+
+        return HOOK_CONTINUE;
+    }
+
+    void Use(CBaseEntity@ pActivator, CBaseEntity@ pCaller, USE_TYPE useType, float flValue)
+    {
+        if( pActivator is null || !pActivator.IsPlayer() || !pActivator.IsAlive() )
+            return;
+
+        Speak( cast<CBasePlayer@>( pActivator ), "message" );
     }
 
     void UpdateOnRemove()
