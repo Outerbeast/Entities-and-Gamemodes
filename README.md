@@ -32,5 +32,6 @@ Some scripts simply just require you add them via `map_script` in map cfg. Again
 ## Terms and Conditions
 You are free to use and distribute these scripts if you agree to:
 - Provide credit
+- [Report bugs and issues if you find them](https://github.com/Outerbeast/Entities-and-Gamemodes/issues). Do not keep them secret
 - Not rename the script files. Some scripts use filenames for self-reference purposes, modifying the names can cause them to break.
 - Not modify the script code. If you want to change variables, they will be exposed so they can be accessed from your map script. Do not distribute forked copies of the script. If you have done so to fix/improve/tweak the script please drop feedback in the Issues section or make a pull request. You are welcome to do so.
