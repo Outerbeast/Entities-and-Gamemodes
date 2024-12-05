@@ -71,11 +71,12 @@ final class trigger_shuffle_position : ScriptBaseEntity
         BaseClass.Spawn();
     }
 
-    void Shuffle(string strEntityList, string strTarget, bool blResetPositions, bool blPreserveAngles)
+    void Shuffle(const string& in strEntityList, const string& in strTarget, bool blResetPositions, bool blPreserveAngles)
     {
         CBaseEntity@ pEntity;
         array<CBaseEntity@> P_ENTITIES;
-        array<Vector> VEC_POSITIONS, VEC_ANGLES, VEC_OCCUPIED;
+        array<Vector> VEC_POSITIONS, VEC_ANGLES;
+        array<uint> I_OCCUPIED;
         // Could condense this code further, but this will do for now
         if( strEntityList != "" )
         {
@@ -88,7 +89,7 @@ final class trigger_shuffle_position : ScriptBaseEntity
 
                 while( ( @pEntity = g_EntityFuncs.FindEntityByTargetname( pEntity, STR_ENTITY_NAMES[i] ) ) !is null )
                 {
-                    if( pEntity is null || !pEntity.IsInWorld() || P_ENTITIES.findByRef( pEntity ) >= 0 )
+                    if( pEntity is null || P_ENTITIES.findByRef( pEntity ) >= 0 )
                         continue;
 
                     P_ENTITIES.insertLast( pEntity );
@@ -123,16 +124,14 @@ final class trigger_shuffle_position : ScriptBaseEntity
             }
         }
         // Unless you show me how to shuffle a set containing one item.
-        if( P_ENTITIES.length() < 2 )
+        if( P_ENTITIES.length() < 2 || VEC_POSITIONS.length() < 2 )
             return;
-
-        VEC_OCCUPIED.resize( VEC_POSITIONS.length() );
   
         for( uint i = 0; i < P_ENTITIES.length(); i++ )
         {
             @pEntity = P_ENTITIES[i];
 
-            if( pEntity is null || !pEntity.IsInWorld() )
+            if( pEntity is null )
                 continue;
 
             if( blResetPositions )
@@ -144,11 +143,15 @@ final class trigger_shuffle_position : ScriptBaseEntity
                     g_EntityFuncs.SetOrigin( pEntity, pEntity.pev.oldorigin );
             }
             else
-            {
-                do( g_EntityFuncs.SetOrigin( pEntity, VEC_POSITIONS[Math.RandomLong( 0, VEC_POSITIONS.length() - 1 )] ) );
-                while( VEC_OCCUPIED.find( pEntity.pev.origin ) >= 0 );
+            {//Select a position of an entity at random
+                uint iRandomIdx = 0;
 
-                VEC_OCCUPIED[i] = pEntity.pev.origin;
+                do
+                    iRandomIdx = Math.RandomLong( 0, VEC_POSITIONS.length() - 1 );
+                while( I_OCCUPIED.find( iRandomIdx ) >= 0 );
+                
+                g_EntityFuncs.SetOrigin( pEntity, VEC_POSITIONS[iRandomIdx] );
+                I_OCCUPIED.insertLast( iRandomIdx );
 
                 if( blPreserveAngles )
                     pEntity.pev.angles = VEC_ANGLES[VEC_POSITIONS.find( pEntity.pev.origin )];

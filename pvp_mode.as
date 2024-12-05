@@ -247,7 +247,9 @@ HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
     if( pPlayer is null || !pPlayer.IsConnected() || !pPlayer.IsAlive() )
         return HOOK_CONTINUE;
 
-    if( pPlayer.GetMaxSpeedOverride() == 0 && 
+    if
+    (   
+        pPlayer.GetMaxSpeedOverride() == 0 && 
         pPlayer.m_afButtonPressed & (
         IN_DUCK | 
         IN_JUMP | 
@@ -258,7 +260,8 @@ HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
         IN_FORWARD | 
         IN_BACK | 
         IN_MOVELEFT | 
-        IN_MOVERIGHT ) != 0 )
+        IN_MOVERIGHT ) != 0
+    )
         SpawnProtection( pPlayer, int( DAMAGE_YES ) );
 
     return HOOK_CONTINUE;
@@ -281,7 +284,7 @@ HookReturnCode PlayerChatCommand(SayParameters@ pParams)
         g_PlayerFuncs.SayTextAll( pPlayer, "" + pPlayer.pev.netname + ": " + cmdArgs.GetCommandString() ); // Replace with decoy
     }
 
-    if( cmdArgs.ArgC() < 1 || cmdArgs[0][0] != "!pvp_" )
+    if( cmdArgs.ArgC() < 1 || !cmdArgs[0].StartsWith( "!pvp_" ) )
         return HOOK_CONTINUE;
 
     pParams.set_ShouldHide( true );

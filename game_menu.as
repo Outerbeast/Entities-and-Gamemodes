@@ -1,4 +1,4 @@
-/* game_menu - Custom entity for making a customisable text menu
+/* game_menu - Custom entity for making a customisable text menu with option that triggers targets
     Installation:-
     - Place in scripts/maps
     - Add 
@@ -21,6 +21,7 @@
     A maximum of 7 options can fit in one page before the rest are put on the next page, so if you had an 8th option it would begin on page 2.
 
     Example:
+    "message" "Menu Title" - this sets the title of the menu
     "1:Option A" "target_something"
     "2:Plan B" "target_something_else"
     "3:Test C" "target_another_thing"
@@ -62,7 +63,7 @@ final class game_menu : ScriptBaseEntity
 
     void Spawn()
     {
-        ARR_STR_OPTIONS.sort( function(a,b) { return atoi( a[0].Split( ":" )[0] ) < atoi( b[0].Split( ":" )[0] ); } );
+        ARR_STR_OPTIONS.sort( function(a, b) { return atoi( a[0].Split( ":" )[0] ) < atoi( b[0].Split( ":" )[0] ); } );
         SetupMenu();
     }
 
@@ -89,7 +90,7 @@ final class game_menu : ScriptBaseEntity
 
         string target;
         pItem.m_pUserData.retrieve( target );
-        g_EntityFuncs.FireTargets( target, pPlayer, null, USE_TOGGLE );
+        g_EntityFuncs.FireTargets( target, pPlayer, self, USE_TOGGLE );
         self.pev.frags = iSlot;
         self.SUB_UseTargets( pPlayer, USE_SET, float( iSlot ) );
         blMenuOpen = false;
@@ -132,7 +133,7 @@ final class game_menu : ScriptBaseEntity
         }
 
         blMenuOpen = true;
-        @fnCloseMenu = g_Scheduler.SetTimeout( "CloseMenu", float( iDelay ), false );
+        @fnCloseMenu = g_Scheduler.SetTimeout( this, "CloseMenu", float( iDelay ), false );
     }
 
     void UpdateOnRemove()
