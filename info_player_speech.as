@@ -120,7 +120,35 @@ const array<dictionary> DICT_PRESETS =
     }
 };
 
+array<CCVar@> CVARS_PLAYER_SPEECH =
+{
+    CCVar( "player_speech_scientist", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_barney", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_otis", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_hev", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_fgrunt", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_hgrunt", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_robogrunt", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_aslave", "", "", ConCommandFlag::None, CreatePreset ),
+    CCVar( "player_speech_agrunt", "", "", ConCommandFlag::None, CreatePreset )
+};
+
 array<info_player_speech> OBJ_PLAYER_SPEECHS;
+
+void CreatePreset(CCVar@ cvar, const string& in szOldValue, float flOldValue)
+{
+    if( cvar is null || cvar.GetString() == "" )
+        return;
+
+    dictionary dictPlayerSpeech =
+    {
+        { "preset", "" + ( CVARS_PLAYER_SPEECH.find( cvar ) + 1 ) },
+        { "pmodels", cvar.GetString() },
+        { "spawnflags", "" + ( 1 << 8 ) }// Prevent precaching, because we already did it somewhere else.
+    };
+
+    g_EntityFuncs.CreateEntity( "info_player_speech", dictPlayerSpeech );
+}
 // Note to devs: this should be a standard CBasePlayer method.
 string GetPlayerModel(EHandle hPlayer)
 {
@@ -135,9 +163,38 @@ string GetPlayerModel(EHandle hPlayer)
         return "";
 }
 
+bool PrecacheSentences(const dictionary@ dictSentences)
+{
+    if( dictSentences is null || dictSentences.isEmpty() )
+        return false;
+
+    array<string> STR_KEYS = dictSentences.getKeys(), STR_VALUES;
+
+    for( uint i = 0; i < STR_KEYS.length(); i++ )
+    {
+        if( STR_SPEECH_GROUPS.find( STR_KEYS[i] ) < 0 )
+            continue;
+
+        STR_VALUES = string( dictSentences[STR_KEYS[i]] ).Split( ";" );
+
+        for( uint j = 0; j < STR_VALUES.length(); j++ )
+        {
+            if( STR_VALUES[j].StartsWith( '!' ) )
+                continue;
+
+            g_Log.PrintF( "Precaching: " + string( dictSentences["base"] ) + STR_VALUES[j] + ".wav\n" );
+            g_SoundSystem.PrecacheSound( string( dictSentences["base"] ) + STR_VALUES[j] + ".wav" );
+        }
+    }
+
+    return true;
+}
+
 bool InfoPlayerSpeechRegister()
 {
     g_CustomEntityFuncs.RegisterCustomEntity( "INFO_PLAYER_SPEECH::info_player_speech", "info_player_speech" );
+    g_EntityLoader.LoadFromFile( "store/info_player_speech.txt" );
+
     return g_CustomEntityFuncs.IsCustomEntity( "info_player_speech" );
 }
 
@@ -182,25 +239,10 @@ final class info_player_speech : ScriptBaseEntity
 
     void Precache()
     {
-        array<string> STR_KEYS = dictSpeech.getKeys(), STR_VALUES;
+        for( uint i = 0; i < DICT_PRESETS.length(); i++ )
+            PrecacheSentences( DICT_PRESETS[i] );
 
-        for( uint i = 0; i < STR_KEYS.length(); i++ )
-        {
-            if( STR_SPEECH_GROUPS.find( STR_KEYS[i] ) < 0 )
-                continue;
-
-            STR_VALUES = string( dictSpeech[STR_KEYS[i]] ).Split( ";" );
-
-            for( uint j = 0; j < STR_VALUES.length(); j++ )
-            {
-                if( STR_VALUES[j][0] == '!' )
-                    continue;
-
-                g_Log.PrintF( "! info_player_speech ! - Precaching: " +  strBase + STR_VALUES[j] + ".wav\n" );
-                g_SoundSystem.PrecacheSound( strBase + STR_VALUES[j] + ".wav" );
-            }
-        }
-
+        PrecacheSentences( dictSpeech );
         BaseClass.Precache();
     }
 
@@ -212,7 +254,9 @@ final class info_player_speech : ScriptBaseEntity
 
     void Spawn()
     {
-        self.Precache();
+        if( !self.pev.SpawnFlagBitSet( 1 << 8 ) )
+            self.Precache();
+
         self.pev.movetype   = MOVETYPE_NONE;
         self.pev.solid      = SOLID_NOT;
         self.pev.effects    |= EF_NODRAW;
@@ -241,8 +285,8 @@ final class info_player_speech : ScriptBaseEntity
             g_Hooks.RegisterHook( Hooks::Weapon::WeaponSecondaryAttack, WeaponSecondaryAttackHook( this.MedkitUse ) );
         }
 
-/*         if( string( dictSpeech["kill"] ) != "" )
-            g_Hooks.RegisterHook( Hooks::Monster::MonsterKilled, MonsterKilledHook( this.EnemyKilled ) ); */
+        if( string( dictSpeech["kill"] ) != "" )
+            g_Hooks.RegisterHook( Hooks::Monster::MonsterKilled, MonsterKilledHook( this.EnemyKilled ) );
 
         if( string( dictSpeech["pain"] ) != "" )
             g_Hooks.RegisterHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( this.PlayerTakeDamage ) );
@@ -278,16 +322,13 @@ final class info_player_speech : ScriptBaseEntity
         {
             strSelectedSnd.Trim( '!' );
             g_SoundSystem.PlaySentenceGroup( hPlayer.GetEntity().edict(), strSelectedSnd, VOL_NORM, ATTN_NORM, 0, pitch );
-            g_Log.PrintF( "! " + self.GetClassname() + " !: " + hPlayer.GetEntity().pev.netname + " spoke " + strSpeechGroup + " sentence: " + strSelectedSnd + "\n" );
         }
         else
-        {
             g_SoundSystem.EmitSoundDyn( hPlayer.GetEntity().edict(), CHAN_VOICE, strBase + strSelectedSnd + ".wav", VOL_NORM, ATTN_NORM, 0, pitch );
-            g_Log.PrintF(  "! " + self.GetClassname() + " !: " + hPlayer.GetEntity().pev.netname + " spoke " + strSpeechGroup + " voiceline: " + strSelectedSnd + "\n" );
-        }
 
         FL_LAST_SPOKE[hPlayer.GetEntity().entindex()] = g_Engine.time;
         STR_LAST_SPOKE[hPlayer.GetEntity().entindex()] = strSelectedSnd;
+        g_Log.PrintF( "! %1 !: %2 spoke %3: %4\n", self.GetClassname(), hPlayer.GetEntity().pev.netname, strSpeechGroup, strSelectedSnd );
     }
 
     EHandle PlayerEnemy(EHandle hPlayer, EHandle hNewEnemy = EHandle(), bool blResetEnemy = false)
@@ -336,7 +377,11 @@ final class info_player_speech : ScriptBaseEntity
             {
                 if( string( dictSpeech["idle"] ) != "" && !PlayerEnemy( pPlayer ) )
                     Idle( pPlayer );
-                else if( string( dictSpeech["fight"] ) != "" )
+
+                if( string( dictSpeech["wounded"] ) != "" )
+                    Wounded( pPlayer );
+
+                if( string( dictSpeech["fight"] ) != "" )
                     Fight( pPlayer );
             }
             else if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 )
@@ -357,12 +402,21 @@ final class info_player_speech : ScriptBaseEntity
             return;
 
         if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 )
-        {
-            if( string( dictSpeech["wounded"] ) != "" && hPlayer.GetEntity().pev.health <= 25 )
-                Speak( hPlayer, "wounded" );
-            else
-                Speak( hPlayer, "idle" );
-        }
+            Speak( hPlayer, "idle" );
+    }
+
+    void Wounded(EHandle hPlayer)
+    {
+        if( !hPlayer )
+            return;
+
+        CBasePlayer@ pPlayer = cast<CBasePlayer@>( hPlayer.GetEntity() );
+
+        if( pPlayer is null || hPlayer.GetEntity().pev.health > 25  )
+            return;
+
+        if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 )
+            Speak( hPlayer, "wounded" );
     }
     
     void Fight(EHandle hPlayer)
@@ -378,13 +432,13 @@ final class info_player_speech : ScriptBaseEntity
         if( g_PlayerFuncs.SharedRandomLong( pPlayer.random_seed, 0, 100 ) <= 10 )
             Speak( hPlayer, "fight" );	
     }
-    //!-TODO-!: add functions for saying help if player is dead, speak alert looking at an enemy or speak follow if looking at a player
+    //!-TODO-!: add features for saying speak alert looking at an enemy or speak follow if looking at a player
     HookReturnCode PlayerUse(CBasePlayer@ pPlayer, uint& out uiFlags)
 	{
 		if( pPlayer is null )
 			return HOOK_CONTINUE;
 
-        if( ( pPlayer.m_afButtonPressed & IN_JUMP ) != 0 && pPlayer.pev.velocity.z > 0.0f )
+        if( ( pPlayer.m_afButtonReleased & IN_JUMP ) != 0 && pPlayer.pev.velocity.z > 0.0f )
             Speak( pPlayer, "jump" );
 
 		return HOOK_CONTINUE;
@@ -489,7 +543,7 @@ final class info_player_speech : ScriptBaseEntity
     void UpdateOnRemove()
     {
         g_Hooks.RemoveHook( Hooks::Player::PlayerPostThink, PlayerPostThinkHook( this.EnemySpotted ) );
-        //g_Hooks.RemoveHook( Hooks::Monster::MonsterKilled, MonsterKilledHook( this.EnemyKilled ) );
+        g_Hooks.RemoveHook( Hooks::Monster::MonsterKilled, MonsterKilledHook( this.EnemyKilled ) );
         g_Hooks.RemoveHook( Hooks::Player::PlayerTakeDamage, PlayerTakeDamageHook( this.PlayerTakeDamage ) );
         g_Hooks.RemoveHook( Hooks::Player::PlayerKilled, PlayerKilledHook( this.PlayerKilled ) );
 
