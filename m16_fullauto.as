@@ -326,7 +326,7 @@ HookReturnCode PlayerUseM16(CBasePlayer@ pPlayer, uint& out uiFlags)
 
     CBasePlayerWeapon@ pM16 = GetM16( pPlayer );
 
-    if( pM16 is null )
+    if( pM16 is null || pPlayer.m_hTank )
         return HOOK_CONTINUE;
 
     if( EHandle( pPlayer.GetUserData( "last_used_weapon" ) ).GetEntity() !is pM16 )

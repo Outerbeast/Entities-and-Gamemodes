@@ -21,6 +21,7 @@ namespace REPLACE_WEAPON_SPRITES
 
 string strDirPath;
 array<string> STR_WEAPONS;
+CScheduledFunction@ fnPatch = g_Scheduler.SetTimeout( "PatchWeapons", 0.1f );
 
 void SetReplacements(string strRootIn = "", string strHudSprs = "", string strWeapons = "")
 {
@@ -48,6 +49,20 @@ void SetReplacements(string strRootIn = "", string strHudSprs = "", string strWe
     g_Hooks.RegisterHook( Hooks::PickupObject::Collected, ItemCollected );
 }
 
+void PatchWeapons()
+{
+    for( uint i = 0; i < STR_WEAPONS.length(); i++ )
+    {
+        if( STR_WEAPONS[i] == "")
+            continue;
+
+        CBaseEntity@ pEntity;
+
+        while( ( @pEntity = g_EntityFuncs.FindEntityByClassname( pEntity, STR_WEAPONS[i] ) ) !is null )
+            g_EntityFuncs.DispatchKeyValue( pEntity.edict(), "CustomSpriteDir", strDirPath );
+    }
+}
+
 void ChangeWpnHudSpr(EHandle hPlayer, EHandle hWeapon)
 {
     if( !hPlayer || !hWeapon )
@@ -63,7 +78,8 @@ void ChangeWpnHudSpr(EHandle hPlayer, EHandle hWeapon)
         if( cvarIgnoreWeaponSprReplacement.GetString() != "" && 
             cvarIgnoreWeaponSprReplacement.GetString().Split( ";" ).find( pWeapon.GetClassname() ) >= 0 )
                 return;
-
+                
+        g_EntityFuncs.DispatchKeyValue( pWeapon.edict(), "CustomSpriteDir", strDirPath );
         pWeapon.LoadSprites( cast<CBasePlayer@>( hPlayer.GetEntity() ), strDirPath + pWeapon.GetClassname() );
     }
 }
