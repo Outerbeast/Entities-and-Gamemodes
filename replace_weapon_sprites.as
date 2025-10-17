@@ -21,7 +21,7 @@ namespace REPLACE_WEAPON_SPRITES
 
 string strDirPath;
 array<string> STR_WEAPONS;
-CScheduledFunction@ fnPatch = g_Scheduler.SetTimeout( "PatchWeapons", 0.1f );
+//CScheduledFunction@ fnPatch = g_Scheduler.SetTimeout( "PatchWeapons", 0.1f );
 
 void SetReplacements(string strRootIn = "", string strHudSprs = "", string strWeapons = "")
 {
@@ -36,13 +36,10 @@ void SetReplacements(string strRootIn = "", string strHudSprs = "", string strWe
         return;
 
     for( uint i = 0; i < STR_HUD_SPRS.length(); i++ )
-    {
         g_Game.PrecacheModel( "sprites/" + strDirPath + STR_HUD_SPRS[i] + ".spr" );
-        g_Game.PrecacheGeneric( "sprites/" + strDirPath + STR_HUD_SPRS[i] + ".spr" );
-    }
 
-    for( uint j = 0; j < STR_WEAPONS.length(); j++ )
-        g_Game.PrecacheGeneric( "sprites/" + strDirPath + STR_WEAPONS[j] + ".txt" );
+    for( uint i = 0; i < STR_WEAPONS.length(); i++ )
+        g_Game.PrecacheGeneric( "sprites/" + strDirPath + STR_WEAPONS[i] + ".txt" );
 
     g_Hooks.RegisterHook( Hooks::Player::PlayerSpawn, PlayerJoined );
     g_Hooks.RegisterHook( Hooks::Player::ClientPutInServer, PlayerJoined );
@@ -78,8 +75,8 @@ void ChangeWpnHudSpr(EHandle hPlayer, EHandle hWeapon)
         if( cvarIgnoreWeaponSprReplacement.GetString() != "" && 
             cvarIgnoreWeaponSprReplacement.GetString().Split( ";" ).find( pWeapon.GetClassname() ) >= 0 )
                 return;
-                
-        g_EntityFuncs.DispatchKeyValue( pWeapon.edict(), "CustomSpriteDir", strDirPath );
+        // !-UNDONE-!: this was leading to the hud icon becoming corrupted.
+        //g_EntityFuncs.DispatchKeyValue( pWeapon.edict(), "CustomSpriteDir", strDirPath );
         pWeapon.LoadSprites( cast<CBasePlayer@>( hPlayer.GetEntity() ), strDirPath + pWeapon.GetClassname() );
     }
 }
