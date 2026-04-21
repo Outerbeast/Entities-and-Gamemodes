@@ -21,6 +21,8 @@
     Current time is stored in "vuser1" in 24H format "hh mm ss"
     Current date is stored in "vuser2" in the format "dd mm yyyy"
     Current weekday is stored "netname" in lowercase e.g. "monday"
+
+    For flags, check the enum "game_clock_flags" below.
 - Outerbeast
 */
 enum game_clock_flags
@@ -29,7 +31,7 @@ enum game_clock_flags
     // The following flags only work when SHOW_HUD_CLOCK flag is set:
     SHOW_SECONDS            = 2,// Display seconds
     DD_MONTH_YYYY_FORMAT    = 4 // Changes the on screen date format to "DD, Month, YYYY"
-}
+};
 
 bool blGameClockRegistered = RegisterGameClock();
 
@@ -104,12 +106,14 @@ final class game_clock : ScriptBaseEntity
             return;
         
         const string 
-            strTimeColon = vuser1.z % 2 != 0 ? " " : ":",
+            strTimeColon = self.pev.vuser1.z % 2 != 0 ? " " : ":",
             strDateFormat = self.pev.SpawnFlagBitSet( DD_MONTH_YYYY_FORMAT ) ? "%e %B, %Y" : "%d/%m/%Y";
 
         obj_DateTime.Format( strTime, "%H" + strTimeColon + "%M" + ( self.pev.SpawnFlagBitSet( SHOW_SECONDS ) ? strTimeColon + "%S" : "" ) );
         obj_DateTime.Format( strDate, strDateFormat );
-        g_PlayerFuncs.HudMessageAll( txtTimeDate, strTime + "\n" + strDay + " " + strDate );
+
+        if( self.pev.SpawnFlagBitSet( SHOW_HUD_CLOCK ) )
+            g_PlayerFuncs.HudMessageAll( txtTimeDate, strTime + "\n" + strDay + " " + strDate );
 
         self.pev.nextthink = g_Engine.time + 0.001f;
     }
