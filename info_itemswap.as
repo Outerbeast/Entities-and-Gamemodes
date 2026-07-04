@@ -20,8 +20,15 @@
     Below is an example which swaps the mp5 to m16:
     "weapon_9mmAR" "weapon_m16"
     You can add as many weapons and ammo types as you want.
-    Removing this entity, via killtarget, will disable swapping, but it will not undo swaps that have already been done.
+    If you want randomisation of items to replace the original, you can add multiple items in a semicolon separated list:-
 
+    "weapon_olditem" "weapon_newitem1;weapon_newitem2;weapon_newitem3; ... ;weapon_newitemN"
+
+    A random item will be chosen from the list. For ItemMapping, the random choice will be set at map start and will not change for
+    the player loadout, but items spawned during playtime will be randomly chosen from the list continuously.
+
+    Removing this entity, via killtarget, will disable swapping, but it will not undo swaps that have already been done.
+    
     Template entity:
     !!EPAIRS
     "classname" "info_itemswap"
@@ -58,6 +65,7 @@ bool ItemSwap(dictionary dictItems)
 final class info_itemswap : ScriptBaseEntity
 {
     private array<ItemMapping@> IM_ITEMS;
+    private dictionary dictRandItemsTable;
 
     bool KeyValue(const string& in szKey, const string& in szValue)
     {
@@ -70,12 +78,23 @@ final class info_itemswap : ScriptBaseEntity
     }
 
     void Precache()
-    {   // Probably unecessary.
+    {   
         for( uint w = 0; w < IM_ITEMS.length(); w++ )
         {
             if( IM_ITEMS[w].get_To() == "" )
                 continue;
+            // handle randomised to-mappings for ItemMapping
+            if( IM_ITEMS[w].get_To().Find( ";" ) != String::INVALID_INDEX )
+            {
+                array<string> randSelection = IM_ITEMS[w].get_To().Split( ";" );
 
+                if( randSelection.length() > 0 )
+                {
+                    dictRandItemsTable[IM_ITEMS[w].get_From()] = randSelection;
+                    @IM_ITEMS[w] = ItemMapping( IM_ITEMS[w].get_From(), randSelection[Math.RandomLong( 0, randSelection.length() - 1 )] );
+                }
+            }
+            // Probably unecessary.
             g_Game.PrecacheOther( IM_ITEMS[w].get_To() );
         }
 
@@ -115,7 +134,17 @@ final class info_itemswap : ScriptBaseEntity
             if( pOldItem.GetClassname() != IM_ITEMS[w].get_From() || IM_ITEMS[w].get_To() == "" )
                 continue;
 
-            CBaseEntity@ pNewItem = g_EntityFuncs.Create( IM_ITEMS[w].get_To(), pOldItem.pev.origin, pOldItem.pev.angles, true );
+            string strNewItem = IM_ITEMS[w].get_To();
+            // handle randomised to-mappings for spawned items
+            if( dictRandItemsTable.exists( pOldItem.GetClassname() ) )
+            {
+                array<string> randSelection = cast<array<string>>( dictRandItemsTable[pOldItem.GetClassname()] );
+
+                if( randSelection.length() > 0 )
+                    strNewItem = randSelection[Math.RandomLong( 0, randSelection.length() - 1 )];
+            }
+
+            CBaseEntity@ pNewItem = g_EntityFuncs.Create( strNewItem, pOldItem.pev.origin, pOldItem.pev.angles, true );
 
             if( pNewItem is null ) 
                 continue;
